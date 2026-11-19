@@ -88,19 +88,23 @@ struct NativeDashboardView: View {
         let summary = lines.isEmpty ? home["tip"].text : lines.joined(separator: " ")
         let evening = store.brief["title"].text.contains("晚") || store.brief["period"].text == "evening"
         let pending = store.brief["status"].text == "pending"
+        // The whole observation is readable on the overview (smaller type, no line
+        // cap); the detail page keeps sources and history.
         return HStack(alignment: .top, spacing: 0) {
             NavigationLink { NativeBriefDetail() } label: {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: evening ? "moon" : "sun.max").font(.body.weight(.semibold)).foregroundStyle(pine).padding(.top, 2)
-                    Text(pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.body).foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
-                        .multilineTextAlignment(.leading).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
-                }.padding(.vertical, 14).padding(.leading, 14).contentShape(Rectangle())
-            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation").accessibilityHint("点按查看完整观察")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(evening ? "晚间观察" : "早间观察").font(.caption.weight(.semibold)).foregroundStyle(pine)
+                    Text(pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.subheadline).lineSpacing(2)
+                        .foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
+                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(.vertical, 12).padding(.leading, 14).contentShape(Rectangle())
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation").accessibilityHint("点按查看来源和历史")
             // Manual trigger: rewrite the observation now, even if the data is unchanged.
             Button { Task { await store.loadBrief(force: true) } } label: {
-                Group { if pending { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.subheadline.weight(.semibold)).foregroundStyle(pine) } }
-                    .frame(width: 44, height: 44)
-            }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview).padding(.top, 2).padding(.trailing, 2)
+                Group { if pending { ProgressView().controlSize(.mini) } else { Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pine) } }
+                    .frame(width: 44, height: 40)
+            }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview)
                 .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
@@ -208,33 +212,38 @@ struct NativeDashboardView: View {
     }
 
     // MARK: Body
+    /// Recovery and steps share one row, left and right.
     private var bodyList: some View {
         let steps = home["today"]["steps"].number, goal = home["step_goal"]["target"].number
         let stepsDetail: String = {
             guard let steps, let goal, goal > 0 else { return "" }
-            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "还差 " + displayNumber(.number(goal - steps), digits: 0)
+            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "/ " + displayNumber(.number(goal), digits: 0)
         }()
-        return VStack(spacing: 0) {
+        return HStack(spacing: 0) {
             NavigationLink(value: NativeOverviewRoute.recovery) {
-                listRow("恢复", home["recovery"]["score"], home["recovery"]["label"].text.isEmpty ? "待更新" : home["recovery"]["label"].text)
+                halfTile("恢复", home["recovery"]["score"], home["recovery"]["label"].text.isEmpty ? "待更新" : home["recovery"]["label"].text)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("recovery-score")
-            Divider().padding(.leading, 16)
+            Divider().frame(height: 36)
             Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
-                listRow("步数", home["today"]["steps"], stepsDetail)
+                halfTile("步数", home["today"]["steps"], stepsDetail)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-steps")
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
-    private func listRow(_ title: String, _ value: JSONValue, _ detail: String) -> some View {
-        HStack(spacing: 8) {
-            Text(title).foregroundStyle(.primary)
-            Spacer(minLength: 8)
-            if !detail.isEmpty { Text(detail).font(.subheadline).foregroundStyle(.secondary) }
-            Text(displayNumber(value, digits: 0)).fontWeight(.semibold).monospacedDigit().foregroundStyle(.primary)
-                .frame(minWidth: 52, alignment: .trailing)
-                .contentTransition(reduceMotion ? .identity : .numericText(value: value.number ?? 0))
-                .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: value.number)
+    private func halfTile(_ title: String, _ value: JSONValue, _ detail: String) -> some View {
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.footnote).foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(displayNumber(value, digits: 0)).font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
+                        .contentTransition(reduceMotion ? .identity : .numericText(value: value.number ?? 0))
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: value.number)
+                    if !detail.isEmpty { Text(detail).font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
+                }
+            }
+            Spacer(minLength: 4)
             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-        }.padding(.horizontal, 16).frame(minHeight: 48).contentShape(Rectangle())
+        }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
     }
 }
 private struct NativeHomeBrief: View {
