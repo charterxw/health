@@ -1,5 +1,7 @@
 # Health / Pine handoff
 
+**与用户交流一律用中文回复**（说明、总结、提问都用中文；代码、提交信息和代码注释保持英文）。
+
 Read `docs/RESTORE.md` first for the source map, current versions, build commands,
 and the distinction between source recovery and private data recovery.
 
