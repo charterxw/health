@@ -658,7 +658,7 @@ struct NativeWeightList: View {
 }
 
 /// Week boundaries for the strength index, in the home timezone.
-enum NativeStrengthWeeks {
+@MainActor enum NativeStrengthWeeks {
     static func calendar(_ timezone: String) -> Calendar {
         var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: timezone) ?? .current; c.firstWeekday = 2; return c
     }
