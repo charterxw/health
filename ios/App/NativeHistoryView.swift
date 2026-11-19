@@ -73,18 +73,21 @@ struct NativeHistoryView: View {
 }
 struct NativeRecordRow: View {
     let item: NativeTimelineItem
-    private var type: String { ["strength":"力量", "posture":"体态", "walk":"散步", "other":"运动"][item.kind] ?? "运动" }
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(type).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6).padding(.vertical, 4).background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 7))
-                Text(item.title).font(.headline).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0); Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(item.time.isEmpty ? "—" : item.time).font(.subheadline).monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .leading)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(focus).font(.body).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                Text(([group] + [item.detail]).filter { !$0.isEmpty }.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if item.pending { Label("本机已保存 · 待同步", systemImage: "arrow.triangle.2.circlepath").font(.caption).foregroundStyle(.secondary) }
             }
-            Text(([item.time, item.detail].filter { !$0.isEmpty }).joined(separator: " · ")).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if item.pending { Label("本机已保存 · 待同步", systemImage: "arrow.triangle.2.circlepath").font(.caption).foregroundStyle(.secondary) }
-        }.padding(.vertical, 16).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).accessibilityElement(children: .combine)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }.padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).accessibilityElement(children: .combine)
     }
+    /// "E · 家庭｜腹部·小腿" reads as the focus, with group and place as detail.
+    private var focus: String { let parts = item.title.components(separatedBy: "｜"); return parts.count > 1 ? parts[1] : item.title }
+    private var group: String { let parts = item.title.components(separatedBy: "｜"); return parts.count > 1 ? parts[0] : "" }
 }
 struct NativeArchivedDetail: View {
     let item: NativeTimelineItem
@@ -125,8 +128,8 @@ struct NativeReportView: View {
     var body: some View {
         PinePage {
             if let record {
-                PineHeading(title: session["title"].text, subtitle: dateLabel(session["started_at"]))
-                reportSummary
+                reportHeader
+                dayContribution
                 Label(record.blocked != nil ? "同步需要处理" : record.dirty ? "本机已保存 · 待同步" : "已保存到服务器", systemImage: record.dirty ? "arrow.triangle.2.circlepath" : "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
                 if record.blocked != nil { NativeConflictView(record: record) }
                 if let error { PineBanner(text: error) }
@@ -135,8 +138,13 @@ struct NativeReportView: View {
                 if saved { physiologyCard }
                 ForEach(Array(session["exercises"].array.enumerated()), id: \.element.id) { i, movement in movementReport(movement, index: i) }
                 if !session["notes"].text.isEmpty { VStack(alignment: .leading, spacing: 10) { Text("训练笔记").font(.headline); Text(session["notes"].text).font(.subheadline) }.pineCard() }
-                Button("再练一次", systemImage: "arrow.clockwise") { repeatSession() }.buttonStyle(.borderedProminent).disabled(store.active != nil)
-                Button("保存为新模板", systemImage: "rectangle.stack.badge.plus") { template = makeTemplate(); templateSheet = true }.buttonStyle(.bordered).disabled(session["exercises"].array.isEmpty)
+                VStack(spacing: 0) {
+                    Button { repeatSession() } label: { Text("再练一次").frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.leading, 16).contentShape(Rectangle()) }.disabled(store.active != nil)
+                    Divider().padding(.leading, 16)
+                    Button { template = makeTemplate(); templateSheet = true } label: { Text("存为模板").frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.leading, 16).contentShape(Rectangle()) }.disabled(session["exercises"].array.isEmpty)
+                    Divider().padding(.leading, 16)
+                    Button(role: .destructive) { deleting = true } label: { Text("删除这条记录").frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.leading, 16).contentShape(Rectangle()) }.disabled(!saved || busy)
+                }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 if let alternative = record.alternative {
                     DisclosureGroup("保留的冲突副本") {
                         Text(alternative["title"].text).font(.headline)
@@ -145,15 +153,67 @@ struct NativeReportView: View {
                         Button("清除这份副本", role: .destructive) { clearAlternative = true }
                     }.pineCard()
                 }
-                Button("删除这场训练", role: .destructive) { deleting = true }.font(.subheadline).frame(maxWidth: .infinity).frame(minHeight: 44).disabled(!saved || busy)
             } else { PineEmpty(title: "训练记录已删除", symbol: "trash") }
-        }.navigationTitle("训练总结").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbar { if record != nil { ToolbarItem(placement: .topBarTrailing) { Button("更正记录") { correcting = true }.disabled(record?.blocked != nil) } } }
             .sheet(isPresented: $correcting) { NavigationStack { NativeRecordCorrection(original: session) } }
             .sheet(isPresented: $templateSheet) { NavigationStack { NativeTemplateEditor(record: ["template": template, "version": 0]) } }
             .confirmationDialog("删除这场训练？", isPresented: $deleting, titleVisibility: .visible) { Button("删除训练", role: .destructive) { busy = true; Task { do { try await store.delete(id); dismiss() } catch { self.error = error.localizedDescription }; busy = false } } } message: { Text("将删除服务器上的训练记录、心率报告和关联分析。") }
             .confirmationDialog("清除保留的冲突副本？", isPresented: $clearAlternative, titleVisibility: .visible) { Button("清除副本", role: .destructive) { store.clearAlternative(id) } }
             .task(id: "\(record?.version ?? 0)-\(saved)-\(attempt)") { await loadReports() }
+    }
+    /// Title split at the "｜" the templates use: focus as title, group and place below.
+    private var reportHeader: some View {
+        let title = session["title"].text
+        let parts = title.components(separatedBy: "｜")
+        let focus = parts.count > 1 ? parts[1] : title
+        let group = parts.count > 1 ? parts[0].replacingOccurrences(of: " · ", with: " 组 · ") : ""
+        let p = NativeTraining.progress(session)
+        let start = NativeDate.parse(session["started_at"]), end = NativeDate.parse(session["ended_at"])
+        let seconds = max(0, (end?.timeIntervalSince(start ?? .now) ?? 0) - (session["paused_seconds"].number ?? 0))
+        let when = start.map { NativeDate.label($0, format: "M月d日 HH:mm", timezone: session["timezone"].text.isEmpty ? TimeZone.current.identifier : session["timezone"].text) } ?? ""
+        return VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(focus).font(.largeTitle.weight(.semibold))
+                Text([group, when].filter { !$0.isEmpty }.joined(separator: " · ")).font(.subheadline).foregroundStyle(.secondary)
+            }
+            HStack(alignment: .top) {
+                reportStat("时长", "\(Int((seconds / 60).rounded()))", "分钟")
+                reportStat("完成", "\(p.done)", "/ \(p.planned) 组")
+                reportStat("动作", "\(session["exercises"].array.count)", "个")
+            }
+            if p.done == 0 { Text("本次没有完成的工作组，不推断训练表现。").font(.footnote).foregroundStyle(.secondary) }
+        }
+    }
+    private func reportStat(_ title: String, _ value: String, _ unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) { Text(value).font(.title2.weight(.semibold)).monospacedDigit(); Text(unit).font(.footnote).foregroundStyle(.secondary) }
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+    }
+    /// How this session filled its day's glyph.
+    @ViewBuilder private var dayContribution: some View {
+        let zone = session["timezone"].text.isEmpty ? TimeZone.current.identifier : session["timezone"].text
+        if session["status"].text == "completed", let start = NativeDate.parse(session["started_at"]) {
+            let key = NativeDate.day(start, timezone: zone)
+            let list = NativeDays.sessions(records: store.records, timezone: zone)[key] ?? []
+            let strength = list.filter { !$0.posture }
+            let index = strength.firstIndex { $0.id == id }
+            let halves = NativeDays.halves(list)
+            let text: String = {
+                if list.contains(where: { $0.id == id && $0.posture }) { return "这天的圆点已经填满。" }
+                guard let index else { return "" }
+                if index >= 2 { return "这是这天的第 \(index + 1) 次力量训练。" }
+                let full = halves.count == 2 && halves.allSatisfy { $0 >= 1 }
+                return index == 0 ? (full ? "这是这天的第一次力量，中圈已经满了。" : "这是这天的第一次力量，中圈填了一半。") : (full ? "这是这天的第二次力量，中圈已经满了。" : "这是这天的第二次力量。")
+            }()
+            if !text.isEmpty {
+                HStack(spacing: 14) {
+                    PineDayGlyph(activity: nil, halves: halves, posture: NativeDays.postureDone(list), size: 52)
+                    Text(text).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
+                }.pineCard()
+            }
+        }
     }
     private var reportSummary: some View {
         VStack(alignment: .leading, spacing: 12) {

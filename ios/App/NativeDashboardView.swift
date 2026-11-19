@@ -326,7 +326,7 @@ struct NativeOverviewLink: View {
     let value: String
     let symbol: String
     let color: Color
-    var body: some View { HStack(spacing: 10) { Image(systemName: symbol).foregroundStyle(color).frame(width: 22); Text(title).font(.subheadline).foregroundStyle(.primary); Spacer(minLength: 5); Text(value).font(.caption).foregroundStyle(.secondary); Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary) }.frame(minHeight: 44).contentShape(Rectangle()) }
+    var body: some View { HStack(spacing: 10) { Image(systemName: symbol).foregroundStyle(pine).frame(width: 22); Text(title).font(.subheadline).foregroundStyle(.primary); Spacer(minLength: 5); Text(value).font(.caption).foregroundStyle(.secondary); Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary) }.frame(minHeight: 44).contentShape(Rectangle()) }
 }
 struct NativeBriefDetail: View {
     @Environment(NativeStore.self) var store
@@ -498,8 +498,10 @@ struct NativeRecoveryContent: View {
     var body: some View {
         let home=store.home, score=home["recovery"]
         PinePage {
-            Text(displayNumber(score["score"],digits:0) + " / 100").font(.system(size:48,weight:.bold,design:.rounded))
-            Text(score["label"].text).font(.title3).foregroundStyle(pine)
+            VStack(spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) { Text(displayNumber(score["score"], digits: 0)).font(.system(size: 64, weight: .semibold, design: .rounded)).monospacedDigit(); Text("/ 100").font(.headline).foregroundStyle(.secondary) }
+                Text(score["label"].text.isEmpty ? "待更新" : "状态" + score["label"].text).font(.title3.weight(.semibold))
+            }.frame(maxWidth: .infinity)
             Text(score["score"].isNull ? "等待当日指标及足够的个人基线记录。" : "结合昨夜睡眠时长、HRV 和静息心率相对个人基线计算，用于观察恢复状态。指数不代表肌肉修复比例，训练仍结合今天的体感。").font(.subheadline).foregroundStyle(.secondary)
             if score["caution"].flag { PineBanner(text:"近期有几次恢复信号偏弱，留意热身和身体感受。") }
             VStack(spacing: 0) {

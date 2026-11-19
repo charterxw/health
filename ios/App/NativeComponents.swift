@@ -263,8 +263,8 @@ struct NativeLoginView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Image(systemName: "leaf.fill").font(.system(size: 42)).foregroundStyle(pine).padding(.bottom, 14)
-                        Text("Pine").font(.system(size: 44, weight: .bold, design: .rounded))
+                        PineDayGlyph(activity: 1, halves: [1, 0], posture: true, size: 64).padding(.bottom, 14)
+                        Text("Pine").font(.system(size: 40, weight: .semibold))
                         Text("留意身体，\n按自己的节奏训练。").font(.title2).foregroundStyle(.secondary)
                     }.padding(.top, 48)
                     VStack(spacing: 16) {

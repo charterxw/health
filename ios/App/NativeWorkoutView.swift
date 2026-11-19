@@ -3,141 +3,289 @@ import SwiftUI
 struct SetSelection: Identifiable { let id: String; let movementID: String }
 struct NativeWorkoutView: View {
     @Environment(NativeStore.self) var store
+    @PineReducedMotion private var reduceMotion
     @State private var finish = false
     @State private var discard = false
     @State private var adding = false
     @State private var options = false
     @State private var setSelection: SetSelection?
+    @State private var editingSet: SetSelection?
     @State private var editingMovement = false
     @State private var replacing = false
     @State private var showExercise = false
     @State private var lastEdited: String?
+    @State private var completedTick = 0
     private var record: NativeRecord? { store.active }
     private var session: JSONValue { record?.session ?? .null }
-    private var mi: Int { min(store.movementIndex, max(0, session["exercises"].array.count - 1)) }
+    private var movements: [JSONValue] { session["exercises"].array }
+    private var mi: Int { min(store.movementIndex, max(0, movements.count - 1)) }
     private var movement: JSONValue { session["exercises"][mi] }
+    private var sets: [JSONValue] { movement["sets"].array }
+    /// The set being recorded: the first unfinished one of this movement.
+    private var current: Int? { sets.firstIndex { $0["completed_at"].isNull } }
+    private var paused: Bool { !session["paused_at"].isNull }
     var body: some View {
         NavigationStack {
-            PinePage {
-                if let row = record {
-                    workoutHeader(row)
-                    if !session["paused_at"].isNull { PineBanner(text: "训练已暂停，计时与休息倒计时保持不变。") }
-                    if let message = store.message { PineBanner(text: message) }
-                    if row.blocked != nil { NativeConflictView(record: row) }
-                    if movement.isNull { PineEmpty(title: "添加第一个动作", symbol: "dumbbell", detail: "从动作库选择，开始记录这场训练。") }
-                    else { movementCard }
-                    Button("添加动作", systemImage: "plus") { adding = true }.buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(session["exercises"].array.count >= 40)
-                } else { PineEmpty(title: "没有进行中的训练", symbol: "checkmark.circle"); Button("返回") { store.workoutPresented = false } }
-            }.navigationTitle("训练中").navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) { Button("收起", systemImage: "chevron.down") { store.workoutPresented = false }.labelStyle(.iconOnly) }
-                    ToolbarItem(placement: .topBarTrailing) { Button("结束训练") { finish = true }.disabled(record == nil) }
+            Group {
+                if record != nil {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        ScrollView { content(now: context.date).padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24) }
+                            .safeAreaInset(edge: .bottom) { bottomBar(now: context.date) }
+                    }
+                } else {
+                    VStack(spacing: 16) { PineEmpty(title: "没有进行中的训练", symbol: "checkmark.circle"); Button("返回") { store.workoutPresented = false } }
                 }
-                .alert("完成这场训练？", isPresented: $finish) {
-                    Button("继续记录", role: .cancel) { }
-                    Button("完成并保存") { if let id = record?.id { store.finish(id) } }
-                } message: { let p = NativeTraining.progress(session); Text("已完成 \(p.done)/\(p.planned) 工作组，热身 \(p.warmup) 组。未勾选的组不会计入完成记录。") }
-                .confirmationDialog("放弃这场训练？", isPresented: $discard, titleVisibility: .visible) { Button("放弃训练", role: .destructive) { if let id = record?.id { store.finish(id, discard: true) } } }
-                .sheet(isPresented: $adding) { NavigationStack { NativeExerciseLibrary { exercise in
-                    mutate { s in s["exercises"] = .array(s["exercises"].array + [NativeTraining.movement(exercise)]) }; store.selectMovement(session["exercises"].array.count - 1); adding = false
-                } } }
-                .sheet(isPresented: $replacing) { NavigationStack { NativeExerciseLibrary { exercise in replace(exercise); replacing = false } } }
-                .sheet(isPresented: $options) { workoutOptions }
-                .sheet(isPresented: $editingMovement) { movementOptions }
-                .sheet(isPresented: $showExercise) { NavigationStack { NativeExerciseDetail(exercise: store.exercises.first { $0.id == movement["exercise_id"].text } ?? movement).toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showExercise = false } } } } }
-                .sheet(item: $setSelection) { selection in NativeSetOptions(sessionID: session.id, selection: selection) }
+            }
+            .background(pineCanvas)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { Button("收起", systemImage: "chevron.down") { store.workoutPresented = false }.labelStyle(.iconOnly) }
+                ToolbarItem(placement: .principal) { header }
+                ToolbarItem(placement: .topBarTrailing) { Button("结束") { finish = true }.fontWeight(.semibold).disabled(record == nil) }
+            }
+            .sensoryFeedback(.success, trigger: completedTick)
+            .alert("完成这场训练？", isPresented: $finish) {
+                Button("继续记录", role: .cancel) { }
+                Button("完成并保存") { if let id = record?.id { store.finish(id) } }
+            } message: { let p = NativeTraining.progress(session); Text("已完成 \(p.done)/\(p.planned) 工作组，热身 \(p.warmup) 组。未完成的组不会计入记录。") }
+            .confirmationDialog("放弃这场训练？", isPresented: $discard, titleVisibility: .visible) { Button("放弃训练", role: .destructive) { if let id = record?.id { store.finish(id, discard: true) } } }
+            .sheet(isPresented: $adding) { NavigationStack { NativeExerciseLibrary { exercise in
+                mutate { s in s["exercises"] = .array(s["exercises"].array + [NativeTraining.movement(exercise)]) }; store.selectMovement(session["exercises"].array.count - 1); adding = false
+            } } }
+            .sheet(isPresented: $replacing) { NavigationStack { NativeExerciseLibrary { exercise in replace(exercise); replacing = false } } }
+            .sheet(isPresented: $options) { workoutOptions }
+            .sheet(isPresented: $editingMovement) { movementOptions }
+            .sheet(isPresented: $showExercise) { NavigationStack { NativeExerciseDetail(exercise: store.exercises.first { $0.id == movement["exercise_id"].text } ?? movement).toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showExercise = false } } } } }
+            .sheet(item: $setSelection) { selection in NativeSetOptions(sessionID: session.id, selection: selection) }
+            .sheet(item: $editingSet) { selection in NativeSetValues(sessionID: session.id, selection: selection).presentationDetents([.medium]) }
         }
     }
-    private func workoutHeader(_ row: NativeRecord) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) { Text(session["title"].text).font(.title2.bold()); Spacer(); Button("训练选项", systemImage: "ellipsis.circle") { options = true }.labelStyle(.iconOnly).font(.title2) }
-            HStack {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    let end = NativeDate.parse(session["paused_at"]) ?? context.date
-                    let seconds = max(0, end.timeIntervalSince(NativeDate.parse(session["started_at"]) ?? end) - (session["paused_seconds"].number ?? 0))
-                    Label(WorkoutSnapshot.clock(seconds), systemImage: "timer").monospacedDigit().font(.title3.bold())
-                }
-                Spacer()
-                let p = NativeTraining.progress(session)
-                Text("\(p.done) / \(p.planned) 工作组").font(.subheadline).foregroundStyle(.secondary)
-            }
-            HStack { Label(row.blocked != nil ? "同步需要处理" : row.dirty ? "本机已保存 · 待同步" : "已保存到服务器", systemImage: row.dirty ? "arrow.triangle.2.circlepath" : "checkmark.icloud").font(.caption).foregroundStyle(.secondary); Spacer(); Button(session["paused_at"].isNull ? "暂停" : "继续", systemImage: session["paused_at"].isNull ? "pause.fill" : "play.fill") { mutate { $0 = NativeTraining.pause($0) } }.font(.subheadline) }
-        }.pineCard()
+
+    // MARK: Header
+    private var header: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let end = NativeDate.parse(session["paused_at"]) ?? context.date
+            let seconds = max(0, end.timeIntervalSince(NativeDate.parse(session["started_at"]) ?? end) - (session["paused_seconds"].number ?? 0))
+            let p = NativeTraining.progress(session)
+            VStack(spacing: 0) {
+                Text(WorkoutSnapshot.clock(seconds)).font(.headline).monospacedDigit()
+                Text(paused ? "已暂停" : "\(p.done) / \(p.planned) 组").font(.caption2).foregroundStyle(.secondary)
+            }.accessibilityElement(children: .combine).accessibilityLabel("训练用时 " + WorkoutSnapshot.clock(seconds) + (paused ? "，已暂停" : "，已完成 \(p.done) 组，共 \(p.planned) 组"))
+        }
     }
-    private var movementCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
+
+    // MARK: Content
+    @ViewBuilder private func content(now: Date) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if paused { PineBanner(text: "训练已暂停，计时与休息倒计时保持不变。").padding(.bottom, 12) }
+            if let message = store.message { PineBanner(text: message).padding(.bottom, 12) }
+            if let row = record, row.blocked != nil { NativeConflictView(record: row).padding(.bottom, 12) }
+            if movement.isNull {
+                PineEmpty(title: "添加第一个动作", symbol: "dumbbell", detail: "从动作库选择，开始记录这场训练。")
+                Button("添加动作", systemImage: "plus") { adding = true }.buttonStyle(.bordered).frame(maxWidth: .infinity)
+            } else {
+                movementHeader
+                if let rest = restRemaining(now) { restPanel(remaining: rest).padding(.top, 20) }
+                else { setPanel.padding(.top, 18) }
+            }
+        }
+    }
+    private func restRemaining(_ now: Date) -> TimeInterval? {
+        guard !paused, let until = NativeDate.parse(session["rest_until"]) else { return nil }
+        let remaining = until.timeIntervalSince(now)
+        return remaining > 0 ? remaining : nil
+    }
+    private var movementHeader: some View {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Menu {
-                    ForEach(Array(session["exercises"].array.enumerated()), id: \.offset) { index, item in Button("\(index + 1). " + item["name"].text) { store.selectMovement(index); lastEdited = nil } }
-                } label: { Label("动作 \(mi + 1) / \(session["exercises"].array.count)", systemImage: "list.bullet").font(.subheadline) }
-                Spacer()
-                Button("动作设置", systemImage: "slider.horizontal.3") { editingMovement = true }.labelStyle(.iconOnly)
-            }
-            Text(movement["name"].text).font(.title2.bold())
-            if !movement["weight_note"].text.isEmpty { Text(movement["weight_note"].text).font(.caption).foregroundStyle(.secondary) }
-            if !movement["prescription"]["reason"].text.isEmpty { Text(movement["prescription"]["reason"].text).font(.footnote).foregroundStyle(pine) }
-            previousPerformance
-            HStack {
-                Text("组").frame(width: 42)
-                if movement["load_mode"].text != "bodyweight" { Text((movement["load_mode"].text == "assistance" ? "辅助 / " : "重量 / ") + unitLabel(movement)).frame(maxWidth: .infinity) }
-                Text(NativeTraining.timed(movement) ? "秒数" : "次数").frame(maxWidth: .infinity)
-                Text("完成").frame(width: 46)
-            }.font(.caption).foregroundStyle(.secondary)
-            ForEach(Array(movement["sets"].array.enumerated()), id: \.element.id) { si, row in setRow(si, row) }
-            Button("添加一组", systemImage: "plus") { appendSet() }.font(.subheadline).frame(maxWidth: .infinity).frame(minHeight: 44).disabled(movement["sets"].array.count >= 50)
-            restView
-            HStack {
-                Button("上一个", systemImage: "chevron.left") { store.selectMovement(mi - 1); lastEdited = nil }.disabled(mi == 0)
-                Spacer()
-                Button("下一个", systemImage: "chevron.right") { store.selectMovement(mi + 1); lastEdited = nil }.disabled(mi + 1 >= session["exercises"].array.count)
-            }.font(.subheadline).frame(minHeight: 44)
-        }.pineCard()
-    }
-    private var previousPerformance: some View {
-        let hints = store.previousSets(exercise: movement["exercise_id"].text, mode: movement["load_mode"].text,
-            before: session["started_at"], timezone: session["timezone"].text, current: session.id)
-        return Group {
-            if !hints.isEmpty {
-                Text("上次：" + hints.filter { !$0["warmup"].flag }.map { prior in var row = prior; row["weight"] = NativeTraining.convert(prior["weight"], from: prior["unit"].text, to: movement["unit"].text); return loadText(movement, row) }.joined(separator: " / ")).font(.caption).foregroundStyle(.secondary)
-            }
-        }
-    }
-    private func setRow(_ si: Int, _ row: JSONValue) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Button { setSelection = SetSelection(id: row.id, movementID: movement.id) } label: {
-                    VStack(spacing: 3) {
-                        Text(row["warmup"].flag ? "热" : "\(movement["sets"].array.prefix(si + 1).filter { !$0["warmup"].flag }.count)").font(.subheadline.bold())
-                        if !row["hard_reps"].isNull { Circle().fill(pine).frame(width: 4, height: 4) }
-                    }.frame(width: 42, height: 44).background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
-                }.buttonStyle(.plain).accessibilityLabel("第 \(si + 1) 组操作")
-                if movement["load_mode"].text != "bodyweight" {
-                    NativeNumberField(label: "第 \(si + 1) 组重量", value: row["weight"], decimal: true) { value in editSet(si, key: "weight", value: value) }.accessibilityIdentifier("set-\(si)-weight")
+                    ForEach(Array(movements.enumerated()), id: \.offset) { index, item in
+                        Button("\(index + 1). " + item["name"].text) { store.selectMovement(index); lastEdited = nil }
+                    }
+                    Divider()
+                    Button("添加动作", systemImage: "plus") { adding = true }.disabled(movements.count >= 40)
+                } label: {
+                    Label("动作 \(mi + 1) / \(movements.count)", systemImage: "list.bullet").font(.footnote).foregroundStyle(.secondary)
+                        .padding(.horizontal, 12).frame(height: 32).background(pineSurface, in: Capsule())
                 }
-                NativeNumberField(label: "第 \(si + 1) 组" + (NativeTraining.timed(movement) ? "秒数" : "次数"), value: row[NativeTraining.timed(movement) ? "duration_seconds" : "reps"], maximum: NativeTraining.timed(movement) ? 3600 : 1000, minimum: 1) { value in editSet(si, key: NativeTraining.timed(movement) ? "duration_seconds" : "reps", value: value) }.accessibilityIdentifier("set-\(si)-value")
-                Button {
-                    mutate { s in s = try NativeTraining.toggle(s, movement: mi, set: si) }
-                    if !row["completed_at"].isNull || session["exercises"][mi]["sets"][si]["completed_at"].isNull { return }; UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                } label: { Image(systemName: row["completed_at"].isNull ? "circle" : "checkmark.circle.fill").font(.system(size: 29)).frame(width: 46, height: 46).foregroundStyle(row["completed_at"].isNull ? Color.secondary : pine) }
-                    .buttonStyle(.plain).disabled(!session["paused_at"].isNull || store.storageFailed).accessibilityLabel(row["completed_at"].isNull ? "完成第 \(si + 1) 组" : "撤销第 \(si + 1) 组").accessibilityIdentifier("set-\(si)-complete")
+                Spacer()
+                Menu {
+                    Button("动作设置", systemImage: "slider.horizontal.3") { editingMovement = true }
+                    Button("动作要领与历史", systemImage: "info.circle") { showExercise = true }
+                    Button(paused ? "继续训练" : "暂停训练", systemImage: paused ? "play" : "pause") { mutate { $0 = NativeTraining.pause($0) } }
+                    Button("训练选项", systemImage: "ellipsis.circle") { options = true }
+                } label: { Image(systemName: "ellipsis").font(.body.weight(.semibold)).frame(width: 44, height: 44).background(pineSurface, in: Circle()) }
+                    .accessibilityLabel("更多操作")
             }
-            if lastEdited == row.id, NativeTraining.valid(movement, row), movement["sets"].array.dropFirst(si + 1).contains(where: { $0["completed_at"].isNull && ($0["weight"] != row["weight"] || $0["reps"] != row["reps"] || $0["duration_seconds"] != row["duration_seconds"]) }) {
-                Button("填入后续未完成组") { fillFollowing(si); lastEdited = nil }.font(.caption).frame(maxWidth: .infinity, alignment: .trailing).frame(minHeight: 44)
-            }
+            Text(movement["name"].text).font(.title.weight(.semibold)).padding(.top, 10)
+            if !previousText.isEmpty { Text(previousText).font(.subheadline).foregroundStyle(.secondary).padding(.top, 4) }
+            if !movement["prescription"]["reason"].text.isEmpty { Text(movement["prescription"]["reason"].text).font(.footnote).foregroundStyle(pine).padding(.top, 6) }
         }
     }
-    @ViewBuilder private var restView: some View {
-        if let rest = NativeDate.parse(session["rest_until"]) {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                let reference = NativeDate.parse(session["paused_at"]) ?? context.date
-                let remaining = max(0, rest.timeIntervalSince(reference))
+    private var previousText: String {
+        let hints = store.previousSets(exercise: movement["exercise_id"].text, mode: movement["load_mode"].text,
+            before: session["started_at"], timezone: session["timezone"].text, current: session.id).filter { !$0["warmup"].flag }
+        guard !hints.isEmpty else { return "" }
+        let texts = hints.map { prior -> String in var row = prior; row["weight"] = NativeTraining.convert(prior["weight"], from: prior["unit"].text, to: movement["unit"].text); return loadText(movement, row) }
+        return Set(texts).count == 1 ? "上次 " + texts[0] + "，\(texts.count) 组" : "上次 " + texts.joined(separator: " / ")
+    }
+    private func setName(_ index: Int) -> String {
+        guard sets.indices.contains(index) else { return "" }
+        if sets[index]["warmup"].flag { return "热身组" }
+        return "第 \(sets.prefix(index + 1).filter { !$0["warmup"].flag }.count) 组"
+    }
+
+    // MARK: Recording one set
+    @ViewBuilder private var setPanel: some View {
+        if let ci = current {
+            let row = sets[ci]
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) { Text(remaining > 0 ? "组间休息" : "休息结束").font(.caption); Text(WorkoutSnapshot.clock(ceil(remaining))).font(.title.bold().monospacedDigit()) }
+                    Text(setName(ci)).font(.headline)
                     Spacer()
-                    Button("跳过") { mutate { $0["rest_until"] = .null; $0["rest_set_id"] = .null } }.buttonStyle(.bordered)
-                }.padding(16).background(pine.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
-            }
+                    HStack(spacing: 5) {
+                        ForEach(Array(sets.enumerated()), id: \.element.id) { index, item in
+                            Capsule().fill(!item["completed_at"].isNull ? pine : index == ci ? pine.opacity(0.4) : pineTrack).frame(width: 18, height: 6)
+                        }
+                    }.accessibilityHidden(true)
+                }.padding(.bottom, 8)
+                if movement["load_mode"].text != "bodyweight", !NativeTraining.timed(movement) {
+                    valueRow(ci, key: "weight", unit: (movement["load_mode"].text == "assistance" ? "辅助 " : "") + unitLabel(movement), step: weightStep, maximum: 2000, decimal: true)
+                }
+                let key = NativeTraining.timed(movement) ? "duration_seconds" : "reps"
+                valueRow(ci, key: key, unit: NativeTraining.timed(movement) ? "秒" : "次", step: NativeTraining.timed(movement) ? 5 : 1, maximum: NativeTraining.timed(movement) ? 3600 : 1000, decimal: false)
+                if !NativeTraining.timed(movement), !NativeTraining.mobility(movement) {
+                    Button { setSelection = SetSelection(id: row.id, movementID: movement.id) } label: {
+                        Label(row["hard_reps"].isNull ? "最后几次很吃力？" : "吃力 \(row["hard_reps"].integer) 次 · 修改", systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.secondary).frame(minHeight: 44)
+                    }.buttonStyle(.plain)
+                }
+            }.pineCard()
+            otherSets(except: ci).padding(.top, 12)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("这个动作完成了", systemImage: "checkmark.circle").font(.headline).foregroundStyle(pine)
+                Text(mi + 1 < movements.count ? "接下来是" + movements[mi + 1]["name"].text + "。" : "所有动作都完成了，可以结束训练。").font(.subheadline).foregroundStyle(.secondary)
+                Button("再加一组", systemImage: "plus") { appendSet() }.font(.subheadline).frame(minHeight: 44).disabled(sets.count >= 50)
+            }.pineCard()
+            otherSets(except: nil).padding(.top, 12)
         }
+    }
+    private var weightStep: Double {
+        if let increment = movement["prescription"]["increment"].number, increment > 0 { return increment }
+        return movement["unit"].text == "kg" ? 2.5 : 5
+    }
+    private func valueRow(_ si: Int, key: String, unit: String, step: Double, maximum: Double, decimal: Bool) -> some View {
+        let value = sets[si][key]
+        return HStack(spacing: 8) {
+            Button { editingSet = SetSelection(id: sets[si].id, movementID: movement.id) } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(displayNumber(value, digits: 2)).font(.system(size: 44, weight: .semibold, design: .rounded)).monospacedDigit().foregroundStyle(.primary)
+                        .contentTransition(reduceMotion ? .identity : .numericText(value: value.number ?? 0))
+                    Text(unit).font(.subheadline).foregroundStyle(.secondary)
+                }
+            }.buttonStyle(.plain).accessibilityLabel(unit + " " + displayNumber(value, digits: 2) + "，点按直接输入")
+            Spacer(minLength: 8)
+            HStack(spacing: 0) {
+                Button { adjust(si, key: key, by: -step, maximum: maximum, decimal: decimal) } label: { Image(systemName: "minus").frame(width: 58, height: 44) }
+                    .accessibilityLabel("减少 " + displayNumber(.number(step), digits: 2))
+                Divider().frame(height: 20)
+                Button { adjust(si, key: key, by: step, maximum: maximum, decimal: decimal) } label: { Image(systemName: "plus").frame(width: 58, height: 44) }
+                    .accessibilityLabel("增加 " + displayNumber(.number(step), digits: 2))
+            }.font(.body.weight(.semibold)).foregroundStyle(.primary).background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                .sensoryFeedback(.selection, trigger: value)
+        }.frame(minHeight: 72).overlay(alignment: .top) { Divider() }
+    }
+    private func adjust(_ si: Int, key: String, by delta: Double, maximum: Double, decimal: Bool) {
+        let minimum: Double = key == "weight" ? 0 : 1
+        var next = (sets[si][key].number ?? (key == "weight" ? 0 : minimum - delta)) + delta
+        next = min(maximum, max(minimum, decimal ? (next * 100).rounded() / 100 : next.rounded()))
+        editSet(si, key: key, value: .number(next))
+    }
+    private func otherSets(except ci: Int?) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(sets.enumerated()).filter { $0.offset != ci }, id: \.element.id) { index, row in
+                Button { setSelection = SetSelection(id: row.id, movementID: movement.id) } label: {
+                    HStack(spacing: 10) {
+                        Text(setName(index)).frame(maxWidth: .infinity, alignment: .leading)
+                        Text(loadText(movement, row)).monospacedDigit()
+                        Image(systemName: row["completed_at"].isNull ? "circle" : "checkmark").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(row["completed_at"].isNull ? Color.secondary.opacity(0.4) : pine).frame(width: 20)
+                    }.foregroundStyle(.secondary).padding(.horizontal, 16).frame(minHeight: 48).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel(setName(index) + "，" + loadText(movement, row) + (row["completed_at"].isNull ? "，未完成" : "，已完成"))
+                if index != sets.indices.last, !(ci == sets.count - 1 && index == sets.count - 2) { Divider().padding(.leading, 16) }
+            }
+            Button { appendSet() } label: { Label("添加一组", systemImage: "plus").font(.subheadline).frame(maxWidth: .infinity, minHeight: 44) }
+                .disabled(sets.count >= 50).overlay(alignment: .top) { Divider().padding(.leading, 16) }
+        }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    // MARK: Rest
+    private func restPanel(remaining: TimeInterval) -> some View {
+        let total = max(remaining, Double(max(1, movement["rest_seconds"].integer)))
+        let doneIndex = sets.lastIndex { !$0["completed_at"].isNull }
+        return VStack(spacing: 18) {
+            if let doneIndex { Text(setName(doneIndex) + "完成").font(.subheadline).foregroundStyle(.secondary) }
+            ZStack {
+                Circle().stroke(pineTrack, lineWidth: 14)
+                Circle().trim(from: 0, to: remaining / total).stroke(pine, style: StrokeStyle(lineWidth: 14, lineCap: .round)).rotationEffect(.degrees(-90))
+                    .animation(reduceMotion ? nil : .linear(duration: 1), value: remaining)
+                VStack(spacing: 4) {
+                    Text("休息").font(.subheadline).foregroundStyle(.secondary)
+                    Text(WorkoutSnapshot.clock(ceil(remaining))).font(.system(size: 60, weight: .semibold, design: .rounded)).monospacedDigit()
+                    Button("+30 秒") { extendRest() }.font(.subheadline.weight(.semibold)).padding(.horizontal, 14).frame(height: 36)
+                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule()).buttonStyle(.plain)
+                }
+            }.frame(width: 240, height: 240).accessibilityElement(children: .combine).accessibilityLabel("组间休息，剩余 " + WorkoutSnapshot.clock(ceil(remaining)))
+            if let ci = current {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("下一组 · " + setName(ci)).font(.footnote).foregroundStyle(.secondary)
+                        Text(loadText(movement, sets[ci])).font(.title3.weight(.semibold)).monospacedDigit()
+                    }
+                    Spacer()
+                    Button("调整") { editingSet = SetSelection(id: sets[ci].id, movementID: movement.id) }.font(.subheadline.weight(.semibold)).frame(minHeight: 44)
+                }.pineCard()
+            }
+            Text("锁屏和灵动岛会继续倒计时。").font(.footnote).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity)
+    }
+    private func extendRest() {
+        mutate { s in
+            guard let until = NativeDate.parse(s["rest_until"]) else { return }
+            s["rest_until"] = NativeDate.stamp(min(until.addingTimeInterval(30), Date().addingTimeInterval(600)))
+        }
+    }
+
+    // MARK: Primary action
+    private func bottomBar(now: Date) -> some View {
+        let resting = restRemaining(now) != nil
+        return VStack(spacing: 4) {
+            if !resting, current == nil || current == 0, mi + 1 < movements.count {
+                Button { store.selectMovement(mi + 1); lastEdited = nil } label: {
+                    HStack(spacing: 4) { Text("下一个：" + movements[mi + 1]["name"].text); Image(systemName: "chevron.right").font(.caption.weight(.semibold)) }.font(.subheadline).foregroundStyle(.secondary).frame(minHeight: 40)
+                }.buttonStyle(.plain)
+            }
+            primaryButton(resting: resting)
+        }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 4)
+            .background(LinearGradient(colors: [pineCanvas.opacity(0), pineCanvas], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35)))
+    }
+    @ViewBuilder private func primaryButton(resting: Bool) -> some View {
+        if resting, let ci = current {
+            Button { mutate { $0["rest_until"] = .null; $0["rest_set_id"] = .null } } label: { Text("开始" + setName(ci)).primaryLabel() }
+                .buttonStyle(PinePressStyle(scale: 0.98))
+        } else if let ci = current {
+            Button { complete(ci) } label: { Label("完成" + setName(ci), systemImage: "checkmark").primaryLabel() }
+                .buttonStyle(PinePressStyle(scale: 0.98)).disabled(paused || store.storageFailed || !NativeTraining.valid(movement, sets[ci]))
+                .accessibilityIdentifier("set-\(ci)-complete")
+        } else if mi + 1 < movements.count {
+            Button { store.selectMovement(mi + 1); lastEdited = nil } label: { Text("下一个动作").primaryLabel() }.buttonStyle(PinePressStyle(scale: 0.98))
+        } else {
+            Button { finish = true } label: { Text("完成训练").primaryLabel() }.buttonStyle(PinePressStyle(scale: 0.98))
+        }
+    }
+    private func complete(_ ci: Int) {
+        mutate { s in s = try NativeTraining.toggle(s, movement: mi, set: ci) }
+        if !(session["exercises"][mi]["sets"][ci]["completed_at"].isNull) { completedTick += 1 }
     }
     private var workoutOptions: some View {
         NavigationStack {
@@ -266,5 +414,49 @@ struct NativeTitleField: View {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, text.count <= 100 else { draft = title; return }
         if text != title { save(text) }
+    }
+}
+
+private extension View {
+    /// The one filled action per screen: full width, thumb-reachable.
+    func primaryLabel() -> some View {
+        font(.headline).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 56).background(pine, in: Capsule())
+    }
+}
+
+/// Direct numeric entry for one set, reached by tapping its large value.
+struct NativeSetValues: View {
+    @Environment(NativeStore.self) var store
+    @Environment(\.dismiss) private var dismiss
+    let sessionID: String
+    let selection: SetSelection
+    private var session: JSONValue { store.recordDocuments[sessionID]?.session ?? .null }
+    private var mi: Int? { session["exercises"].array.firstIndex { $0.id == selection.movementID } }
+    private var movement: JSONValue { mi.map { session["exercises"][$0] } ?? .null }
+    private var si: Int? { movement["sets"].array.firstIndex { $0.id == selection.id } }
+    private var row: JSONValue { si.map { movement["sets"][$0] } ?? .null }
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(movement["name"].text) {
+                    if movement["load_mode"].text != "bodyweight", !NativeTraining.timed(movement) {
+                        HStack { Text("重量 / " + unitLabel(movement)); Spacer(); NativeNumberField(label: "重量", value: row["weight"], decimal: true) { assign("weight", $0) }.frame(width: 120) }
+                    }
+                    let timed = NativeTraining.timed(movement)
+                    HStack { Text(timed ? "秒数" : "次数"); Spacer(); NativeNumberField(label: timed ? "秒数" : "次数", value: row[timed ? "duration_seconds" : "reps"], maximum: timed ? 3600 : 1000, minimum: 1) { assign(timed ? "duration_seconds" : "reps", $0) }.frame(width: 120) }
+                }
+            }.navigationTitle("输入数值").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+        }
+    }
+    private func assign(_ key: String, _ value: JSONValue) {
+        guard let mi, let si else { return }
+        store.update(sessionID) { s in
+            s["exercises"][mi]["sets"][si][key] = value
+            if !NativeTraining.valid(s["exercises"][mi], s["exercises"][mi]["sets"][si]) {
+                s["exercises"][mi]["sets"][si]["completed_at"] = .null
+                if s["rest_set_id"] == s["exercises"][mi]["sets"][si]["id"] { s["rest_set_id"] = .null; s["rest_until"] = .null }
+            }
+        }
     }
 }
