@@ -305,8 +305,7 @@ final class NativeStore {
     /// (Control Center, notification banners) cannot cancel requests mid-flight.
     func becameActive() {
         guard phase == .ready, !isDesignPreview else { return }
-        Task { await openPending() }
-        if let last = lastForeground, Date().timeIntervalSince(last) < 30 { publishActivity(force: true); return }
+        if let last = lastForeground, Date().timeIntervalSince(last) < 30 { Task { await openPending() }; publishActivity(force: true); return }
         lastForeground = Date()
         Task { await foreground() }
     }
@@ -446,7 +445,12 @@ final class NativeStore {
         do {
             try await mutateHome("/home/refresh", method: "POST")
             if !cache.home["refresh_failed"].array.isEmpty { message = partial } else if message == partial { message = nil }
-        } catch { if !(error is CancellationError) { handle(error) } }
+        } catch {
+            // Server errors (409 "Google Health 未连接", 401 → login) and local storage
+            // failures are shown. Connectivity failures were already reported by
+            // refresh(); a raw URLError text would only replace that clearer message.
+            if !(error is URLError) && !Self.isCancellation(error) { handle(error) }
+        }
     }
     func loadBrief(generate: Bool = false) async {
         let stamp = epoch
