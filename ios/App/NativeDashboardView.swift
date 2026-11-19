@@ -48,9 +48,7 @@ struct NativeDashboardView: View {
                     Spacer(minLength: 0)
                 }
             }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
-                // A scroll view proposes no height; the ideal height makes the stack
-                // lay out against the visible screen and share out the spare space.
-                .frame(minHeight: viewport, idealHeight: viewport, alignment: .top)
+            .fillHeight(viewport)
         }
         .background {
             GeometryReader { proxy in
@@ -766,4 +764,22 @@ struct NativeStrengthProgressView: View {
             PineRow(label: "上周同期", value: displayNumber(.number(previous), digits: 0) + " 磅")
         }.pineCard()
     }
+}
+
+/// A scroll view proposes no height, so flexible children would stay at their
+/// minimum. This proposes the visible height instead and grows past it only when
+/// the content's minimum is taller (then the page scrolls).
+private struct PineFillHeight: Layout {
+    var height: CGFloat
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let child = subviews.first else { return .zero }
+        let size = child.sizeThatFits(ProposedViewSize(width: proposal.width, height: height > 0 ? height : nil))
+        return CGSize(width: proposal.width ?? size.width, height: max(size.height, height))
+    }
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
+    }
+}
+private extension View {
+    func fillHeight(_ height: CGFloat) -> some View { PineFillHeight(height: height) { self } }
 }
