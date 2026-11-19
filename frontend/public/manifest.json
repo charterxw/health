@@ -1,0 +1,10 @@
+{
+  "id": "/",
+  "name": "Health",
+  "short_name": "Health",
+  "start_url": "/#strength",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#f4f5f7"
+}

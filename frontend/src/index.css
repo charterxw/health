@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ *
+ * Shared surfaces and typography with Wealth and Media
+ * ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.08);
+  --card-shadow: 0 3px 16px rgba(27, 39, 60, 0.035);
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --separator: rgba(0, 0, 0, 0.08);
+  --fill: #edeef1;
+  --inset: #f4f5f7;
+  --sidebar: #f8f8fa;
+  --accent: #0066d6;
+  --action-bg: #0066d6;
+  --accent-soft: rgba(0, 122, 255, 0.08);
+  --success: #1c7a32;
+  --success-soft: rgba(36, 138, 61, 0.08);
+  --bottom-nav-height: 0px;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #111214;
+  --card: #202124;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --card-shadow: none;
+  --text: #f5f5f7;
+  --text-secondary: #a1a1a6;
+  --separator: rgba(255, 255, 255, 0.1);
+  --fill: #303136;
+  --inset: #303136;
+  --sidebar: #191a1d;
+  --accent: #4b9fff;
+  --action-bg: #1673df;
+  --accent-soft: rgba(75, 159, 255, 0.1);
+  --success: #47cd69;
+  --success-soft: rgba(71, 205, 105, 0.1);
+}
+
+@layer base {
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, 'PingFang SC', sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-size: 15px;
+    background-color: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+    /* Prevent iOS rubber-band revealing a mismatched color behind the page */
+    overscroll-behavior-y: none;
+  }
+  /* Never allow horizontal scroll on phones */
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  /* Clipping must not create an extra scroll container around sticky headers. */
+  @supports (overflow: clip) {
+    body, #root { overflow-x: clip; }
+  }
+}
+
+/* Honor iPhone safe areas (Dynamic Island, home indicator, landscape notch) */
+@layer utilities {
+  .safe-top {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+  .safe-bottom {
+    padding-bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1rem));
+  }
+  .safe-x {
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+}
+
+@layer components {
+  /* Elevated card surface — the Apple Health tile */
+  .card {
+    background-color: var(--card);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    border-radius: 22px;
+  }
+
+  /* Frosted top bar */
+  .chrome-blur {
+    background-color: rgba(242, 242, 247, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  .dark .chrome-blur {
+    background-color: rgba(0, 0, 0, 0.72);
+  }
+
+  /* iOS segmented control */
+  .segmented {
+    background-color: var(--fill);
+    border-radius: 0.75rem;
+    padding: 0.15rem;
+  }
+  .segmented-item {
+    border-radius: 0.6rem;
+    transition: color 0.2s ease;
+    color: var(--text-secondary);
+  }
+  .segmented-item[data-active='true'] {
+    background-color: var(--card);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
+  }
+  .dark .segmented-item[data-active='true'] {
+    background-color: #636366;
+    color: #ffffff;
+    box-shadow: none;
+  }
+
+  /* Icon chips (rounded-square, SF Symbols style) */
+  .icon-chip {
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+
+  .grad-move   { background: linear-gradient(160deg, #ff375f 0%, #ff2d55 100%); }
+  .grad-steps  { background: linear-gradient(160deg, #30d158 0%, #34c759 100%); }
+  .grad-cal    { background: linear-gradient(160deg, #ff9f0a 0%, #ff9500 100%); }
+  .grad-active { background: linear-gradient(160deg, #0a84ff 0%, #007aff 100%); }
+  .grad-distance { background: linear-gradient(160deg, #5e5ce6 0%, #4f46e5 100%); }
+  .grad-sleep  { background: linear-gradient(160deg, #bf5af2 0%, #af52de 100%); }
+  .grad-hrv    { background: linear-gradient(160deg, #64d2ff 0%, #5ac8fa 100%); }
+  .grad-hr     { background: linear-gradient(160deg, #ff6482 0%, #ff375f 100%); }
+}
+
+/* Activity ring draw-in */
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--dash-start); }
+  to   { stroke-dashoffset: var(--dash-end); }
+}
+.ring-progress {
+  animation: ring-fill 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+/* Fade/slide-in for content */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.rise { animation: rise 0.5s cubic-bezier(0.25, 1, 0.5, 1) both; }

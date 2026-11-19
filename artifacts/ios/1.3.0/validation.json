@@ -1,0 +1,82 @@
+{
+  "version": "1.3.0",
+  "build": 10,
+  "baseline": "current local native 1.2 source; user confirmed no other agent changes",
+  "server_unchanged": true,
+  "user_data_unchanged": true,
+  "xcode": "27.2",
+  "device_release_build": "passed",
+  "simulator_debug_build": "passed",
+  "test_bundle_build": "passed",
+  "project_structure": "passed",
+  "swift_core_checks": {
+    "passed": 24,
+    "timer_routing": 10,
+    "training_persistence": 14
+  },
+  "runtime_acceptance": {
+    "status": "not_performed_at_user_request",
+    "simulator_run": "started_then_cancelled",
+    "ui_tests_not_claimed_passed": true,
+    "visual_acceptance": false,
+    "dark_large_text_acceptance": false,
+    "physical_device_fps": "not_measured",
+    "note": "User explicitly requested no simulator checking. Early blank launch frame is not acceptance evidence."
+  },
+  "changes": [
+    "original card layout retained",
+    "local press feedback",
+    "stable day selection identity and lightweight selection transition",
+    "semibold tabular metric numerals and smaller baseline units",
+    "actual-value numeric transitions",
+    "larger compact long-observation summary and existing full detail",
+    "future-day accessibility labels",
+    "system Reduce Motion respected"
+  ],
+  "navigation": {
+    "tabs": [
+      "总览",
+      "训练",
+      "运动记录"
+    ],
+    "home_layout": "original grouped cards",
+    "home_standard_text": "preserved layout intention; runtime not accepted this revision",
+    "recovery_entries": [
+      "睡眠与作息",
+      "心率变异性",
+      "静息心率",
+      "观察记录"
+    ]
+  },
+  "release_integrity": {
+    "app_widget_version_match": true,
+    "live_activity_extension": true,
+    "preview_flags_absent": true,
+    "webview_absent": true,
+    "zip_valid": true
+  },
+  "performance": {
+    "previous_1_2_optimizations_retained": true,
+    "new_looping_animations": false,
+    "new_animation_dependencies": false,
+    "new_network_or_storage_work": false,
+    "device_fps_claimed": false
+  },
+  "artifacts": {
+    "ipa": {
+      "path": "/Users/xwang/Documents/health/ios/build/Pine-1.3.0-10-unsigned.ipa",
+      "sha256": "ab93d57d8463e2195f99f8955be5081e6ed39b1c07f48b1dfb9fed5f6854c8df",
+      "bytes": 1473529
+    },
+    "source": {
+      "path": "/Users/xwang/Documents/health/ios/build/Pine-1.3.0-10-source.zip",
+      "sha256": "fc91318709763e04a6f3a14ee42e3f63798a20f14c58952d1074c7fe793166d6",
+      "bytes": 283946
+    }
+  },
+  "skill": {
+    "name": "emil-design-eng",
+    "repo": "https://github.com/emilkowalski/skills",
+    "commit": "64eb3deb9a5fbfa041faf783e0bc3fd635872e9c"
+  }
+}

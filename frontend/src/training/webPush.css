@@ -1,0 +1,7 @@
+.st-webpush { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 13px 0; margin: 12px 0; border-top: 1px solid var(--separator); border-bottom: 1px solid var(--separator); }
+.st-webpush > div { flex: 1; min-width: 180px; }
+.st-webpush strong { font-size: 12px; font-weight: 550; }
+.st-webpush p { font-size: 10px; color: var(--text-secondary); line-height: 1.8; margin-top: 3px; }
+.st-webpush > button { min-height: 44px; padding: 10px 13px; color: var(--accent); background: var(--accent-soft); border-radius: 10px; font-size: 12px; }
+.st-webpush > button:disabled { opacity: .5; }
+.st-webpush .st-webpush-error { flex-basis: 100%; color: #b33b36; }

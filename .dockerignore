@@ -1,0 +1,13 @@
+.git
+.env
+secrets
+runtime-secrets
+data
+backups
+work
+artifacts
+**/node_modules
+**/__pycache__
+**/*.log
+ios/build
+ios/.build

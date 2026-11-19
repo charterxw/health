@@ -1,0 +1,119 @@
+.st-workout-report { display: grid; gap: 14px; }
+.st-report-overview, .st-report-exercises, .st-report-notes, .st-physiology {
+  min-width: 0;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: var(--card);
+}
+.st-report-overview { padding: 17px 16px 13px; }
+.st-report-overview h2 { font-size: clamp(1.3rem, 5vw, 1.6rem); font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.st-report-date { margin-top: 5px; color: var(--text-secondary); font-size: .8125rem; }
+.st-report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 15px; padding: 12px 0; border-block: 1px solid var(--separator); }
+.st-report-metrics > div { padding: 0 11px; border-inline-start: 1px solid var(--separator); }
+.st-report-metrics > div:first-child { padding-inline-start: 0; border: 0; }
+.st-report-metrics > div:last-child { padding-inline-end: 0; }
+.st-report-metrics dt { color: var(--text-secondary); font-size: .75rem; }
+.st-report-metrics dd { margin-top: 3px; font-size: clamp(1.125rem, 5vw, 1.625rem); font-weight: 650; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.st-report-metrics dd > small { font-size: .75rem; font-weight: 400; color: var(--text-secondary); white-space: nowrap; }
+.st-report-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-top: 10px; color: var(--text-secondary); font-size: .75rem; }
+.st-report-saved { color: var(--success); }
+.st-report-exercises > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 14px 16px 8px; }
+.st-report-exercises > header > h3, .st-report-notes h3 { font-size: 1rem; font-weight: 680; }
+.st-report-exercises > header > span { color: var(--text-secondary); font-size: .75rem; }
+
+.st-report-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  list-style: none;
+  cursor: pointer;
+}
+.st-report-disclosure::-webkit-details-marker { display: none; }
+.st-report-disclosure::after {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: 0 3px 0 0;
+  border: solid var(--text-secondary);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(-45deg);
+}
+details[open] > .st-report-disclosure::after { transform: translateY(-2px) rotate(45deg); }
+.st-report-disclosure:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+.st-report-movement, .st-report-unrecorded { margin-inline: 16px; border-top: 1px solid var(--separator); }
+.st-report-movement > summary { padding: 10px 0; }
+.st-report-movement-title { display: grid; flex: 1; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.st-report-movement-title > strong { font-size: .9375rem; font-weight: 650; }
+.st-report-movement-title > small { color: var(--text-secondary); font-size: .75rem; }
+.st-report-movement-title b { color: var(--text); font-weight: 600; }
+.st-report-rep-change { color: var(--accent); font-size: .75rem; }
+.st-report-movement-count { flex: none; color: var(--text-secondary); font-size: .75rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st-report-set-details { padding: 0 0 8px; }
+.st-report-comparison { font-size: .8125rem; line-height: 1.65; padding: 9px 10px; border-radius: 8px; background: var(--inset); }
+.st-report-comparison > small { display: block; color: var(--text-secondary); font-size: .75rem; }
+.st-report-effort { margin: 6px 0; color: var(--text-secondary); font-size: .75rem; }
+.st-report-set-details table { width: 100%; margin-top: 4px; text-align: left; font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.st-report-set-details th { color: var(--text-secondary); font-size: .75rem; font-weight: 500; }
+.st-report-set-details td, .st-report-set-details th { padding: 7px 3px; border-bottom: 1px solid var(--separator); }
+.st-report-set-details td:last-child, .st-report-set-details th:last-child { text-align: right; }
+.st-report-set-details tr:last-child td { border: 0; }
+.st-report-unrecorded > summary { color: var(--text-secondary); font-size: .8125rem; }
+.st-report-unrecorded > summary > span { margin-inline-start: auto; }
+.st-report-unrecorded ul { padding-bottom: 10px; color: var(--text-secondary); font-size: .8125rem; line-height: 1.8; }
+.st-report-empty { padding: 6px 16px 12px; color: var(--text-secondary); font-size: .8125rem; }
+.st-report-notes { padding: 13px 16px; }
+.st-report-notes p { margin-top: 5px; color: var(--text-secondary); font-size: .875rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.st-report-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.st-report-actions > button { min-height: 44px; padding: 10px 15px; font-size: .8125rem; border-radius: 11px; }
+.st-report-delete { justify-self: center; min-height: 44px; padding: 10px 16px; color: #ae2f2a; font-size: .8125rem; }
+.dark .st-report-delete { color: #ffb2aa; }
+@media (max-width: 639px) {
+  .st-report-actions > button { flex: 1; }
+}
+@media (max-width: 360px) {
+  .st-report-metrics > div { padding-inline: 8px; }
+}
+.st-report-highlight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 11px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  text-align: start;
+}
+.st-report-highlight > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.st-report-highlight > span > strong { color: var(--accent); font-size: .75rem; font-weight: 650; }
+.st-report-highlight > span > span { color: var(--text); font-size: .875rem; font-weight: 650; }
+.st-report-highlight small { color: var(--text-secondary); font-size: .75rem; }
+.st-report-highlight::after {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 3px;
+  border: solid var(--accent);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(-45deg);
+}
+.st-report-muscles {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: .75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.st-report-muscles strong { flex: none; color: var(--text); font-weight: 600; }
+.st-report-movement { scroll-margin-top: calc(var(--app-header-height, 0px) + 10px); }
+.st-report-muscle-details { color:var(--text-secondary); font-size:12px; }
+.st-report-muscle-details > summary { padding:13px 0 2px; cursor:pointer; min-height:44px; }
+.st-report-movement > summary { padding:15px 0; min-height:76px; }
+.st-report-movement-title > .st-movement-headline { color:var(--text-secondary); font-size:13px; line-height:1.6; margin-top:2px; }
+.health-native-chrome .st-report-movement { scroll-margin-top: 10px; }

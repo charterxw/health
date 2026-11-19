@@ -1,0 +1,55 @@
+# Portable source build, without the Pi's external media bridge or host backup service.
+# Run with: docker compose --env-file .env -f ops/compose.standalone.yml up -d --build
+name: health
+services:
+  backend:
+    image: local/health-backend:source
+    build:
+      context: ../backend
+    env_file: ../.env
+    environment:
+      APP_VERSION: source-dialog-diagnostics-20261118
+      DB_PATH: /data/fitness.db
+      TOKEN_FILE: /data/tokens.json
+      TZ: ${TZ:-America/New_York}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:9999}
+      ENABLE_API_DOCS: 'false'
+      ENABLE_BACKGROUND_JOBS: ${ENABLE_BACKGROUND_JOBS:-false}
+      CHATGPT_CREDENTIALS_FILE: /run/secrets/oauth/chatgpt-oauth.json
+      TELEGRAM_NOTIFICATIONS_ENABLED: ${TELEGRAM_NOTIFICATIONS_ENABLED:-false}
+      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/fitness/telegram-bot-token
+      TELEGRAM_CHAT_ID_FILE: /run/secrets/fitness/telegram-chat-id
+      MEDIA_AI_SOCKET: ''
+    volumes:
+      - fitness-data:/data
+      - ../runtime-secrets/oauth:/run/secrets/oauth
+      - ../secrets:/run/secrets/fitness:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 40s
+    mem_limit: 512m
+  frontend:
+    image: local/health-frontend:source
+    build:
+      context: ../frontend
+    ports:
+      - '127.0.0.1:9999:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    mem_limit: 128m
+volumes:
+  fitness-data:
+    name: health_fitness-data

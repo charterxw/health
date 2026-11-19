@@ -1,0 +1,7 @@
+.health-native-settings section { display: flex; align-items: center; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--separator); }
+.health-native-settings section:first-child { padding-top: 4px; }
+.health-native-settings section:last-of-type { border-bottom: 0; }
+.health-native-settings section > div { flex: 1; min-width: 0; }
+.health-native-settings strong { font-size: 15px; }
+.health-native-settings p { color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-top: 6px; }
+.health-native-settings button { flex: none; white-space: nowrap; }

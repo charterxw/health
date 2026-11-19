@@ -1,0 +1,4 @@
+// For Xcode automatic signing, copy to Local.xcconfig and select your own team.
+// For an unsigned IPA + SideStore this file is not needed.
+// DEVELOPMENT_TEAM = YOUR_TEAM_ID
+// APP_BUNDLE_IDENTIFIER = com.yourname.health

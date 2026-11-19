@@ -1,0 +1,46 @@
+.st-physiology > summary { padding: 11px 16px; }
+.st-physiology-overview { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.st-physiology-overview > strong { font-size: 1rem; font-weight: 680; }
+.st-physiology-overview > span { color: var(--text-secondary); font-size: .8125rem; }
+.st-physiology[open] .st-physiology-glance { display: none; }
+.st-physiology-body { margin: 0 16px; padding: 12px 0 8px; border-top: 1px solid var(--separator); }
+.st-open-health > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--accent-soft);
+  border-radius: 9px;
+  color: var(--accent);
+  font-size: .8125rem;
+  font-weight: 600;
+}
+.st-heart-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; }
+.st-heart-metrics dt { color: var(--text-secondary); font-size: .75rem; line-height: 1.5; }
+.st-heart-metrics dd { font-size: 1.125rem; line-height: 1.4; font-weight: 650; font-variant-numeric: tabular-nums; }
+.st-heart-metrics dd > small { font-size: .625rem; font-weight: 400; color: var(--text-secondary); white-space: nowrap; }
+.st-heart-metrics:has(> :only-child) { grid-template-columns: 1fr; margin-top: 8px; }
+@media (max-width: 390px) {
+  .st-heart-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.st-heart-chart { margin: 8px 0 0; }
+.st-heart-chart svg { display: block; width: 100%; overflow: visible; }
+.st-heart-chart text { fill: var(--text-secondary); font-size: 9px; font-variant-numeric: tabular-nums; }
+.st-heart-grid { stroke: var(--separator); stroke-dasharray: 3 4; }
+.st-heart-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.st-heart-point { fill: var(--accent); }
+.st-heart-set-line { stroke: var(--text-secondary); opacity: .65; stroke-width: 1; stroke-dasharray: 3 3; }
+.st-heart-set-dot { fill: var(--text-secondary); }
+.st-heart-splits { margin-top: 6px; }
+.st-heart-splits > li { display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: 3px 10px; padding: 7px 0; border-top: 1px solid var(--separator); }
+.st-heart-splits > li > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.st-heart-splits time, .st-heart-splits p { color: var(--text-secondary); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.st-heart-splits time { flex: none; }
+.st-heart-splits strong { font-size: .8125rem; font-weight: 650; overflow-wrap: anywhere; }
+.st-heart-source { display: grid; gap: 7px; font-size: .8125rem; color: var(--text-secondary); margin: 10px 0; }
+.st-heart-source select { width: 100%; min-height: 44px; padding: 10px; background: var(--inset); color: var(--text); border: 1px solid var(--card-border); border-radius: 10px; font-size: 1rem; }
+.st-physiology-body > footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.st-physiology-body > footer > span { color: var(--text-secondary); font-size: .75rem; }
+.st-physiology-body > footer > button { flex-shrink: 0; min-height: 44px; padding: 8px 0 8px 12px; color: var(--accent); font-size: .8125rem; font-weight: 600; }
+.st-physiology button:disabled { opacity: .5; cursor: default; }

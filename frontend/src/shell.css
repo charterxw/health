@@ -1,0 +1,93 @@
+/* The same 220px sidebar, mobile tab bar and quiet surfaces as Wealth / Media. */
+[hidden] { display: none !important; }
+.health-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; min-width: 0; }
+.health-sidebar { position: fixed; inset: 0 auto 0 0; width: 220px; padding: 28px 18px 24px; display: flex; flex-direction: column; background: var(--sidebar); border-right: 1px solid var(--separator); z-index: 40; }
+.health-brand { display: flex; gap: 11px; align-items: center; padding: 0 10px 30px; text-align: left; color: var(--text); }
+.health-brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--action-bg); color: white; flex: none; }
+.health-brand strong { display: block; font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
+.health-brand small { display: block; color: var(--text-secondary); font-size: 11px; margin-top: 3px; }
+.health-navigation { display: grid; gap: 5px; }
+.health-nav-item { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 10px 12px; border-radius: 12px; text-align: left; background: transparent; color: var(--text-secondary); font-size: 15px; }
+.health-nav-item .health-icon { flex: none; }
+.health-nav-item.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.health-nav-item:hover:not(.active) { background: var(--fill); }
+.health-sidebar-footer { margin-top: auto; padding: 18px 8px 0; border-top: 1px solid var(--separator); color: var(--text-secondary); font-size: 11px; line-height: 1.7; }
+.health-sidebar-footer > span { display: flex; align-items: center; gap: 7px; }
+.health-sidebar-footer i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-secondary); flex: none; }
+.health-sidebar-footer i.connected { background: var(--success); }
+.health-sidebar-footer small { display: block; margin: 6px 0 0 13px; font-size: 10px; }
+.health-workspace { grid-column: 2; width: 100%; min-width: 0; max-width: 1120px; margin: 0 auto; padding: 0 32px 48px; }
+.health-page-header { position: sticky; top: 0; z-index: 35; display: flex; align-items: center; justify-content: space-between; min-height: 104px; gap: 18px; padding: 20px 0; background: var(--bg); }
+.health-training-header { position: sticky; top: var(--app-header-height, 104px); z-index: 30; background: var(--bg); }
+.health-training-header:empty { display: none; }
+.health-training-header .st-session-toolbar { position: static; max-width: 600px; margin: 0 auto; }
+.health-page-content { min-width: 0; }
+.health-page-header h1 { font-size: 28px; font-weight: 650; letter-spacing: -.035em; line-height: 1.2; }
+.health-eyebrow { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+.health-header-tools { display: flex; gap: 8px; align-items: center; flex: none; }
+.health-icon-button { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--separator); border-radius: 12px; background: var(--card); color: var(--text-secondary); flex: none; }
+.health-connect { min-height: 42px; display: inline-flex; align-items: center; padding: 8px 12px; color: var(--accent); background: var(--accent-soft); border-radius: 11px; font-size: 12px; font-weight: 550; }
+.health-shell button, .health-login button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.health-shell button:focus-visible, .health-shell a:focus-visible, .health-login input:focus-visible, .health-login button:focus-visible { outline: 3px solid rgba(0, 122, 255, .35); outline-offset: 3px; }
+.health-login { display: grid; place-items: center; min-height: 100dvh; padding: 28px 18px; background: var(--bg); }
+.health-login-card { width: min(100%, 410px); padding: 32px; background: var(--card); border: 1px solid var(--separator); border-radius: 24px; box-shadow: var(--card-shadow); }
+.health-login-card > .health-brand-mark { width: 44px; height: 44px; border-radius: 13px; margin-bottom: 20px; }
+.health-login h1 { font-size: 28px; font-weight: 650; letter-spacing: -.035em; }
+.health-login p { color: var(--text-secondary); font-size: 13px; margin: 8px 0 26px; line-height: 1.7; }
+.health-login label { display: block; font-size: 13px; font-weight: 500; margin: 17px 0 7px; }
+.health-login input { width: 100%; min-height: 46px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--separator); background: var(--inset); color: var(--text); font-size: 16px; }
+.health-login button[type=submit] { width: 100%; min-height: 46px; padding: 10px 16px; background: var(--action-bg); color: #fff; border-radius: 12px; font-size: 14px; font-weight: 600; margin-top: 24px; }
+.health-login button:disabled { opacity: .55; }
+.health-login-error { color: #c62e36; font-size: 12px; margin-top: 14px; line-height: 1.6; }
+.dark .health-login-error { color: #ff6965; }
+@media (max-width: 1000px) {
+  /* The browser owns screen insets (viewport-fit=contain). The app fills that rectangle. */
+  html:has(.health-shell), body:has(.health-shell), #root:has(.health-shell) { height: 100%; min-height: 0; overflow: hidden; }
+  .health-shell { --page-padding: 24px; --bottom-nav-height: 74px; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; min-height: 0; position: fixed; inset: 0; height: auto; height: var(--keyboard-viewport-height, auto); padding-top: 0; overflow: hidden; background: var(--bg); }
+  .health-sidebar { display: contents; }
+  .health-brand, .health-sidebar-footer { display: none; }
+  .health-workspace { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; min-height: 0; max-width: none; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+  .health-page-header { position: static; flex: none; min-height: 60px; margin: 0; padding: 8px var(--page-padding); gap: 8px; z-index: auto; background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .health-page-header h1 { font-size: 25px; }
+  .health-eyebrow { display: none; }
+  .health-header-tools { gap: 5px; }
+  .health-icon-button { width: 44px; height: 44px; border: none; background: transparent; }
+  .health-connect { font-size: 11px; padding: 8px; }
+  .health-training-header { position: static; flex: none; padding: 0 var(--page-padding); z-index: auto; }
+  .health-training-header .st-session-toolbar { max-width: none; }
+  .health-page-content { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; overflow-anchor: none; padding: 8px var(--page-padding) 20px; }
+  .health-navigation { grid-column: 1; grid-row: 2; position: static; z-index: auto; display: flex; justify-content: center; gap: 0; border-top: 1px solid var(--separator); padding: 5px max(18px, env(safe-area-inset-right)) 12px max(18px, env(safe-area-inset-left)); background: var(--card); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .health-nav-item { flex: 1; max-width: 180px; min-height: 57px; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 5px 2px; border-radius: 0; text-align: center; font-size: 11px; font-weight: 500; }
+  .health-nav-item .health-icon { width: 23px; height: 23px; }
+  .health-nav-item.active, .health-nav-item:hover:not(.active) { background: transparent; }
+  body:has(.st-modal-backdrop) .health-navigation { visibility: hidden; pointer-events: none; }
+  .health-shell:has(.health-page-content input:focus, .health-page-content textarea:focus, .health-training-header input:focus) .health-navigation { display: none; }
+  .health-shell:has(.st-live-view) { --bottom-nav-height: 0px; }
+  .health-shell:has(.st-live-view) .health-navigation, .health-shell:has(.st-live-view) .health-page-header { display: none; }
+  .health-shell:has(.st-live-view) .health-page-content { padding-bottom: 20px; }
+}
+@media (max-width: 680px) {
+  .health-shell { --page-padding: 14px; }
+  .health-login-card { padding: 28px 25px; }
+}
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+/* Activated only after the native host acknowledges navigation ownership.
+   UIKit owns the safe areas. Content stays opaque and uses the full WK viewport. */
+.health-native-chrome .health-page-header,
+.health-native-chrome .health-navigation,
+.health-native-chrome .st-live-topline,
+.health-native-chrome .st-back,
+.health-native-chrome .st-session-tools { display: none; }
+.health-native-chrome .health-shell { grid-template-rows: minmax(0, 1fr); }
+.health-native-chrome .health-training-header .st-session-toolbar { padding-top: 0; }
+@media (max-width: 1000px) {
+  .health-native-chrome .health-page-content {
+    padding-bottom: calc(20px + var(--native-tab-inset, 0px));
+    scroll-padding-bottom: var(--native-tab-inset, 0px);
+  }
+}
+.health-page-content { scroll-behavior: auto; }
+html:has(.health-shell) { scrollbar-gutter: stable; }
+
+.health-native-chrome [data-record-detail] .st-back { display:flex; }

@@ -1,0 +1,60 @@
+{
+  "record_type": "investigation_source_manifest",
+  "is_rea_evidence": false,
+  "recorded_ui": {
+    "source": "user-supplied screen recording",
+    "filename": "ScreenRecording_11-07-2026 16-04-51_1.mp4",
+    "sha256": "637fca7eb22ffe727691c9510f9ae62cd7657911bd350b72abafeba6e1316cde",
+    "size_bytes": 18210642,
+    "duration_seconds": 30.108333,
+    "width": 1206,
+    "height": 2622,
+    "reviewed_still_timestamps_seconds": [
+      0,
+      1,
+      7,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      16,
+      17,
+      20,
+      22,
+      24,
+      27
+    ],
+    "limits": [
+      "UI states and transitions only; no touch-event log",
+      "No app binary identity or transport capture",
+      "A four-second test workout cannot establish full-session data coverage"
+    ]
+  },
+  "user_report": {
+    "device": "iPhone + Fitbit Air",
+    "priority": "Start a specified workout with one Home Screen tap",
+    "workout_types": [
+      "strength",
+      "walking",
+      "hiking"
+    ],
+    "shortcuts_check": "User reports no Google Health/Fitbit start-workout action found in Shortcuts"
+  },
+  "association_file": {
+    "url": "https://www.fitbit.com/.well-known/apple-app-site-association",
+    "retrieved_date": "2026-11-07",
+    "sha256": "3a2f071da20c4654a1f90971d035cec6713e1a8f008aacd91f5499826f6f0c6e",
+    "saved_as": "fitbit-apple-app-site-association.json",
+    "production_bundle_id": "com.fitbit.FitbitMobile",
+    "declared_path_patterns": [
+      "/in-app/*"
+    ],
+    "limits": [
+      "Server-side association does not enumerate concrete routes",
+      "Installed-app entitlements and URL handlers not inspected",
+      "No start-workout URL validated"
+    ]
+  }
+}

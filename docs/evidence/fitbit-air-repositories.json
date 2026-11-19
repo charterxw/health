@@ -1,0 +1,117 @@
+{
+  "review_date": "2026-11-07",
+  "is_rea_evidence": false,
+  "scope": "Public source repositories for Fitbit Air data reading; original iOS app not inspected",
+  "repositories": [
+    {
+      "repository": "wasimcodex/180D",
+      "url": "https://github.com/wasimcodex/180D",
+      "commit": "ffd03a9296ed9b547d11a170ebacfc3f2ec24d3d",
+      "commit_date": "2026-09-26",
+      "route": "Android BLE + local sessions",
+      "license": "MIT",
+      "reviewed_files": [
+        "CLAUDE.md",
+        "app/src/main/java/com/example/a180d/BleHeartRateService.kt",
+        "app/src/main/java/com/example/a180d/SessionStorage.kt"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "AyushSagar16/fitbit-air",
+      "url": "https://github.com/AyushSagar16/fitbit-air",
+      "commit": "b27b8ed3f73c534b1cff10193f78c9f9515d8836",
+      "commit_date": "2026-08-10",
+      "route": "Node BLE + separate Google Health API client",
+      "license": "MIT",
+      "reviewed_files": [
+        "src/ble/heartRate.js",
+        "src/server/sessions.js",
+        "src/server/server.js"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "taku0193/pulse-air-macos",
+      "url": "https://github.com/taku0193/pulse-air-macos",
+      "commit": "dc3820b7361ef565640e91e92baf1232b5b63346",
+      "commit_date": "2026-07-14",
+      "route": "Swift/macOS CoreBluetooth reader",
+      "license": "MIT",
+      "reviewed_files": [
+        "Sources/PulseAirMenuBar/HeartRateMonitor.swift",
+        "Sources/PulseAirCore/HeartRateParser.swift"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "santekotturi/airlift",
+      "url": "https://github.com/santekotturi/airlift",
+      "commit": "de2ec9e596310fba64c9b9b399e72489796c226c",
+      "commit_date": "2026-10-27",
+      "route": "iOS Google Health API to HealthKit sync",
+      "license": "MIT",
+      "reviewed_files": [
+        "Sources/GoogleHealth/GoogleHealthClient.swift",
+        "Sources/Intents/SyncIntent.swift"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "Luraxx/pulse",
+      "url": "https://github.com/Luraxx/pulse",
+      "commit": "f324b03319af60958751ec4e5e0379af5d592efd",
+      "commit_date": "2026-10-28",
+      "route": "iOS cloud-fed health dashboard",
+      "license": "Apache-2.0",
+      "reviewed_files": [
+        "Core/API/HealthAPIClient.swift",
+        "README.md"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "bharathajay51/fitbit-air",
+      "url": "https://github.com/bharathajay51/fitbit-air",
+      "commit": "8f287432a8d015c92f542e9d49a165ebefd7c85f",
+      "commit_date": "2026-06-29",
+      "route": "Python Google Health API polling",
+      "license": "not checked",
+      "reviewed_files": [
+        "live_feed.py",
+        "client.py",
+        "FINDINGS.md"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "adityaongit/pulse",
+      "url": "https://github.com/adityaongit/pulse",
+      "commit": "15b236d4a07e45ea0acd04b393c1b85bdd742238",
+      "commit_date": "2026-10-21",
+      "route": "Web cloud-fed dashboard; live start disabled",
+      "license": "PolyForm Noncommercial 1.0.0",
+      "reviewed_files": [
+        "src/lib/features.ts",
+        "src/app/(app)/activity/LogActivity.tsx",
+        "src/server/sources/google/client.ts"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    },
+    {
+      "repository": "LordPerkyy/HeartRateWidget",
+      "url": "https://github.com/LordPerkyy/HeartRateWidget",
+      "commit": "a1b74ceba3611ed46cf7a9298970a0fc12307d04",
+      "commit_date": "2026-10-23",
+      "route": "Windows Python/Bleak BLE display",
+      "license": "MIT",
+      "reviewed_files": [
+        "widget_heart_rate_6.0.py",
+        "README.md"
+      ],
+      "verification": "Source inspection only; no execution or own-device test"
+    }
+  ],
+  "runtime_executed": false,
+  "apple_account_login_performed": false
+}

@@ -1,0 +1,46 @@
+.overview { display: grid; gap: 10px; }
+.overview-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; padding: 0 2px; color: var(--text-secondary); font-size: .8125rem; }
+.overview-source { display: flex; align-items: center; justify-content: flex-end; gap: 8px; text-align: right; }
+.overview-source button, .overview-detail-status button { color: var(--accent); font-weight: 600; min-height: 44px; min-width: 44px; }
+
+.overview-activity, .overview-recovery { padding: 0 14px 5px; border-radius: 16px; box-shadow: none; }
+.overview-section-head { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: 44px; }
+.overview-section-head h2 { font-size: 1rem; font-weight: 700; }
+.overview-section-head button { display: flex; align-items: center; gap: 3px; min-height: 44px; color: var(--accent); font-size: .8125rem; font-weight: 600; }
+
+.overview-ring-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.3fr); align-items: center; gap: 12px; padding-bottom: 4px; }
+.overview-rings { width: min(100%, 116px); height: auto; margin: auto; }
+.overview-ring-legend { min-width: 0; }
+.overview-ring-metric, .overview-metric { display: flex; align-items: center; width: 100%; gap: 8px; min-height: 44px; padding: 4px 0; text-align: left; color: var(--text); }
+.overview-ring-metric + .overview-ring-metric, .overview-metric { border-top: 1px solid var(--separator); }
+.overview-ring-metric:active, .overview-metric:active { background: var(--inset); }
+.overview-ring-metric i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.overview-ring-text { flex: 1; min-width: 0; display: grid; color: var(--text-secondary); font-size: .75rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.overview-ring-text strong { color: var(--text); font-size: 1rem; font-weight: 650; }
+.overview-metric-label { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: .875rem; }
+.overview-metric-icon { display: grid; place-items: center; width: 22px; height: 22px; flex: none; }
+.overview-metric-icon svg { width: 17px; height: 17px; }
+.overview-metric-value { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 0 3px; font-variant-numeric: tabular-nums; }
+.overview-metric-value strong, .overview-score strong { font-size: 1.0625rem; font-weight: 650; }
+.overview-metric-value small { font-size: .75rem; color: var(--text-secondary); }
+.overview-arrow { flex: none; color: var(--text-secondary); }
+.overview-score { display: flex; align-items: baseline; gap: 6px; font-size: .75rem; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.overview-score.high { color: var(--success); }
+.overview-score.moderate { color: #a66300; }
+.dark .overview-score.moderate { color: #ffb347; }
+.overview-score.low { color: #b92d46; }
+.dark .overview-score.low { color: #ff6683; }
+
+.st-modal-backdrop.is-centered { align-items: center; padding: 16px; }
+.st-modal-backdrop.is-centered .st-modal { border-radius: 20px; max-height: min(calc(var(--keyboard-viewport-height, 100dvh) - 32px), 40rem); }
+.overview-detail-status { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; color: var(--text-secondary); font-size: .875rem; }
+.overview-calendar { max-height: min(45dvh, 24rem); overflow-y: auto; overscroll-behavior: contain; }
+.overview-chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(26px, 1fr); overflow-x: auto; gap: 4px; padding: 4px 2px 7px; overscroll-behavior-x: contain; }
+.overview-chart[tabindex] { grid-auto-columns: minmax(3rem, 1fr); }
+.overview-chart-point { display: grid; gap: 4px; min-width: 0; text-align: center; color: var(--text-secondary); font-size: .6875rem; font-variant-numeric: tabular-nums; }
+.overview-chart-track { height: 96px; display: flex; align-items: end; justify-content: center; border-bottom: 1px solid var(--separator); }
+.overview-chart-track > div { width: min(70%, 30px); border-radius: 4px 4px 0 0; }
+@media (min-width: 720px) {
+  .overview { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .overview > :not(.overview-activity, .overview-recovery) { grid-column: 1 / -1; }
+}

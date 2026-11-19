@@ -1,0 +1,75 @@
+name: health
+services:
+  backend:
+    image: local/health-backend:dialog-diagnostics-20261118
+    build: {context: ./backend, network: host}
+    container_name: fitness-api
+    env_file: [.env]
+    environment:
+      APP_VERSION: home-overview-20261116T0516Z
+      DB_PATH: /data/fitness.db
+      TOKEN_FILE: /data/tokens.json
+      TZ: ${TZ:-America/New_York}
+      COOKIE_SECURE: 'true'
+      SESSION_TTL_SECONDS: '604800'
+      TRUSTED_PROXY_NETWORKS: 127.0.0.1/32,::1/128,172.16.0.0/12
+      ALLOWED_HOSTS: health.frankandpatrick.com,localhost,127.0.0.1,backend,192.168.1.225
+      CORS_ORIGINS: https://health.frankandpatrick.com
+      ENABLE_API_DOCS: 'false'
+      ENABLE_BACKGROUND_JOBS: 'true'
+      CHATGPT_CREDENTIALS_FILE: /run/secrets/oauth/chatgpt-oauth.json
+      TELEGRAM_NOTIFICATIONS_ENABLED: ${TELEGRAM_NOTIFICATIONS_ENABLED:-true}
+      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/fitness/telegram-bot-token
+      TELEGRAM_CHAT_ID_FILE: /run/secrets/fitness/telegram-chat-id
+      MEDIA_AI_SOCKET: /run/media-ai/media-ai.sock
+      MEDIA_AI_TOKEN_FILE: /run/secrets/media-ai-token
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6.1-sol}
+      OPENAI_REASONING_EFFORT: ${OPENAI_REASONING_EFFORT:-low}
+    volumes:
+      - fitness-data:/data
+      - ./runtime-secrets/oauth:/run/secrets/oauth
+      - ./secrets/telegram-bot-token:/run/secrets/fitness/telegram-bot-token:ro
+      - ./secrets/telegram-chat-id:/run/secrets/fitness/telegram-chat-id:ro
+      - /home/admin/cloud-reel/data/health-ai-socket:/run/media-ai
+      - /home/admin/cloud-reel/data/ai-bridge-token:/run/secrets/media-ai-token:ro
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 40s
+    mem_limit: 512m
+    mem_reservation: 256m
+    memswap_limit: 768m
+    cpus: 1.5
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+  frontend:
+    image: local/health-frontend:dialog-diagnostics-20261118
+    build: {context: ./frontend, network: host}
+    container_name: fitness-ui
+    ports:
+      - '${HEALTH_BIND_ADDRESS:-192.168.1.225}:9999:8080'
+      - '127.0.0.1:9999:8080'
+    depends_on:
+      backend: {condition: service_healthy}
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=32m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+volumes:
+  fitness-data:
+    external: true
+    name: health_fitness-data
+networks:
+  default:
+    name: health_default

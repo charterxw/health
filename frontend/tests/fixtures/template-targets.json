@@ -1,0 +1,749 @@
+{
+  "note": "Synthetic regression fixture. Invented templates and target numbers, not an exported user plan.",
+  "requests": [
+    {
+      "template": {
+        "id": "fixture-targets-1",
+        "name": "示例模板 1",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-2",
+        "name": "示例模板 2",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-3",
+        "name": "示例模板 3",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-4",
+        "name": "示例模板 4",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-5",
+        "name": "示例模板 5",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-6",
+        "name": "示例模板 6",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-7",
+        "name": "示例模板 7",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "template": {
+        "id": "fixture-targets-8",
+        "name": "示例模板 8",
+        "notes": "Synthetic test data",
+        "exercises": [
+          {
+            "exercise_id": "barbell-bench-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 30,
+                "reps": 10
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 65,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "machine-shoulder-press",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 120,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              },
+              {
+                "weight": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "exercise_id": "cable-triceps-pushdown",
+            "set_count": 4,
+            "warmup_count": 1,
+            "unit": "lb",
+            "rest_seconds": 75,
+            "target_reps": 8,
+            "progression": "off",
+            "targets_updated_at": "2026-11-02T00:00:00Z",
+            "set_targets": [
+              {
+                "weight": 40,
+                "reps": 10
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 80,
+                "reps": 8
+              },
+              {
+                "weight": 70,
+                "reps": 8
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

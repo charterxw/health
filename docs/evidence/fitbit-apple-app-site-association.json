@@ -1,0 +1,51 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "EQHXZ8M8AV.com.fitbit.FitbitMobile",
+        "paths": [
+          "/in-app/*"
+        ]
+      },
+      {
+        "appID": "4ANB9W7R3P.com.fitbit.FitbitMobile.enterprise",
+        "paths": [
+          "/in-app/*"
+        ]
+      },
+      {
+        "appID": "4ANB9W7R3P.com.fitbit.FitbitMobile.teamfood",
+        "paths": [
+          "/in-app/*"
+        ]
+      },
+      {
+        "appID": "4ANB9W7R3P.com.fitbit.FitbitMobile.fishfood",
+        "paths": [
+          "/in-app/*"
+        ]
+      },
+      {
+        "appID": "EQHXZ8M8AV.com.fitbit.FitbitMobile.dev",
+        "paths": [
+          "/in-app/*"
+        ]
+      },
+      {
+        "appID": "WBBFRPWRL9.com.fitbit.FitbitMobile",
+        "paths": [
+          "/in-app/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [   "EQHXZ8M8AV.com.fitbit.FitbitMobile",
+                "4ANB9W7R3P.com.fitbit.FitbitMobile.enterprise",
+                "4ANB9W7R3P.com.fitbit.FitbitMobile.teamfood",
+                "4ANB9W7R3P.com.fitbit.FitbitMobile.fishfood",
+                "EQHXZ8M8AV.com.fitbit.FitbitMobile.dev",
+                "WBBFRPWRL9.com.fitbit.FitbitMobile" ]
+ }
+}

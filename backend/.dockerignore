@@ -1,0 +1,12 @@
+__pycache__
+**/__pycache__
+*.pyc
+*.db
+*.db-*
+*.sqlite*
+.env
+.venv
+venv
+tests
+*.md
+test_*.py
