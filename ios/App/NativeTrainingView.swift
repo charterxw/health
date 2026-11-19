@@ -41,78 +41,184 @@ struct NativeTrainingView: View {
         if !t["rotation_order"].isNull { return String(UnicodeScalar(65 + max(0, min(25, t["rotation_order"].integer)))!) }
         return id.split(separator: "-").last.map { String($0).uppercased() } ?? ""
     }
+    @State private var slotChoice = 0
     var body: some View {
         PinePage {
             if let active = store.active { continueCard(active) }
             if let message = store.message { PineBanner(text: message) }
-            currentPlan
-            ForEach(groups) { group in
-                DisclosureGroup {
-                    VStack(spacing: 0) {
-                        ForEach(Array(group.records.enumerated()), id: \.offset) { index, row in
-                            if index > 0 { Divider() }
-                            NativeRoutineTemplateRow(record: row)
-                        }
-                    }.padding(.top, 8)
-                } label: {
-                    HStack(spacing: 12) {
-                        Group { if group.letter == "体态" { Image(systemName: "figure.flexibility").font(.title2) } else { Text(group.letter).font(.title2.bold()) } }
-                            .foregroundStyle(group.letter == "体态" ? Color.secondary : pine).frame(width: 44, height: 48).background(group.letter == "体态" ? Color(uiColor: .tertiarySystemFill) : pine.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                        VStack(alignment: .leading, spacing: 5) { Text(group.title).font(.headline).foregroundStyle(.primary); Text(group.subtitle).font(.subheadline).foregroundStyle(.secondary) }
-                        Spacer(minLength: 4)
-                        if group.letter == currentLetter { Text("当前").font(.caption.weight(.medium)).foregroundStyle(pine).padding(.horizontal, 8).padding(.vertical, 5).background(pine.opacity(0.08), in: Capsule()) }
-                    }
-                }.disclosureGroupStyle(NativeRoutineDisclosureStyle()).pineCard()
-            }
+            roundProgress
+            nextSession
+            postureRow
             if store.catalog.isNull { PineEmpty(title: "正在读取训练安排", symbol: "dumbbell", detail: "联网后下拉刷新即可读取你的模板。") }
-            DisclosureGroup("本周肌群工作组") { weeklyMuscles }.font(.subheadline).pineCard()
+            let rotation = groups.filter { $0.letter.count == 1 }
+            if !rotation.isEmpty {
+                Text("本轮计划").font(.title3.weight(.semibold)).padding(.top, 8)
+                VStack(spacing: 0) {
+                    ForEach(Array(rotation.enumerated()), id: \.element.id) { index, group in
+                        if index > 0 { Divider().padding(.leading, 60) }
+                        NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { groupRow(group) }.buttonStyle(.plain)
+                    }
+                }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            }
+            Text("其他").font(.title3.weight(.semibold)).padding(.top, 8)
+            VStack(spacing: 0) {
+                ForEach(groups.filter { $0.letter.count > 1 && $0.letter != "体态" }) { group in
+                    NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { plainRow(group.letter == "周末" ? "周末 · 保底训练" : group.title) }.buttonStyle(.plain)
+                    Divider().padding(.leading, 16)
+                }
+                NavigationLink { NativeExerciseLibrary() } label: { plainRow("动作库") }.buttonStyle(.plain)
+                Divider().padding(.leading, 16)
+                NavigationLink { NativeTemplateLibrary() } label: { plainRow("全部模板") }.buttonStyle(.plain)
+                Divider().padding(.leading, 16)
+                NavigationLink { PinePage { weeklyMuscles.pineCard() }.navigationTitle("本周肌群工作组") } label: { plainRow("本周肌群工作组") }.buttonStyle(.plain)
+            }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             ForEach(store.records.filter { $0.blocked != nil }, id: \.id) { NativeConflictView(record: $0) }
         }.navigationTitle("训练").navigationBarTitleDisplayMode(.large).refreshable { await store.refresh() }
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    Button("自由训练", systemImage: "plus") { store.start() }.disabled(store.catalog.isNull)
                     NavigationLink("动作库", destination: NativeExerciseLibrary())
                     NavigationLink("全部模板", destination: NativeTemplateLibrary())
-                    Button("自由训练", systemImage: "plus") { store.start() }.disabled(store.catalog.isNull)
                 } label: { Label("训练工具", systemImage: "ellipsis") }.accessibilityIdentifier("training-tools")
             } }
             .sheet(isPresented: $showingPlan) { NavigationStack { NativePlanView() } }
     }
-    private var currentPlan: some View {
+
+    // MARK: Round and next session
+    private var roundProgress: some View {
         let plan = store.home["plan"]
-        let current = plan["current"]["slots"].array
-        let slots = !current.isEmpty ? current : plan["next"].isNull ? [] : [plan["next"]]
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("当前安排").font(.title3.bold()); Spacer()
-                Button { showingPlan = true } label: { HStack(spacing: 4) { Text("\(plan["done"].integer) / \(plan["target"].integer) 工作组"); Image(systemName: "chevron.right").font(.caption2.weight(.semibold)) }.font(.caption).frame(minHeight: 44) }.disabled(plan.isNull)
-            }
-            if plan.isNull { Text("下拉刷新，读取最新安排。").font(.subheadline).foregroundStyle(.secondary) }
-            else if slots.isEmpty { Label("本轮安排已完成", systemImage: "checkmark.circle.fill").foregroundStyle(strengthColor); Button("查看本轮进度") { showingPlan = true } }
-            ForEach(Array(slots.enumerated()), id: \.offset) { index, slot in
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(slot["name"].text).font(.headline).fixedSize(horizontal: false, vertical: true)
-                        Text("\(slot["done"].integer)/\(slot["target"].integer) 工作组 · " + (slot["completed"].flag ? "已完成" : slot["done"].integer > 0 ? "待继续" : "待练")).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    if slot["completed"].flag { Image(systemName: "checkmark.circle.fill").foregroundStyle(strengthColor).font(.title2).accessibilityLabel("已完成") }
-                    else if index == 0 { startButton(slot).buttonStyle(.borderedProminent) }
-                    else { startButton(slot).buttonStyle(.bordered) }
-                }.padding(.vertical, 4)
-            }
-        }.pineCard()
+        let done = plan["done"].integer, target = plan["target"].integer
+        return Button { showingPlan = true } label: {
+            HStack(spacing: 10) {
+                ProgressView(value: Double(done), total: Double(max(1, target))).tint(pine)
+                Text("本轮 \(done) / \(target) 组").font(.footnote).monospacedDigit().foregroundStyle(.secondary).fixedSize()
+                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
+            }.frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain).disabled(plan.isNull).accessibilityLabel("本轮进度，已完成 \(done) 组，共 \(target) 组")
     }
-    private func startButton(_ slot: JSONValue) -> some View {
-        Button(slot["done"].integer > 0 ? "继续" : "开始") { store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) }.font(.headline).frame(minWidth: 48, minHeight: 44).controlSize(.large)
+    private var slots: [JSONValue] {
+        let plan = store.home["plan"], current = plan["current"]["slots"].array
+        return !current.isEmpty ? current : plan["next"].isNull ? [] : [plan["next"]]
+    }
+    @ViewBuilder private var nextSession: some View {
+        let list = slots
+        if store.home["plan"].isNull {
+            Text("下拉刷新，读取最新安排。").font(.subheadline).foregroundStyle(.secondary).pineCard()
+        } else if list.isEmpty || list.allSatisfy({ $0["completed"].flag }) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("本次安排都完成了", systemImage: "checkmark.circle").font(.headline).foregroundStyle(pine)
+                Button("查看本轮进度") { showingPlan = true }.font(.subheadline).frame(minHeight: 44)
+            }.pineCard()
+        } else {
+            let firstOpen = list.firstIndex { !$0["completed"].flag } ?? 0
+            let index = list.indices.contains(slotChoice) ? slotChoice : firstOpen
+            let slot = list[index]
+            let name = slot["name"].text.components(separatedBy: "｜")
+            let template = store.templates.first { $0["template"].id == slot["template_id"].text }?["template"] ?? .null
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(groupLabel(name.first ?? "")).font(.footnote).foregroundStyle(.secondary)
+                        Text(name.count > 1 ? name[1] : slot["name"].text).font(.title2.weight(.semibold))
+                    }
+                    Spacer(minLength: 8)
+                    if list.count > 1 {
+                        Picker("地点", selection: Binding(get: { index }, set: { slotChoice = $0 })) {
+                            ForEach(Array(list.enumerated()), id: \.offset) { i, item in Text(place(item["name"].text)).tag(i) }
+                        }.pickerStyle(.segmented).frame(width: 120)
+                    }
+                }
+                VStack(spacing: 0) {
+                    ForEach(Array(template["exercises"].array.enumerated()), id: \.offset) { _, plan in exerciseLine(plan) }
+                }.padding(.top, 10)
+                if slot["completed"].flag {
+                    Label("这一次已完成", systemImage: "checkmark").font(.subheadline).foregroundStyle(pine).frame(maxWidth: .infinity, minHeight: 52)
+                } else {
+                    Button { store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) } label: {
+                        Label(slot["done"].integer > 0 ? "继续 · 还剩 \(max(0, slot["target"].integer - slot["done"].integer)) 组" : "开始 · \(slot["target"].integer) 组", systemImage: "play.fill")
+                            .font(.headline).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 52).background(pine, in: Capsule())
+                    }.buttonStyle(PinePressStyle(scale: 0.98)).padding(.top, 12).disabled(store.catalog.isNull)
+                }
+            }.pineCard()
+        }
+    }
+    private func groupLabel(_ prefix: String) -> String {
+        let parts = prefix.components(separatedBy: " · ")
+        return parts.count > 1 ? parts[0] + " 组" : prefix
+    }
+    private func place(_ name: String) -> String { name.contains("公司") ? "公司" : name.contains("家庭") ? "家庭" : "训练" }
+    private func exerciseLine(_ plan: JSONValue) -> some View {
+        let exercise = store.exercises.first { $0.id == plan["exercise_id"].text } ?? .null
+        let mode = exercise["load_mode"].text
+        let hints = store.previousSets(exercise: plan["exercise_id"].text, mode: mode, before: NativeDate.stamp(), timezone: TimeZone.current.identifier, current: "").filter { !$0["warmup"].flag }
+        let detail: String = {
+            guard let first = hints.first else { return "\(max(0, plan["set_count"].integer - plan["warmup_count"].integer)) 组" }
+            var row = first; row["weight"] = NativeTraining.convert(first["weight"], from: first["unit"].text, to: first["unit"].text)
+            var movement = exercise; movement["unit"] = first["unit"]
+            return "上次 " + loadText(movement, row).replacingOccurrences(of: " 次", with: "")
+        }()
+        return HStack {
+            Text(exercise["name"].text.isEmpty ? plan["exercise_id"].text : exercise["name"].text).font(.body).lineLimit(1)
+            Spacer(minLength: 8)
+            Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+        }.frame(minHeight: 46).overlay(alignment: .top) { Divider() }
+    }
+
+    // MARK: Posture and groups
+    private var postureRow: some View {
+        let today = store.home["days"].array.first { $0["date"] == store.home["date"] } ?? .null
+        let done = today["posture"].flag
+        let posture = groups.first { $0.letter == "体态" }
+        return Button {
+            if !done { store.homeAction(["template_id": "posture-daily"]) }
+        } label: {
+            HStack(spacing: 12) {
+                Circle().fill(done ? pine : pineTrack).frame(width: 14, height: 14).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("每日体态").font(.body).foregroundStyle(.primary)
+                    Text(done ? "今天已做" : (today["posture_planned"].flag ? "今天待完成 · 5–8 分钟" : "5–8 分钟")).font(.footnote).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if done { Image(systemName: "checkmark").foregroundStyle(pine).font(.subheadline.weight(.semibold)) }
+                else { Text("开始").font(.subheadline.weight(.semibold)).foregroundStyle(pine) }
+            }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
+        }.buttonStyle(PinePressStyle()).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contextMenu { if let posture { NavigationLink("体态练习模板") { NativeRoutineGroupView(title: posture.title, records: posture.records) } } }
+    }
+    private func lastDone(_ group: RoutineGroup) -> String {
+        let ids = Set(group.records.map { $0["template"].id })
+        guard let latest = store.completedRecords.first(where: { ids.contains($0.session["template_id"].text) }), let start = NativeDate.parse(latest.session["started_at"]) else { return group.subtitle }
+        return NativeDate.label(start, format: "M月d日", timezone: TimeZone.current.identifier) + " 已练"
+    }
+    private func groupRow(_ group: RoutineGroup) -> some View {
+        let current = group.letter == currentLetter
+        return HStack(spacing: 12) {
+            Text(group.letter).font(.subheadline.weight(.bold)).foregroundStyle(current ? .white : pine)
+                .frame(width: 32, height: 32).background(current ? pine : pineTint, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.title + (group.optional ? " · 可选" : "")).font(.body).foregroundStyle(.primary)
+                Text(current ? "下一次" : lastDone(group)).font(.footnote).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 4)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
+    }
+    private func plainRow(_ title: String) -> some View {
+        HStack { Text(title).foregroundStyle(.primary); Spacer(); Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary) }
+            .padding(.horizontal, 16).frame(minHeight: 50).contentShape(Rectangle())
     }
     private func continueCard(_ active: NativeRecord) -> some View {
         Button { store.workoutPresented = true } label: {
             HStack(spacing: 12) {
-                Image(systemName: "play.circle.fill").font(.title).foregroundStyle(pine)
-                VStack(alignment: .leading, spacing: 4) { Text(active.session["title"].text).font(.headline); Text("进行中 · \(NativeTraining.progress(active.session).done) 组已完成").font(.caption).foregroundStyle(.secondary) }
-                Spacer(); Text("继续").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
-            }.pineCard()
-        }.buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("进行中").font(.footnote).foregroundStyle(.white.opacity(0.8))
+                    Text(active.session["title"].text.components(separatedBy: "｜").last ?? "").font(.headline).foregroundStyle(.white)
+                    Text("已完成 \(NativeTraining.progress(active.session).done) 组").font(.footnote).foregroundStyle(.white.opacity(0.8))
+                }
+                Spacer()
+                Text("继续").font(.headline).foregroundStyle(pine).padding(.horizontal, 18).frame(minHeight: 44).background(.white, in: Capsule())
+            }.padding(16).background(pine, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }.buttonStyle(PinePressStyle())
     }
     private var weeklyMuscles: some View {
         let counts = store.weeklyMuscleCounts.reduce(into: [String: Int]()) { result, entry in result[muscleName(entry.key), default: 0] += entry.value }
@@ -308,4 +414,20 @@ struct NativePlanEditor: View {
         if key == "rep_min", plan["rep_max"].integer < value { plan["rep_max"] = .number(Double(value)) }
     }) }
     private func touchTargets() { plan["targets_updated_at"] = plan["set_targets"].isNull ? .null : NativeDate.stamp() }
+}
+
+/// One rotation group's templates as a plain list.
+struct NativeRoutineGroupView: View {
+    let title: String
+    let records: [JSONValue]
+    var body: some View {
+        PinePage {
+            VStack(spacing: 0) {
+                ForEach(Array(records.enumerated()), id: \.offset) { index, row in
+                    if index > 0 { Divider() }
+                    NativeRoutineTemplateRow(record: row)
+                }
+            }.pineCard()
+        }.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+    }
 }
