@@ -29,21 +29,21 @@ struct NativeDashboardView: View {
                 syncRow
                 if home.isNull { PineEmpty(title: "等待健康数据", symbol: "heart.text.square", detail: "下拉或点上方的同步状态重试。") }
                 else {
-                    observation.padding(.top, 4)
+                    observation.padding(.top, 4).layoutPriority(1)
                     // The page fills exactly one screen: whatever the observation's
                     // length, the leftover height goes to these gaps and the goal rows.
-                    flexGap(min: 4, max: 16)
+                    flexGap(min: 4, max: 20)
                     PineSectionHeader(title: "目标") {
                         Text(isToday ? "今日" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
                     }
                     goalsCard(sessions[day["date"].text] ?? [])
-                    flexGap(min: 2, max: 14)
+                    flexGap(min: 2, max: 20)
                     PineSectionHeader(title: "本周") {
                         Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
                         Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
                     }
                     weekCard(sessions)
-                    flexGap(min: 10, max: 18)
+                    flexGap(min: 10, max: 22)
                     bodyList
                     Spacer(minLength: 0)
                 }
@@ -131,7 +131,11 @@ struct NativeDashboardView: View {
                     .frame(width: 44, height: 40)
             }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview)
                 .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
-        }.background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        // A steady card: it reserves about five lines, so a short or long observation
+        // does not move the sections below.
+        .frame(maxWidth: .infinity, maxHeight: 150, alignment: .top)
+        .background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     // MARK: Goals of the selected day
