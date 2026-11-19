@@ -122,7 +122,11 @@ final class NativeStore {
                 recordPositions = Dictionary(uniqueKeysWithValues: records.enumerated().map { ($0.element.id, $0.offset) })
             }
             let nextActive = records.first { $0.session["status"].text == "active" }
-            if active != nextActive { active = nextActive }
+            if active != nextActive {
+                // A cold start or a different workout restores where the lifter was, not movement 1.
+                if let row = nextActive, row.id != active?.id { movementIndex = resumeIndex(row.session) }
+                active = nextActive
+            }
         }
         let completed = records.filter { $0.session["status"].text == "completed" }
         let historyChanged = completedRecords != completed || previous.imported != cache.imported || previous.catalog != cache.catalog
@@ -375,12 +379,13 @@ final class NativeStore {
             guard !cache.catalog.isNull else { throw TrainingError.invalid("请先联网加载动作和模板。") }
             let s = try NativeTraining.start(template: template, catalog: exercises, history: history, remaining: remaining)
             var next = cache; next.records[s.id] = NativeRecord(session: s, dirty: true); try commit(next)
-            movementIndex = 0; if reportID != nil { deferredWorkout = true } else { workoutPresented = true }; scheduleSync(); publishActivity()
+            movementIndex = 0; UserDefaults.standard.set(0, forKey: Self.movementKey + s.id); if reportID != nil { deferredWorkout = true } else { workoutPresented = true }; scheduleSync(); publishActivity()
         } catch { message = error.localizedDescription }
     }
     func finish(_ id: String, discard: Bool = false) {
         update(id) { $0 = NativeTraining.finish($0, status: discard ? "discarded" : "completed") }
         guard cache.records[id]?.session["status"].text != "active" else { return }
+        UserDefaults.standard.removeObject(forKey: Self.movementKey + id)
         if !discard { pendingReport = id; selectedTab = 2 }; workoutPresented = false
         retrySync()
     }
@@ -493,7 +498,8 @@ final class NativeStore {
             catch { handle(error); return }
         }
         pendingWorkout = nil
-        if cache.records[id]?.session["status"].text == "active" { movementIndex = 0; workoutPresented = true }
+        // Opening from the Lock Screen or a rest reminder keeps the movement being recorded.
+        if let row = cache.records[id], row.session["status"].text == "active" { if active?.id != id { movementIndex = resumeIndex(row.session) }; workoutPresented = true }
         else { reportID = id; selectedTab = 2 }
     }
     func logout() async throws {
@@ -508,7 +514,18 @@ final class NativeStore {
     }
     func handle(_ error: Error) { if (error as? HealthAPIError)?.status == 401 { unauthorized() } else { message = error.localizedDescription } }
     private func unauthorized() { epoch = UUID(); syncTask?.cancel(); phase = .login; workoutPresented = false; showingSettings = false; publishActivity() }
-    func selectMovement(_ index: Int) { movementIndex = index; publishActivity() }
+    func selectMovement(_ index: Int) {
+        movementIndex = index
+        if let id = active?.id { UserDefaults.standard.set(index, forKey: Self.movementKey + id) }
+        publishActivity()
+    }
+    private static let movementKey = "pine.workout.movement."
+    /// The saved selection for this workout, else the movement of the latest completed set.
+    private func resumeIndex(_ session: JSONValue) -> Int {
+        let count = session["exercises"].array.count
+        if let saved = UserDefaults.standard.object(forKey: Self.movementKey + session.id) as? Int, (0..<count).contains(saved) { return saved }
+        return NativeTraining.resumeIndex(session)
+    }
     func publishActivity(force: Bool = false) {
         guard !isDesignPreview else { return }
         activityForce = activityForce || force

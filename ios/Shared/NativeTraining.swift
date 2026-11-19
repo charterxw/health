@@ -207,6 +207,20 @@ public enum NativeTraining {
             if s["rest_set_id"] == row["id"] { s["rest_until"] = .null; s["rest_set_id"] = .null }
         }; return s
     }
+    /// Where to resume: the movement of the latest completed set while it still has
+    /// open sets, otherwise the next movement with open sets.
+    public static func resumeIndex(_ s: JSONValue) -> Int {
+        let ms = s["exercises"].array
+        guard !ms.isEmpty else { return 0 }
+        let open = ms.map { m in m["sets"].array.contains { $0["completed_at"].isNull } }
+        var latest: (index: Int, at: Date)?
+        for (i, m) in ms.enumerated() {
+            for row in m["sets"].array { if let at = NativeDate.parse(row["completed_at"]), at > (latest?.at ?? .distantPast) { latest = (i, at) } }
+        }
+        guard let last = latest?.index else { return open.firstIndex(of: true) ?? 0 }
+        if open[last] { return last }
+        return (last + 1 ..< ms.count).first { open[$0] } ?? open.firstIndex(of: true) ?? last
+    }
     public static func snapshot(_ s: JSONValue, movement index: Int) -> WorkoutSnapshot? {
         guard s["status"].text == "active", let start = NativeDate.parse(s["started_at"]), Date().timeIntervalSince(start) < 7 * 86400 else { return nil }
         let ms = s["exercises"].array; let i = min(max(0, index), max(0, ms.count - 1)); let m = ms.indices.contains(i) ? ms[i] : .null

@@ -25,6 +25,15 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         let undone = try NativeTraining.toggle(s,movement:0,set:0)
         try check(undone["rest_until"].isNull && undone["rest_set_id"].isNull,"Undo did not clear its own rest")
     }
+    static func resumeMovement() throws {
+        var s = try make(); let second = s["exercises"][0]; s["exercises"] = .array([second, second, second])
+        try check(NativeTraining.resumeIndex(s) == 0, "Fresh workout did not start at movement 1")
+        for i in 0..<3 { s["exercises"][0]["sets"][i]["weight"] = 50; s = try NativeTraining.toggle(s, movement: 0, set: i, at: Date().addingTimeInterval(Double(i))) }
+        s["exercises"][1]["sets"][0]["weight"] = 50; s = try NativeTraining.toggle(s, movement: 1, set: 0, at: Date().addingTimeInterval(10))
+        try check(NativeTraining.resumeIndex(s) == 1, "Resume left the movement being recorded")
+        for i in 1..<3 { s["exercises"][1]["sets"][i]["weight"] = 50; s = try NativeTraining.toggle(s, movement: 1, set: i, at: Date().addingTimeInterval(Double(10 + i))) }
+        try check(NativeTraining.resumeIndex(s) == 2, "Resume did not move past a finished movement")
+    }
     static func timers() throws {
         let now=Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970));var s=try make();s["exercises"][0]["sets"][0]["weight"]=50
         s=try NativeTraining.toggle(s,movement:0,set:0,at:now)
@@ -116,7 +125,7 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         try payload.data().write(to:URL(fileURLWithPath:output));print("Emitted \(sessions.count) sessions from the latest Pi template catalog")
     }
     static func main() throws {
-        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
+        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
         for (name,run) in cases { try run();print("PASS: \(name)") }
         if CommandLine.arguments.count==4 && CommandLine.arguments[1]=="--contracts" { try emitContracts(CommandLine.arguments[2],CommandLine.arguments[3]) }
         if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--performance" { try measurePerformance(CommandLine.arguments[2]) }

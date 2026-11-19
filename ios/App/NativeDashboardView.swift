@@ -29,16 +29,16 @@ struct NativeDashboardView: View {
                     observation.padding(.top, 4)
                     PineSectionHeader(title: "目标") {
                         Text(isToday ? "今日" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
-                    }.padding(.top, 14)
+                    }.padding(.top, 8)
                     goalsCard(sessions[day["date"].text] ?? [])
                     PineSectionHeader(title: "本周") {
                         Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
                         Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
-                    }.padding(.top, 10)
+                    }.padding(.top, 6)
                     weekCard(sessions)
-                    bodyList.padding(.top, 12)
+                    bodyList.padding(.top, 10)
                 }
-            }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24)
+            }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
         }
         .background(pineCanvas)
         .navigationTitle("今天")
@@ -162,7 +162,7 @@ struct NativeDashboardView: View {
                     Divider()
                     goalLine("体态 · 圆点", postureText, done: postureDone(day, sessions))
                 }
-            }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
+            }.padding(.horizontal, 16).padding(.vertical, 8).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
         }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
     }
     private func goalLine(_ title: String, _ detail: String, done: Bool) -> some View {
@@ -172,7 +172,7 @@ struct NativeDashboardView: View {
                 Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
             }.frame(maxWidth: .infinity, alignment: .leading)
             if done { Image(systemName: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine).accessibilityLabel("已完成") }
-        }.frame(minHeight: 42)
+        }.frame(minHeight: 38)
     }
 
     // MARK: Week
@@ -202,14 +202,19 @@ struct NativeDashboardView: View {
                         .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
-            Divider().padding(.top, 8)
-            HStack(alignment: .top, spacing: 4) {
-                weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
-                weekTotal("力量", "\(past.filter { $0["sets"].integer > 0 }.count)", "/\(home["goals"]["weeklyStrength"].integer) 天")
-                weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/\(home["goals"]["weeklyPosture"].integer) 天")
-                volumeTotal
-            }.padding(.top, 8)
-        }.padding(.horizontal, 12).padding(.vertical, 10).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            Divider().padding(.top, 6)
+            // Two by two: each total reads label on the left, value on the right.
+            Grid(horizontalSpacing: 20, verticalSpacing: 6) {
+                GridRow {
+                    weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
+                    weekTotal("力量", "\(past.filter { $0["sets"].integer > 0 }.count)", "/\(home["goals"]["weeklyStrength"].integer) 天")
+                }
+                GridRow {
+                    weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/\(home["goals"]["weeklyPosture"].integer) 天")
+                    volumeTotal
+                }
+            }.padding(.horizontal, 4).padding(.top, 8)
+        }.padding(.horizontal, 12).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
     /// Load × reps this week so far, against last week up to the same moment.
     private var volumeTotal: some View {
@@ -221,20 +226,22 @@ struct NativeDashboardView: View {
         let current = NativeDays.volume(records: store.records, from: start, to: now)
         let previous = NativeDays.volume(records: store.records, from: lastStart, to: lastNow)
         let change = previous > 0 ? Int(((current / previous - 1) * 100).rounded()) : nil
-        return VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 3) {
-                Text("容量").font(.caption).foregroundStyle(.secondary)
-                if let change { Text((change >= 0 ? "+" : "") + "\(change)%").font(.caption.weight(.semibold)).foregroundStyle(change >= 0 ? pine : Color.secondary) }
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 2) { Text(displayNumber(.number(current), digits: 0)).font(.headline).monospacedDigit(); Text("磅").font(.caption).foregroundStyle(.secondary) }
-        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+        return HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("容量").font(.footnote).foregroundStyle(.secondary)
+            if let change { Text((change >= 0 ? "+" : "") + "\(change)%").font(.caption.weight(.semibold)).foregroundStyle(change >= 0 ? pine : Color.secondary) }
+            Spacer(minLength: 4)
+            Text(displayNumber(.number(current), digits: 0)).font(.headline).monospacedDigit()
+            Text("磅").font(.caption).foregroundStyle(.secondary)
+        }.lineLimit(1).frame(maxWidth: .infinity).accessibilityElement(children: .combine)
             .accessibilityLabel("本周训练容量 " + displayNumber(.number(current), digits: 0) + " 磅" + (change.map { "，比上周同期 \($0 >= 0 ? "多" : "少") \(abs($0))%" } ?? ""))
     }
     private func weekTotal(_ title: String, _ value: String, _ target: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) { Text(value).font(.headline).monospacedDigit(); Text(target).font(.caption).foregroundStyle(.secondary) }
-        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text(title).font(.footnote).foregroundStyle(.secondary)
+            Spacer(minLength: 4)
+            Text(value).font(.headline).monospacedDigit()
+            Text(target).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+        }.lineLimit(1).frame(maxWidth: .infinity).accessibilityElement(children: .combine)
     }
     private func weekAccessibility(_ row: JSONValue, _ sessions: [NativeDaySession]) -> String {
         let title = dayTitle(row["date"].text) + "，" + planLabel(NativeDays.focus(dayKey: row["date"].text, sessions: sessions, serverTag: row["short"].text))
@@ -248,7 +255,7 @@ struct NativeDashboardView: View {
         let steps = home["today"]["steps"].number, goal = home["step_goal"]["target"].number
         let stepsDetail: String = {
             guard let steps, let goal, goal > 0 else { return "" }
-            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "/" + displayNumber(.number(goal), digits: 0)
+            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "目标 " + displayNumber(.number(goal), digits: 0)
         }()
         let weight = weightSummary
         return HStack(spacing: 0) {
