@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CryptoKit
 import Observation
 
@@ -32,6 +33,7 @@ final class NativeStore {
     private var pendingWorkout: String?
     private var pendingReport: String?
     private var deferredWorkout = false
+    @ObservationIgnored private var lastForeground: Date?
 
     init() {
         #if DEBUG && targetEnvironment(simulator)
@@ -164,7 +166,10 @@ final class NativeStore {
             try await enter(account)
         } catch {
             if await api.canOpenOffline, let account = await api.username {
-                do { try await loadCache(account); phase = .ready; message = "连接暂时不可用，正在显示本机数据。"; publishActivity(); await openPending() }
+                do {
+                    try await loadCache(account); phase = .ready; publishActivity(); await openPending()
+                    message = await api.credentialExpired ? "登录已过期，正在显示本机数据。联网后请重新登录，未同步的记录会保留。" : "连接暂时不可用，正在显示本机数据。"
+                }
                 catch { phase = .failed(error.localizedDescription) }
             } else { phase = .failed("暂时无法连接健康服务器，请检查网络后重试。") }
         }
@@ -173,7 +178,7 @@ final class NativeStore {
         try await api.login(username: name, password: password); try await enter(name)
     }
     private func enter(_ name: String) async throws {
-        epoch = UUID(); try await loadCache(name); phase = .ready; message = nil
+        epoch = UUID(); try await loadCache(name); phase = .ready; message = nil; lastForeground = Date()
         await refresh(); await openPending()
     }
     private func loadCache(_ account: String) async throws {
@@ -243,7 +248,7 @@ final class NativeStore {
     func refresh() async {
         guard !isDesignPreview, phase == .ready, !refreshing else { return }; refreshing = true
         let stamp = epoch
-        let paths = ["home": "/home", "catalog": "/strength/catalog", "sessions": "/strength/sessions", "deleted": "/strength/session-deletions",
+        let paths = ["home": "/home", "catalog": "/strength/catalog", "sessions": "/strength/sessions?limit=500", "deleted": "/strength/session-deletions",
                      "imported": "/workouts/training/archive", "observations": "/insights/archive", "brief": "/home/brief", "integrations": "/integrations/status"]
         let outcomes = await withTaskGroup(of: (String, Result<JSONValue, Error>).self) { group in
             for (key, path) in paths { group.addTask { [api] in do { return (key, .success(try await api.request(path))) } catch { return (key, .failure(error)) } } }
@@ -263,7 +268,7 @@ final class NativeStore {
                 case "integrations": next.integrations = data
                 default: break
                 }
-            case .failure(let error): if (error as? HealthAPIError)?.status == 401 { unauthorized(); refreshing = false; return }; failure = error
+            case .failure(let error): if (error as? HealthAPIError)?.status == 401 { unauthorized(); refreshing = false; return }; if !Self.isCancellation(error) { failure = error }
             }
         }
         if case .success(let rows) = outcomes["deleted"] { next.deleted.formUnion(rows.array.map(\.id)) }
@@ -285,7 +290,33 @@ final class NativeStore {
     func foreground() async { guard phase == .ready else { return }; await refresh(); await openPending(); publishActivity(force: true) }
     func retrySync() {
         if storageFailed { do { try commit(cache) } catch { message = "本机存储仍不可用，请释放空间后重试。"; return } }
-        syncTask?.cancel(); syncTask = nil; Task { await synchronize() }
+        syncTask?.cancel(); syncTask = nil; protectedSync()
+    }
+    /// Keeps uploading for a short while if the app is backgrounded or the phone locks,
+    /// e.g. right after finishing a workout.
+    private func protectedSync() {
+        let assertion = BackgroundAssertion("pine-sync")
+        Task {
+            while syncing { try? await Task.sleep(for: .milliseconds(200)) }
+            await synchronize(); assertion.end()
+        }
+    }
+    /// Scene became active. Runs outside the view's task so a brief inactive phase
+    /// (Control Center, notification banners) cannot cancel requests mid-flight.
+    func becameActive() {
+        guard phase == .ready, !isDesignPreview else { return }
+        Task { await openPending() }
+        if let last = lastForeground, Date().timeIntervalSince(last) < 30 { publishActivity(force: true); return }
+        lastForeground = Date()
+        Task { await foreground() }
+    }
+    func enteredBackground() {
+        guard phase == .ready, !isDesignPreview, records.contains(where: { $0.dirty && $0.blocked == nil }) else { return }
+        syncTask?.cancel(); syncTask = nil; protectedSync()
+    }
+    func periodicSync() { guard phase == .ready, !syncing else { return }; Task { await synchronize() } }
+    nonisolated static func isCancellation(_ error: Error) -> Bool {
+        error is CancellationError || (error as? URLError)?.code == .cancelled
     }
     private func scheduleSync() {
         syncTask?.cancel(); syncTask = Task {
@@ -328,7 +359,7 @@ final class NativeStore {
                 let home = try await api.request("/home")
                 if stamp == epoch, phase == .ready { var next = cache; next.home = home; try commit(next) }
             }
-        } catch { if !Task.isCancelled { handle(error) } }
+        } catch { if !Task.isCancelled && !Self.isCancellation(error) { handle(error) } }
         publishActivity()
     }
     func update(_ id: String, _ change: (inout JSONValue) throws -> Void) {
@@ -475,5 +506,18 @@ final class NativeStore {
             return ["id": .string("import-\(index)-" + workout["datestr"].text), "title": workout["title"], "status": "completed",
                     "started_at": workout["datestr"], "ended_at": nil, "exercises": .array(movements)]
         }
+    }
+}
+
+/// One UIKit background-time request; ended explicitly or when iOS reclaims it.
+@MainActor
+private final class BackgroundAssertion {
+    private var id = UIBackgroundTaskIdentifier.invalid
+    init(_ name: String) {
+        id = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in MainActor.assumeIsolated { self?.end() } }
+    }
+    func end() {
+        guard id != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(id); id = .invalid
     }
 }

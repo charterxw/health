@@ -34,11 +34,14 @@ private struct NativeAppContent: View {
         }
         .task { await store.boot(); openPending() }
         .task(id: phase) {
+            // Network work runs in store-owned tasks: this view task is cancelled on
+            // every scene-phase change, which would otherwise abort in-flight requests.
+            if phase == .background { store.enteredBackground(); return }
             guard phase == .active, !store.isDesignPreview else { return }; openPending()
-            if store.phase == .ready { await store.foreground() }
+            store.becameActive()
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(15)) } catch { return }
-                await store.synchronize()
+                store.periodicSync()
             }
         }
         .onOpenURL { store.open($0) }

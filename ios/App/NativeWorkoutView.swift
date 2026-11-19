@@ -143,7 +143,7 @@ struct NativeWorkoutView: View {
         NavigationStack {
             Form {
                 Section("本次训练") {
-                    TextField("名称", text: Binding(get: { session["title"].text }, set: { text in if !text.trimmingCharacters(in: .whitespaces).isEmpty && text.count <= 100 { mutate { $0["title"] = .string(text) } } }))
+                    NativeTitleField(title: session["title"].text) { text in mutate { $0["title"] = .string(text) } }
                     TextField("训练笔记", text: Binding(get: { session["notes"].text }, set: { text in if text.count <= 4000 { mutate { $0["notes"] = .string(text) } } }), axis: .vertical)
                     if !session["template_notes"].text.isEmpty { Text(session["template_notes"].text).font(.footnote).foregroundStyle(.secondary) }
                 }
@@ -245,5 +245,26 @@ struct NativeSetOptions: View {
             if rows.isEmpty { ms.remove(at: mi) } else { ms[mi]["sets"] = .array(rows) }; s["exercises"] = .array(ms)
             if s["rest_set_id"].text == selection.id { s["rest_until"] = .null; s["rest_set_id"] = .null }
         }; dismiss()
+    }
+}
+
+/// Edits a local draft so the name can be cleared and retyped; saves a valid,
+/// non-empty name on return, focus loss or when the sheet closes.
+struct NativeTitleField: View {
+    let title: String
+    let save: (String) -> Void
+    @State private var draft = ""
+    @FocusState private var focused: Bool
+    var body: some View {
+        TextField("名称", text: $draft).focused($focused).submitLabel(.done)
+            .onAppear { draft = title }
+            .onSubmit(commit)
+            .onChange(of: focused) { _, isFocused in if !isFocused { commit() } }
+            .onDisappear(perform: commit)
+    }
+    private func commit() {
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, text.count <= 100 else { draft = title; return }
+        if text != title { save(text) }
     }
 }

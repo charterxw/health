@@ -15,6 +15,8 @@ final class WorkoutCoordinator: NSObject, AVAudioPlayerDelegate {
     private var restClock: Task<Void, Never>?
     private var player: AVAudioPlayer?
     private var activityError: String?
+    private var snapshotError: String?
+    private var activityChain: Task<Void, Never>?
     private var reminderError: String?
     private var syncing = false
     private var hasSynchronized = false
@@ -37,7 +39,7 @@ final class WorkoutCoordinator: NSObject, AVAudioPlayerDelegate {
                                      restRemindersEnabled: remindersEnabled && permission == .authorized,
                                      notificationSoundEnabled: settings.soundSetting == .enabled,
                                      notificationPermission: permission,
-                                     activityError: activityError, reminderError: reminderError)
+                                     activityError: activityError ?? snapshotError, reminderError: reminderError)
     }
 
     func setLiveActivities(_ enabled: Bool) async {
@@ -64,12 +66,16 @@ final class WorkoutCoordinator: NSObject, AVAudioPlayerDelegate {
 
     func sync(_ next: WorkoutSnapshot?, force: Bool = false) async throws {
         // Weight/repetition keystrokes do not change the Live Activity payload.
-        guard force || !hasSynchronized || workout != next || activityError != nil || reminderError != nil else { return }
+        guard force || !hasSynchronized || workout != next || activityError != nil || snapshotError != nil || reminderError != nil else { return }
         // The native publisher serializes calls. Reject overlapping settings work.
         guard !syncing else { throw BridgeFailure.busy }
         syncing = true
         defer { syncing = false }
-        if let next { workout = try next.validated() } else { workout = nil }
+        // An invalid snapshot must not leave the previous workout state on the Lock Screen.
+        if let next {
+            do { workout = try next.validated(); snapshotError = nil }
+            catch { workout = nil; snapshotError = "训练实况数据异常，已暂停显示。重新打开训练后会再次尝试。" }
+        } else { workout = nil; snapshotError = nil }
         hasSynchronized = true
         updateRestClock()
         // Schedule the local reminder before awaiting ActivityKit.
@@ -81,7 +87,16 @@ final class WorkoutCoordinator: NSObject, AVAudioPlayerDelegate {
         await updateActivity()
     }
 
+    /// Serializes ActivityKit work so settings changes and workout updates cannot
+    /// both see "no activity" and request two Live Activities.
     private func updateActivity() async {
+        let previous = activityChain
+        let next = Task { await previous?.value; await performActivityUpdate() }
+        activityChain = next
+        await next.value
+    }
+
+    private func performActivityUpdate() async {
         activityError = nil
         let current = workout
         for activity in Activity<WorkoutAttributes>.activities {

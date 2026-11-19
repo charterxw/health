@@ -74,10 +74,13 @@ actor HealthAPI {
     private func restoreCredential() {
         guard !credentialRestored else { return }; credentialRestored = true
         guard !isReadOnlyDesignPreview else { return }
-        if let data = SessionVault.read(vaultAccount), let value = try? JSONDecoder().decode(HealthCredential.self, from: data), value.expires > Date() { credential = value }
+        // An expired login is kept so the local cache can still open offline; the server
+        // rejects it with 401 once reachable, which clears it and asks for a new login.
+        if let data = SessionVault.read(vaultAccount), let value = try? JSONDecoder().decode(HealthCredential.self, from: data) { credential = value }
     }
     var username: String? { restoreCredential(); return credential?.username }
-    var canOpenOffline: Bool { restoreCredential(); return credential.map { $0.expires > Date() } ?? false }
+    var canOpenOffline: Bool { restoreCredential(); return credential != nil }
+    var credentialExpired: Bool { restoreCredential(); return credential.map { $0.expires <= Date() } ?? false }
     func login(username: String, password: String) async throws {
         let (_, response) = try await send("/auth/app-login", method: "POST", body: ["username": .string(username), "password": .string(password)])
         let headers = response.allHeaderFields.reduce(into: [String: String]()) { if let key = $1.key as? String, let value = $1.value as? String { $0[key] = value } }
@@ -96,7 +99,7 @@ actor HealthAPI {
               url.host == baseURL.host, url.scheme == baseURL.scheme else { throw TrainingError.invalid("请求地址无效。") }
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeout)
         request.httpMethod = method; request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let sentCookie = credential?.cookie
+        let sentCookie = credential.flatMap { $0.expires > Date() ? $0.cookie : nil }
         if let sentCookie { request.setValue(sentCookie, forHTTPHeaderField: "Cookie") }
         if let testID { request.setValue(testID, forHTTPHeaderField: "X-Health-Test-ID")
             #if DEBUG && targetEnvironment(simulator)
@@ -108,7 +111,7 @@ actor HealthAPI {
         guard let response = raw as? HTTPURLResponse else { throw TrainingError.invalid("服务器响应无效。") }
         let result = (try? JSONValue.read(data)) ?? .null
         guard (200..<300).contains(response.statusCode) else {
-            if response.statusCode == 401, credential?.cookie == sentCookie, path != "/auth/app-login" { clearCredential() }
+            if response.statusCode == 401, sentCookie == nil || credential?.cookie == sentCookie, path != "/auth/app-login" { clearCredential() }
             let detail = result["detail"]
             let message = !detail.text.isEmpty ? detail.text : !detail["message"].text.isEmpty ? detail["message"].text :
                 !detail.array.isEmpty ? detail.array.map { $0["msg"].text }.joined(separator: "；") : "请求未完成（\(response.statusCode)）"
