@@ -95,8 +95,46 @@ public enum NativeDays {
         return days
     }
     /// Strength halves for the glyph: the first two strength sessions' completion.
-    public static func halves(_ sessions: [NativeDaySession]) -> [Double] {
-        Array(sessions.filter { !$0.posture }.prefix(2).map(\.ratio))
+    /// Weekends have one home session only, so it fills the whole middle ring.
+    public static func halves(_ sessions: [NativeDaySession], weekend: Bool = false) -> [Double] {
+        let strength = sessions.filter { !$0.posture }
+        if weekend { return strength.first.map { [$0.ratio, $0.ratio] } ?? [] }
+        return Array(strength.prefix(2).map(\.ratio))
+    }
+    /// Saturday or Sunday for a "yyyy-MM-dd" day key.
+    public static func isWeekend(_ key: String) -> Bool {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return false }
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: "UTC")!
+        guard let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return false }
+        let weekday = calendar.component(.weekday, from: date)
+        return weekday == 1 || weekday == 7
+    }
+    /// One-character focus for a day: weekends are home days; otherwise the
+    /// rotation group of the day's session (A/C chest, B/D back, E core), else
+    /// the server's planned tag.
+    public static func focus(dayKey: String, sessions: [NativeDaySession], serverTag: String) -> String {
+        if isWeekend(dayKey) { return "家" }
+        if let title = sessions.first(where: { !$0.posture })?.title, let letter = title.trimmingCharacters(in: .whitespaces).first {
+            switch letter { case "A", "C": return "胸"; case "B", "D": return "背"; case "E": return "腹"; default: break }
+        }
+        switch serverTag { case "上": return "胸"; case "家": return "家"; case "休": return "休"; default: return serverTag.isEmpty ? "休" : serverTag }
+    }
+    /// Training volume (load × reps of completed external-load work sets) in
+    /// pounds, for sets completed in [from, to).
+    public static func volume(records: [NativeRecord], from: Date, to: Date) -> Double {
+        var total = 0.0
+        for record in records where ["completed", "active"].contains(record.session["status"].text) {
+            for movement in record.session["exercises"].array where movement["load_mode"].text == "external" && !NativeTraining.timed(movement) && !NativeTraining.mobility(movement) {
+                let factor = movement["unit"].text == "kg" ? 2.2046226 : 1
+                for set in NativeTraining.done(movement) where !set["warmup"].flag {
+                    guard let done = NativeDate.parse(set["completed_at"]), done >= from, done < to,
+                          let weight = set["weight"].number, let reps = set["reps"].number else { continue }
+                    total += weight * factor * reps
+                }
+            }
+        }
+        return total
     }
     public static func postureDone(_ sessions: [NativeDaySession]) -> Bool {
         sessions.contains { $0.posture && $0.ratio > 0 }

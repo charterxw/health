@@ -12,6 +12,7 @@ struct NativeDashboardView: View {
     @State private var showingFeedback = false
     @State private var showingDay = false
     @State private var showingSync = false
+    @State private var showingWeight = false
     private var home: JSONValue { store.home }
     private var day: JSONValue { home["days"].array.first { $0["date"].text == selectedDay } ?? home["days"].array.first { $0["date"] == home["date"] } ?? .null }
     private var isToday: Bool { day["date"] == home["date"] }
@@ -47,6 +48,7 @@ struct NativeDashboardView: View {
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
         .sheet(isPresented: $showingDay) { NavigationStack { NativeDayDetail(day: day) } }
         .sheet(isPresented: $showingSync) { NavigationStack { NativeSyncDetail() } }
+        .sheet(isPresented: $showingWeight) { NavigationStack { NativeWeightList(rows: home["weights"].array) } }
         .task(id: store.brief["status"].text) {
             guard !store.isDesignPreview, store.brief["status"].text == "pending" else { return }
             for _ in 0..<60 {
@@ -62,8 +64,12 @@ struct NativeDashboardView: View {
         if busy { return "正在从 Google 更新" }
         if store.message != nil { return "同步需重试" }
         guard let date = NativeDate.parse(home["sources"]["metrics"]["fetched_at"]) else { return "数据与同步" }
-        let sameDay = NativeDate.day(date, timezone: timezone) == home["date"].text
-        return NativeDate.label(date, format: sameDay ? "HH:mm" : "M/d HH:mm", timezone: timezone) + " 从 Google 更新"
+        let fetched = shortTime(date) + " 更新"
+        guard let band = NativeDate.parse(home["freshness"]["device"]["last_sync_at"]) else { return fetched + "自 Google" }
+        return "手环 " + shortTime(band) + " 同步 · " + fetched
+    }
+    private func shortTime(_ date: Date) -> String {
+        NativeDate.label(date, format: NativeDate.day(date, timezone: timezone) == home["date"].text ? "HH:mm" : "M/d HH:mm", timezone: timezone)
     }
     private var feelings: String { [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · ") }
     private var syncRow: some View {
@@ -116,7 +122,9 @@ struct NativeDashboardView: View {
     }
     private func strengthPlanned(_ row: JSONValue) -> Bool { row["strength_planned"].flag || row["strength_optional"].flag || row["target"].integer > 0 }
     private func halves(_ row: JSONValue, _ sessions: [NativeDaySession]) -> [Double] {
-        let done = NativeDays.halves(sessions)
+        let weekend = NativeDays.isWeekend(row["date"].text)
+        let done = NativeDays.halves(sessions, weekend: weekend)
+        if weekend { return done }
         return strengthPlanned(row) ? done + Array(repeating: 0, count: max(0, 2 - done.count)) : done
     }
     private func postureDone(_ row: JSONValue, _ sessions: [NativeDaySession]) -> Bool { row["posture"].flag || NativeDays.postureDone(sessions) }
@@ -125,12 +133,15 @@ struct NativeDashboardView: View {
         let fraction = activityFraction(day)
         let target = day["target"].integer, sets = day["sets"].integer
         let places = sessions.filter { !$0.posture }.map { $0.title.contains("公司") ? "公司" : $0.title.contains("家庭") ? "家庭" : "训练" }
+        let weekend = NativeDays.isWeekend(day["date"].text)
         let strengthText: String = {
-            guard strengthPlanned(day) else { return places.isEmpty ? "今天休息" : places.joined(separator: "、") + "已练" }
-            let optional = day["strength_optional"].flag ? " · 可选" : ""
-            if places.isEmpty { return (future ? "计划 " : "待练 · ") + "\(sets) / \(target) 组" + optional }
-            return places.joined(separator: "、") + "已练 · \(sets) / \(target) 组" + optional
+            if places.count >= 2 { return "两次已练 · \(sets) 组" }
+            if let place = places.first { return weekend || target <= sets ? place + "已练 · \(sets) 组" : place + "已练 · \(sets)/\(target) 组" }
+            if weekend { return "休息为主 · 家庭可练" }
+            guard strengthPlanned(day) else { return "今天休息" }
+            return (future ? "计划 " : "待练 · ") + "\(target) 组" + (day["strength_optional"].flag ? " · 可选" : "")
         }()
+        let strengthDone: Bool = { let h = halves(day, sessions); return h.count == 2 && h.allSatisfy { $0 >= 1 } }()
         let posture = sessions.last { $0.posture }
         let postureText: String = {
             if let posture, let start = posture.start {
@@ -147,7 +158,7 @@ struct NativeDashboardView: View {
                 VStack(spacing: 0) {
                     goalLine("活动 · 外圈", activityText, done: (fraction ?? 0) >= 1)
                     Divider()
-                    goalLine("力量 · 中圈", strengthText, done: target > 0 && sets >= target)
+                    goalLine("力量 · 中圈", strengthText, done: strengthDone)
                     Divider()
                     goalLine("体态 · 圆点", postureText, done: postureDone(day, sessions))
                 }
@@ -181,7 +192,7 @@ struct NativeDashboardView: View {
                         VStack(spacing: 4) {
                             Text(["一","二","三","四","五","六","日"][min(index, 6)]).font(.caption.weight(selected ? .bold : .regular)).foregroundStyle(selected ? pine : Color.secondary)
                             PineDayGlyph(activity: activityFraction(row), halves: halves(row, list), posture: postureDone(row, list), future: future, size: 36)
-                            Text(planLabel(row["short"].text)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            Text(NativeDays.focus(dayKey: date, sessions: list, serverTag: row["short"].text)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         }.frame(maxWidth: .infinity, minHeight: 72).padding(.vertical, 2)
                             .background(selected ? pineTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .contentShape(Rectangle())
@@ -192,12 +203,32 @@ struct NativeDashboardView: View {
                 }
             }
             Divider().padding(.top, 8)
-            HStack(alignment: .top) {
-                weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/ " + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
-                weekTotal("力量", "\(past.filter { $0["sets"].integer > 0 }.count)", "/ \(home["goals"]["weeklyStrength"].integer) 天")
-                weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/ \(home["goals"]["weeklyPosture"].integer) 天")
+            HStack(alignment: .top, spacing: 4) {
+                weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
+                weekTotal("力量", "\(past.filter { $0["sets"].integer > 0 }.count)", "/\(home["goals"]["weeklyStrength"].integer) 天")
+                weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/\(home["goals"]["weeklyPosture"].integer) 天")
+                volumeTotal
             }.padding(.top, 8)
         }.padding(.horizontal, 12).padding(.vertical, 10).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+    /// Load × reps this week so far, against last week up to the same moment.
+    private var volumeTotal: some View {
+        let calendar: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: timezone) ?? .current; c.firstWeekday = 2; return c }()
+        let now = Date()
+        let start = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let lastStart = calendar.date(byAdding: .day, value: -7, to: start) ?? start
+        let lastNow = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+        let current = NativeDays.volume(records: store.records, from: start, to: now)
+        let previous = NativeDays.volume(records: store.records, from: lastStart, to: lastNow)
+        let change = previous > 0 ? Int(((current / previous - 1) * 100).rounded()) : nil
+        return VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 3) {
+                Text("容量").font(.caption).foregroundStyle(.secondary)
+                if let change { Text((change >= 0 ? "+" : "") + "\(change)%").font(.caption.weight(.semibold)).foregroundStyle(change >= 0 ? pine : Color.secondary) }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 2) { Text(displayNumber(.number(current), digits: 0)).font(.headline).monospacedDigit(); Text("磅").font(.caption).foregroundStyle(.secondary) }
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+            .accessibilityLabel("本周训练容量 " + displayNumber(.number(current), digits: 0) + " 磅" + (change.map { "，比上周同期 \($0 >= 0 ? "多" : "少") \(abs($0))%" } ?? ""))
     }
     private func weekTotal(_ title: String, _ value: String, _ target: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
@@ -206,43 +237,59 @@ struct NativeDashboardView: View {
         }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
     }
     private func weekAccessibility(_ row: JSONValue, _ sessions: [NativeDaySession]) -> String {
-        let title = dayTitle(row["date"].text) + "，" + planLabel(row["short"].text)
+        let title = dayTitle(row["date"].text) + "，" + planLabel(NativeDays.focus(dayKey: row["date"].text, sessions: sessions, serverTag: row["short"].text))
         if row["date"].text > home["date"].text { return title + "，未来日期" }
         return title + "，日常活动 " + displayNumber(row["activity"], digits: 0) + " 千卡，力量 \(row["sets"].integer)/\(row["target"].integer) 组，体态" + (postureDone(row, sessions) ? "已完成" : row["posture_planned"].flag ? "待完成" : "未安排")
     }
 
     // MARK: Body
-    /// Recovery and steps share one row, left and right.
+    /// Recovery, steps and body weight share one row.
     private var bodyList: some View {
         let steps = home["today"]["steps"].number, goal = home["step_goal"]["target"].number
         let stepsDetail: String = {
             guard let steps, let goal, goal > 0 else { return "" }
-            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "/ " + displayNumber(.number(goal), digits: 0)
+            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "/" + displayNumber(.number(goal), digits: 0)
         }()
+        let weight = weightSummary
         return HStack(spacing: 0) {
             NavigationLink(value: NativeOverviewRoute.recovery) {
-                halfTile("恢复", home["recovery"]["score"], home["recovery"]["label"].text.isEmpty ? "待更新" : home["recovery"]["label"].text)
+                thirdTile("恢复", home["recovery"]["label"].text.isEmpty ? "" : home["recovery"]["label"].text, displayNumber(home["recovery"]["score"], digits: 0), "", home["recovery"]["score"].number)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("recovery-score")
             Divider().frame(height: 36)
             Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
-                halfTile("步数", home["today"]["steps"], stepsDetail)
+                thirdTile("步数", stepsDetail, displayNumber(home["today"]["steps"], digits: 0), "", steps)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-steps")
+            Divider().frame(height: 36)
+            Button { showingWeight = true } label: {
+                thirdTile("体重", weight.change, weight.value, weight.value == "—" ? "" : "公斤", nil)
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-weight")
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
-    private func halfTile(_ title: String, _ value: JSONValue, _ detail: String) -> some View {
-        HStack(spacing: 6) {
-            VStack(alignment: .leading, spacing: 1) {
+    /// Latest weigh-in and the change against the reading about four weeks earlier.
+    private var weightSummary: (value: String, change: String) {
+        let rows = home["weights"].array.filter { $0["kg"].number != nil }.sorted { $0["date"].text > $1["date"].text }
+        guard let latest = rows.first, let kg = latest["kg"].number else { return ("—", "") }
+        let value = displayNumber(.number(kg), digits: 1)
+        guard let date = NativeDate.parse(latest["date"].text + "T12:00:00Z"),
+              let older = rows.first(where: { (NativeDate.parse($0["date"].text + "T12:00:00Z") ?? date) <= date.addingTimeInterval(-25 * 86400) }),
+              let then = older["kg"].number, let thenDate = NativeDate.parse(older["date"].text + "T12:00:00Z") else { return (value, "") }
+        let weeks = max(1, Int((date.timeIntervalSince(thenDate) / (7 * 86400)).rounded()))
+        let delta = ((kg - then) * 10).rounded() / 10
+        return (value, "\(weeks)周 " + (delta >= 0 ? "+" : "") + displayNumber(.number(delta), digits: 1))
+    }
+    private func thirdTile(_ title: String, _ detail: String, _ value: String, _ unit: String, _ animated: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
                 Text(title).font(.footnote).foregroundStyle(.secondary)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(displayNumber(value, digits: 0)).font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
-                        .contentTransition(reduceMotion ? .identity : .numericText(value: value.number ?? 0))
-                        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: value.number)
-                    if !detail.isEmpty { Text(detail).font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
-                }
+                if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85) }
             }
-            Spacer(minLength: 4)
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-        }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).contentShape(Rectangle())
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value).font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
+                    .contentTransition(reduceMotion ? .identity : .numericText(value: animated ?? 0))
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: animated)
+                if !unit.isEmpty { Text(unit).font(.caption).foregroundStyle(.secondary) }
+            }
+        }.padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
             .accessibilityElement(children: .combine)
     }
 }
@@ -566,5 +613,29 @@ struct NativeDayDetail: View {
                 if day["date"]==store.home["date"],!day["posture_recorded"].flag { Button("查看今天的体态练习") { dismiss();store.homeAction(["template_id":"posture-daily"]) } }
             }.pineCard()
         }.navigationTitle("每日记录").toolbar { ToolbarItem(placement:.confirmationAction) { Button("完成") { dismiss() } } }
+    }
+}
+
+/// Body-weight readings, newest first, with the change from each previous one.
+struct NativeWeightList: View {
+    @Environment(\.dismiss) private var dismiss
+    let rows: [JSONValue]
+    var body: some View {
+        let sorted = rows.filter { $0["kg"].number != nil }.sorted { $0["date"].text > $1["date"].text }
+        List {
+            if sorted.isEmpty { Text("还没有体重记录。").foregroundStyle(.secondary) }
+            ForEach(Array(sorted.enumerated()), id: \.offset) { index, row in
+                HStack {
+                    Text(dayTitle(row["date"].text, format: "M月d日 EEE"))
+                    Spacer()
+                    if index + 1 < sorted.count, let kg = row["kg"].number, let prior = sorted[index + 1]["kg"].number {
+                        let delta = ((kg - prior) * 10).rounded() / 10
+                        Text((delta >= 0 ? "+" : "") + displayNumber(.number(delta), digits: 1)).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    Text(displayNumber(row["kg"], digits: 1) + " 公斤").fontWeight(.semibold).monospacedDigit()
+                }
+            }
+        }.navigationTitle("体重").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
     }
 }

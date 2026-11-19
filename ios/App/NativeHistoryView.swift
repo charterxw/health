@@ -205,10 +205,12 @@ struct NativeReportView: View {
             let list = NativeDays.sessions(records: store.records, timezone: zone)[key] ?? []
             let strength = list.filter { !$0.posture }
             let index = strength.firstIndex { $0.id == id }
-            let halves = NativeDays.halves(list)
+            let weekend = NativeDays.isWeekend(key)
+            let halves = NativeDays.halves(list, weekend: weekend)
             let text: String = {
                 if list.contains(where: { $0.id == id && $0.posture }) { return "这天的圆点已经填满。" }
                 guard let index else { return "" }
+                if weekend { return index == 0 ? "周末的家庭训练完成，中圈已经满了。" : "这是这天的第 \(index + 1) 次力量训练。" }
                 if index >= 2 { return "这是这天的第 \(index + 1) 次力量训练。" }
                 let full = halves.count == 2 && halves.allSatisfy { $0 >= 1 }
                 return index == 0 ? (full ? "这是这天的第一次力量，中圈已经满了。" : "这是这天的第一次力量，中圈填了一半。") : (full ? "这是这天的第二次力量，中圈已经满了。" : "这是这天的第二次力量。")
@@ -503,7 +505,7 @@ struct NativeMonthCalendar: View {
             Button { selected = cell.key } label: {
                 VStack(spacing: 2) {
                     Text("\(cell.number)").font(.caption.weight(chosen ? .bold : .regular)).monospacedDigit().foregroundStyle(numberColor)
-                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list), posture: posture(cell.key, list), future: future, size: 34)
+                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(cell.key)), posture: posture(cell.key, list), future: future, size: 34)
                 }
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .background(chosen ? pineTint : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -536,7 +538,7 @@ struct NativeMonthCalendar: View {
         let kcal = inWeek?["activity"] ?? store.home["metrics"].array.first { $0["date"].text == key }?["calories_burned"] ?? .null
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 14) {
-                PineDayGlyph(activity: activity(key), halves: NativeDays.halves(list), posture: posture(key, list), future: key > today, size: 60)
+                PineDayGlyph(activity: activity(key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(key)), posture: posture(key, list), future: key > today, size: 60)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(dayTitle(key, format: "M月d日 EEE")).font(.headline)
                     Text("活动 " + displayNumber(kcal, digits: 0) + " 千卡" + (inWeek == nil && !kcal.isNull ? "（含训练）" : "")).font(.footnote).foregroundStyle(.secondary)
