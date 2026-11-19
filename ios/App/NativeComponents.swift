@@ -85,6 +85,12 @@ struct PineReducedMotion: DynamicProperty {
 extension View {
     func pineCard() -> some View { padding(16).frame(maxWidth: .infinity, alignment: .leading).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)) }
 }
+/// Shared type scale for list rows on all three tabs: rows read at 16 pt with
+/// 13 pt details, section titles at title3 and the tab title at 30 pt.
+extension Font {
+    static let pineRow = Font.callout
+    static let pineDetail = Font.footnote
+}
 struct PinePage<Content: View>: View {
     @ViewBuilder let content: Content
     var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 16) { content }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24) }.frame(maxWidth: .infinity).background(pineCanvas).scrollDismissesKeyboard(.interactively) }

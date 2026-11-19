@@ -30,7 +30,8 @@ def ensure_schema(conn):
 
 
 def period_at(instant):
-    return 'evening' if instant.hour >= 18 else 'morning'
+    # Evening starts at 17:00, after the day's training; the iOS app uses the same hour.
+    return 'evening' if instant.hour >= 17 else 'morning'
 
 
 def avg(values):

@@ -317,7 +317,26 @@ final class NativeStore {
         guard phase == .ready, !isDesignPreview, records.contains(where: { $0.dirty && $0.blocked == nil }) else { return }
         syncTask?.cancel(); syncTask = nil; protectedSync()
     }
-    func periodicSync() { guard phase == .ready, !syncing else { return }; Task { await synchronize() } }
+    func periodicSync() {
+        guard phase == .ready else { return }
+        if !syncing { Task { await synchronize() } }
+        if briefOutdated, Date().timeIntervalSince(lastBriefCheck ?? .distantPast) > 300 {
+            lastBriefCheck = Date()
+            Task { await loadBrief(); await ensureBrief() }
+        }
+    }
+    /// Evening observations start at 17:00 local time (matches the server's period_at).
+    nonisolated static let eveningHour = 17
+    @ObservationIgnored private var lastBriefCheck: Date?
+    /// The screen still shows an earlier period's observation, e.g. the app stayed
+    /// open past 17:00 or midnight.
+    private var briefOutdated: Bool {
+        guard !isDesignPreview, !cache.brief["date"].text.isEmpty else { return false }
+        let zone = home["timezone"].text.isEmpty ? TimeZone.current.identifier : home["timezone"].text
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: zone) ?? .current
+        let now = Date(), period = calendar.component(.hour, from: now) >= Self.eveningHour ? "evening" : "morning"
+        return cache.brief["date"].text != NativeDate.day(now, timezone: zone) || cache.brief["period"].text != period
+    }
     nonisolated static func isCancellation(_ error: Error) -> Bool {
         error is CancellationError || (error as? URLError)?.code == .cancelled
     }

@@ -14,6 +14,8 @@ struct NativeDashboardView: View {
     @State private var showingSync = false
     @State private var showingWeight = false
     @State private var showingStrength = false
+    /// Visible height between the status bar and the tab bar.
+    @State private var viewport: CGFloat = 0
     private var home: JSONValue { store.home }
     private var day: JSONValue { home["days"].array.first { $0["date"].text == selectedDay } ?? home["days"].array.first { $0["date"] == home["date"] } ?? .null }
     private var isToday: Bool { day["date"] == home["date"] }
@@ -28,18 +30,33 @@ struct NativeDashboardView: View {
                 if home.isNull { PineEmpty(title: "等待健康数据", symbol: "heart.text.square", detail: "下拉或点上方的同步状态重试。") }
                 else {
                     observation.padding(.top, 4)
+                    // The page fills exactly one screen: whatever the observation's
+                    // length, the leftover height goes to these gaps and the goal rows.
+                    flexGap(min: 4, max: 16)
                     PineSectionHeader(title: "目标") {
                         Text(isToday ? "今日" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
-                    }.padding(.top, 8)
+                    }
                     goalsCard(sessions[day["date"].text] ?? [])
+                    flexGap(min: 2, max: 14)
                     PineSectionHeader(title: "本周") {
                         Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
                         Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
-                    }.padding(.top, 6)
+                    }
                     weekCard(sessions)
-                    bodyList.padding(.top, 10)
+                    flexGap(min: 10, max: 18)
+                    bodyList
+                    Spacer(minLength: 0)
                 }
             }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
+                // A scroll view proposes no height; the ideal height makes the stack
+                // lay out against the visible screen and share out the spare space.
+                .frame(minHeight: viewport, idealHeight: viewport, alignment: .top)
+        }
+        .background {
+            GeometryReader { proxy in
+                let visible = proxy.size.height - proxy.safeAreaInsets.top - proxy.safeAreaInsets.bottom
+                Color.clear.onAppear { viewport = visible }.onChange(of: visible) { _, value in viewport = value }
+            }
         }
         .background(pineCanvas)
         .navigationTitle("今天")
@@ -59,6 +76,8 @@ struct NativeDashboardView: View {
             }
         }
     }
+
+    private func flexGap(min: CGFloat, max: CGFloat) -> some View { Spacer(minLength: min).frame(maxHeight: max) }
 
     // MARK: Sync and feelings
     private var busy: Bool { store.refreshing || store.healthRefreshing }
@@ -170,11 +189,11 @@ struct NativeDashboardView: View {
     private func goalLine(_ title: String, _ detail: String, done: Bool) -> some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Text(title).font(.pineRow.weight(.semibold)).foregroundStyle(.primary)
                 Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
             }.frame(maxWidth: .infinity, alignment: .leading)
             if done { Image(systemName: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine).accessibilityLabel("已完成") }
-        }.frame(minHeight: 38)
+        }.frame(minHeight: 40, maxHeight: 54)
     }
 
     // MARK: Week

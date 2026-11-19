@@ -83,7 +83,7 @@ struct NativeRecordRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(item.time.isEmpty ? "—" : item.time).font(.subheadline).monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .leading)
             VStack(alignment: .leading, spacing: 3) {
-                Text(focus).font(.body).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                Text(focus).font(.pineRow.weight(.medium)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 Text(([group] + [item.detail]).filter { !$0.isEmpty }.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if item.pending { Label("本机已保存 · 待同步", systemImage: "arrow.triangle.2.circlepath").font(.caption).foregroundStyle(.secondary) }
             }

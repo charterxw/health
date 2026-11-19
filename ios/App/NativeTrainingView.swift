@@ -119,7 +119,7 @@ struct NativeTrainingView: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(groupLabel(name.first ?? "")).font(.footnote).foregroundStyle(.secondary)
-                        Text(name.count > 1 ? name[1] : slot["name"].text).font(.title2.weight(.semibold))
+                        Text(name.count > 1 ? name[1] : slot["name"].text).font(.title3.weight(.semibold))
                     }
                     Spacer(minLength: 8)
                     if list.count > 1 {
@@ -158,7 +158,7 @@ struct NativeTrainingView: View {
             return "上次 " + loadText(movement, row).replacingOccurrences(of: " 次", with: "")
         }()
         return HStack {
-            Text(exercise["name"].text.isEmpty ? plan["exercise_id"].text : exercise["name"].text).font(.body).lineLimit(1)
+            Text(exercise["name"].text.isEmpty ? plan["exercise_id"].text : exercise["name"].text).font(.pineRow).lineLimit(1)
             Spacer(minLength: 8)
             Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
         }.frame(minHeight: 46).overlay(alignment: .top) { Divider() }
@@ -175,7 +175,7 @@ struct NativeTrainingView: View {
             HStack(spacing: 12) {
                 Circle().fill(done ? pine : pineTrack).frame(width: 14, height: 14).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("每日体态").font(.body).foregroundStyle(.primary)
+                    Text("每日体态").font(.pineRow).foregroundStyle(.primary)
                     Text(done ? "今天已做" : (today["posture_planned"].flag ? "今天待完成 · 5–8 分钟" : "5–8 分钟")).font(.footnote).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -196,7 +196,7 @@ struct NativeTrainingView: View {
             Text(group.letter).font(.subheadline.weight(.bold)).foregroundStyle(current ? .white : pine)
                 .frame(width: 32, height: 32).background(current ? pine : pineTint, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
-                Text(group.title + (group.optional ? " · 可选" : "")).font(.body).foregroundStyle(.primary)
+                Text(group.title + (group.optional ? " · 可选" : "")).font(.pineRow).foregroundStyle(.primary)
                 Text(current ? "下一次" : lastDone(group)).font(.footnote).foregroundStyle(.secondary)
             }
             Spacer(minLength: 4)
@@ -204,7 +204,7 @@ struct NativeTrainingView: View {
         }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
     }
     private func plainRow(_ title: String) -> some View {
-        HStack { Text(title).foregroundStyle(.primary); Spacer(); Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary) }
+        HStack { Text(title).font(.pineRow).foregroundStyle(.primary); Spacer(); Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary) }
             .padding(.horizontal, 16).frame(minHeight: 50).contentShape(Rectangle())
     }
     private func continueCard(_ active: NativeRecord) -> some View {
