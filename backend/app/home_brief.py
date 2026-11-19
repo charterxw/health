@@ -185,8 +185,14 @@ def validate(value, data):
         text, refs = line['text'],line['evidence_ids']
         if not isinstance(text,str) or not 4 <= len(text.strip()) <= 60 or re.search(r'[\n#•]',text):
             raise ValueError('length')
-        if not isinstance(refs,list) or not 1 <= len(refs) <= 4 or any(r not in facts for r in refs):
+        # A mistyped citation should not discard an otherwise grounded sentence:
+        # drop unknown ids, and fail only when no real evidence remains.
+        if not isinstance(refs,list) or not all(isinstance(r,str) for r in refs):
             raise ValueError('evidence')
+        refs = [r for r in dict.fromkeys(refs) if r in facts][:4]
+        if not refs:
+            raise ValueError('evidence')
+        line['evidence_ids'] = refs
         source = ' '.join(facts[r]['text'] for r in refs)
         if set(re.findall(r'\d+(?:\.\d+)?',text)) - set(re.findall(r'\d+(?:\.\d+)?',source)):
             raise ValueError('number')

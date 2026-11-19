@@ -476,7 +476,9 @@ final class NativeStore {
         let current = !cache.brief["sentences"].array.isEmpty && status == "ready"
         guard !current, status != "pending", !cache.brief["date"].text.isEmpty else { return }
         let key = "pine.brief.requested." + cache.brief["date"].text + "." + cache.brief["period"].text
-        if let last = UserDefaults.standard.object(forKey: key) as? Date, Date().timeIntervalSince(last) < 2 * 3600 { return }
+        // A failed generation is retried sooner than a merely outdated one.
+        let wait: TimeInterval = status == "error" ? 20 * 60 : 2 * 3600
+        if let last = UserDefaults.standard.object(forKey: key) as? Date, Date().timeIntervalSince(last) < wait { return }
         UserDefaults.standard.set(Date(), forKey: key)
         await loadBrief(generate: true)
     }
