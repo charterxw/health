@@ -4,9 +4,8 @@ import Charts
 struct MetricSelection: Identifiable { let id: String; let title: String; let unit: String }
 struct NativeDashboardView: View {
     @Environment(NativeStore.self) var store
-    @Environment(\.dynamicTypeSize) private var typeSize
     @PineReducedMotion private var reduceMotion
-    @Namespace private var daySelection
+    @AppStorage("pine.records.calendar") private var recordsCalendar = false
     @State private var selectedDay = ""
     @State private var metric: MetricSelection?
     @State private var showingGoals = false
@@ -15,16 +14,37 @@ struct NativeDashboardView: View {
     @State private var showingSync = false
     private var home: JSONValue { store.home }
     private var day: JSONValue { home["days"].array.first { $0["date"].text == selectedDay } ?? home["days"].array.first { $0["date"] == home["date"] } ?? .null }
+    private var isToday: Bool { day["date"] == home["date"] }
+    private var timezone: String { home["timezone"].text.isEmpty ? TimeZone.current.identifier : home["timezone"].text }
     var body: some View {
-        GeometryReader { geometry in
-            if typeSize > .large {
-                ScrollView { dashboard.padding(.vertical, 8) }.scrollBounceBehavior(.basedOnSize)
-            } else {
-                dashboard.padding(.vertical, 8).frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
-            }
+        // Computed once per render; the week shares one grouping of local records.
+        let sessions = NativeDays.sessions(records: store.records, timezone: timezone)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                syncRow
+                if home.isNull { PineEmpty(title: "等待健康数据", symbol: "heart.text.square", detail: "下拉或点上方的同步状态重试。") }
+                else {
+                    observation.padding(.top, 8)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(isToday ? "今天的目标" : "这天的目标").font(.title3.weight(.semibold))
+                        Spacer()
+                        Text(isToday ? "今日" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
+                    }.padding(.top, 22)
+                    goalsCard(sessions[day["date"].text] ?? []).padding(.top, 8)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("本周").font(.title3.weight(.semibold))
+                        Spacer()
+                        Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
+                        Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
+                    }.padding(.top, 14)
+                    weekCard(sessions).padding(.top, 2)
+                    bodyList.padding(.top, 12)
+                }
+            }.padding(.horizontal, 20).padding(.bottom, 24)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle("总览").navigationBarTitleDisplayMode(.inline)
+        .background(pineCanvas)
+        .navigationTitle(home.isNull ? "今天" : dayTitle(home["date"].text, format: "M月d日 EEE")).navigationBarTitleDisplayMode(.large)
+        .refreshable { await store.refresh(); await store.refreshHealth() }
         .sheet(item: $metric) { item in NavigationStack { NativeMetricDetail(metric: item) } }
         .sheet(isPresented: $showingGoals) { NavigationStack { NativeGoalsView() } }
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
@@ -38,103 +58,175 @@ struct NativeDashboardView: View {
             }
         }
     }
-    private var dashboard: some View {
-        VStack(spacing: 10) {
-            dateRow
-            if home.isNull { PineEmpty(title: "等待健康数据", symbol: "heart.text.square", detail: "点右上角的同步状态重试。") }
-            else {
-                NavigationLink { NativeBriefDetail() } label: { NativeHomeBrief(brief: store.brief, tip: home["tip"].text) }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation")
-                if typeSize.isAccessibilitySize { VStack(spacing: 10) { recoveryCard; stepsCard } }
-                else { HStack(spacing: 12) { recoveryCard; stepsCard }.frame(height: typeSize > .large ? nil : 112) }
-                weekCard
-            }
-        }.padding(.horizontal, 20)
-    }
-    private var dateRow: some View {
-        HStack {
-            Text(dayTitle(home["date"].text)).font(.subheadline).foregroundStyle(.secondary)
-            Spacer(minLength: 6)
-            Button { showingSync = true } label: {
-                HStack(spacing: 5) {
-                    if store.refreshing || store.healthRefreshing { ProgressView().controlSize(.mini) }
-                    else { Image(systemName: store.message == nil ? "arrow.triangle.2.circlepath" : "exclamationmark.circle").imageScale(.small) }
-                    Text(store.refreshing || store.healthRefreshing ? "正在同步" : store.message == nil ? syncTime : "同步需重试")
-                }.font(.caption).foregroundStyle(.secondary).frame(minHeight: 44)
-            }.buttonStyle(PinePressStyle()).accessibilityLabel("数据与同步，" + syncTime)
-        }.frame(minHeight: 44)
-    }
-    private var syncTime: String {
-        let dates = home["freshness"]["records"].object.values.compactMap { NativeDate.parse($0["observed_at"]) }.filter { $0 <= Date() }
-        if let date = dates.max() { return "记录 " + NativeDate.label(date, format: "HH:mm", timezone: home["timezone"].text) }
-        return "数据与同步"
-    }
-    private var recoveryCard: some View {
-        NavigationLink(value: NativeOverviewRoute.recovery) {
-            NativeHomeMetric(title: "恢复指数", value: home["recovery"]["score"], unit: "/ 100", detail: home["recovery"]["label"].text.isEmpty ? "待更新" : home["recovery"]["label"].text)
-        }.buttonStyle(PinePressStyle()).accessibilityIdentifier("recovery-score")
-    }
-    private var stepsCard: some View {
-        Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
-            NativeHomeMetric(title: "今日步数", value: home["today"]["steps"], detail: "/ " + displayNumber(home["step_goal"]["target"], digits: 0) + " 步", progress: stepsProgress)
-        }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-steps")
-    }
-    private var stepsProgress: Double? { guard let value = home["today"]["steps"].number, let goal = home["step_goal"]["target"].number, goal > 0 else { return nil }; return min(1, max(0, value / goal)) }
-    private var weekCard: some View {
-        VStack(spacing: 3) {
-            HStack {
-                Text("活动与训练").font(.headline)
-                Spacer(minLength: 4)
-                let days = home["days"].array
-                Text(String(days.first?["date"].text.suffix(5) ?? "").replacingOccurrences(of: "-", with: "/") + "–" + String(days.last?["date"].text.suffix(5) ?? "").replacingOccurrences(of: "-", with: "/")).font(.caption2).foregroundStyle(.secondary)
-                Button("调整目标", systemImage: "slider.horizontal.3") { showingGoals = true }.labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44).buttonStyle(PinePressStyle())
-            }
-            if typeSize.isAccessibilitySize { ScrollView(.horizontal) { weekDays }.scrollIndicators(.hidden) }
-            else { weekDays }
-            HStack { Text("目标").frame(maxWidth: .infinity, alignment: .leading); Text(day["date"] == home["date"] ? "今日" : dayTitle(day["date"].text, format: "M/d")).accessibilityIdentifier("home-selected-date").frame(maxWidth: .infinity, alignment: .trailing); Text("本周").frame(maxWidth: .infinity, alignment: .trailing) }.font(.caption).foregroundStyle(.secondary)
-            goalRows
-            Spacer(minLength: 0)
-            Divider()
-            Button { showingFeedback = true } label: {
-                HStack { Text(feelings.isEmpty ? "今天感觉如何？" : feelings).foregroundStyle(.primary); Spacer(); Text(feelings.isEmpty ? "可选记录" : "修改").foregroundStyle(.secondary); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary) }.font(.subheadline).frame(minHeight: 44)
-            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-feelings")
-        }.padding(12).frame(maxWidth: .infinity, maxHeight: typeSize > .large ? nil : .infinity, alignment: .top).background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
-    }
-    private var weekDays: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(home["days"].array.enumerated()), id: \.element["date"].text) { index, value in
-                Button {
-                    let next = value["date"].text
-                    guard next != day["date"].text else { return }
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.20)) { selectedDay = next }
-                } label: {
-                    NativeWeekDay(day: value, name: ["一","二","三","四","五","六","日"][min(index, 6)], today: value["date"] == home["date"], selected: value["date"] == day["date"], compact: true)
-                        .background {
-                            if value["date"] == day["date"], value["date"] != home["date"] {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(pine.opacity(0.08))
-                                    .matchedGeometryEffect(id: "selected-week-day", in: daySelection)
-                            }
-                        }
-                }.buttonStyle(PinePressStyle(scale: 0.97)).frame(maxWidth: .infinity)
-                    .accessibilityLabel(weekAccessibility(value))
-                    .accessibilityIdentifier("home-day-" + value["date"].text)
-                    .accessibilityAddTraits(value["date"] == day["date"] ? .isSelected : [])
-            }
-        }
-    }
-    private var goalRows: some View {
-        let past = home["days"].array.filter { $0["date"].text <= home["date"].text }
-        let energy = past.compactMap { $0["activity"].number }
-        return VStack(spacing: 0) {
-            NativeGoalRow(title: "日常活动", color: activityColor, daily: day["activity"], dailyTarget: "/ " + displayNumber(day["goals"]["dailyActivity"], digits: 0), weekly: energy.isEmpty ? .null : .number(energy.reduce(0, +)), weeklyTarget: "/ " + displayNumber(home["goals"]["weeklyActivity"], digits: 0)) { showingDay = true }
-            NativeGoalRow(title: "力量训练", color: strengthColor, daily: day["strength_planned"].flag || day["strength_optional"].flag ? day["sets"] : .null, dailyTarget: day["strength_planned"].flag || day["strength_optional"].flag ? "/ \(day["target"].integer) 组" + (day["strength_optional"].flag ? " · 可选" : "") : "休息日", weekly: .number(Double(past.filter { $0["sets"].integer > 0 }.count)), weeklyTarget: "/ \(home["goals"]["weeklyStrength"].integer) 天") { showingDay = true }
-            NativeGoalRow(title: "体态练习", color: postureColor, daily: day["posture_planned"].flag || day["posture"].flag ? .number(day["posture"].flag ? 1 : 0) : .null, dailyTarget: day["posture_planned"].flag || day["posture"].flag ? "/ 1 次" : "未安排", weekly: .number(Double(past.filter { $0["posture"].flag }.count)), weeklyTarget: "/ \(home["goals"]["weeklyPosture"].integer) 天") { showingDay = true }
-        }
+
+    // MARK: Sync and feelings
+    private var busy: Bool { store.refreshing || store.healthRefreshing }
+    private var syncText: String {
+        if busy { return "正在从 Google 更新" }
+        if store.message != nil { return "同步需重试" }
+        guard let date = NativeDate.parse(home["sources"]["metrics"]["fetched_at"]) else { return "数据与同步" }
+        let sameDay = NativeDate.day(date, timezone: timezone) == home["date"].text
+        return NativeDate.label(date, format: sameDay ? "HH:mm" : "M/d HH:mm", timezone: timezone) + " 从 Google 更新"
     }
     private var feelings: String { [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · ") }
-    private func weekAccessibility(_ row: JSONValue) -> String {
-        if row["date"].text > home["date"].text { return dayTitle(row["date"].text) + "，未来日期，" + row["short"].text }
-        return dayTitle(row["date"].text) + "，日常活动 " + displayNumber(row["activity"], digits: 0) + " 千卡，力量 \(row["sets"].integer)/\(row["target"].integer) 组，体态" + (row["posture"].flag ? "已完成" : row["posture_planned"].flag ? "待完成" : "未安排")
+    private var syncRow: some View {
+        HStack(spacing: 8) {
+            Button { showingSync = true } label: {
+                HStack(spacing: 6) {
+                    if busy { ProgressView().controlSize(.mini) }
+                    else { Image(systemName: store.message == nil ? "arrow.clockwise" : "exclamationmark.circle").imageScale(.small) }
+                    Text(syncText)
+                }.font(.footnote).foregroundStyle(.secondary).frame(minHeight: 44)
+            }.buttonStyle(PinePressStyle()).accessibilityLabel("数据与同步，" + syncText)
+            Spacer(minLength: 8)
+            Button { showingFeedback = true } label: {
+                Label(feelings.isEmpty ? "记录感受" : feelings, systemImage: feelings.isEmpty ? "plus" : "face.smiling").font(.footnote.weight(.semibold)).frame(minHeight: 44)
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-feelings")
+        }
+    }
+
+    // MARK: Observation
+    private var observation: some View {
+        let lines = store.brief["sentences"].array.map { $0.text.isEmpty ? $0["text"].text : $0.text }.filter { !$0.isEmpty }
+        let summary = lines.isEmpty ? home["tip"].text : lines.joined(separator: " ")
+        let evening = store.brief["title"].text.contains("晚") || store.brief["period"].text == "evening"
+        return NavigationLink { NativeBriefDetail() } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: evening ? "moon" : "sun.max").font(.body.weight(.semibold)).foregroundStyle(pine).padding(.top, 2)
+                Text(summary).font(.body).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(4).frame(maxWidth: .infinity, alignment: .leading)
+            }.padding(16).background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation").accessibilityHint("点按查看完整观察")
+    }
+
+    // MARK: Goals of the selected day
+    private func activityFraction(_ row: JSONValue) -> Double? {
+        guard let value = row["activity"].number, let goal = row["goals"]["dailyActivity"].number, goal > 0 else { return nil }
+        return value / goal
+    }
+    private func strengthPlanned(_ row: JSONValue) -> Bool { row["strength_planned"].flag || row["strength_optional"].flag || row["target"].integer > 0 }
+    private func halves(_ row: JSONValue, _ sessions: [NativeDaySession]) -> [Double] {
+        let done = NativeDays.halves(sessions)
+        return strengthPlanned(row) ? done + Array(repeating: 0, count: max(0, 2 - done.count)) : done
+    }
+    private func postureDone(_ row: JSONValue, _ sessions: [NativeDaySession]) -> Bool { row["posture"].flag || NativeDays.postureDone(sessions) }
+    private func goalsCard(_ sessions: [NativeDaySession]) -> some View {
+        let future = day["date"].text > home["date"].text
+        let fraction = activityFraction(day)
+        let target = day["target"].integer, sets = day["sets"].integer
+        let places = sessions.filter { !$0.posture }.map { $0.title.contains("公司") ? "公司" : $0.title.contains("家庭") ? "家庭" : "训练" }
+        let strengthText: String = {
+            guard strengthPlanned(day) else { return places.isEmpty ? "今天休息" : places.joined(separator: "、") + "已练" }
+            let optional = day["strength_optional"].flag ? " · 可选" : ""
+            if places.isEmpty { return (future ? "计划 " : "待练 · ") + "\(sets) / \(target) 组" + optional }
+            return places.joined(separator: "、") + "已练 · \(sets) / \(target) 组" + optional
+        }()
+        let posture = sessions.last { $0.posture }
+        let postureText: String = {
+            if let posture, let start = posture.start {
+                let minutes = posture.end.map { max(1, Int(($0.timeIntervalSince(start) / 60).rounded())) }
+                return NativeDate.label(start, format: "HH:mm", timezone: timezone) + (minutes.map { " · \($0) 分钟" } ?? "")
+            }
+            if day["posture"].flag { return "已完成" }
+            return day["posture_planned"].flag ? (future ? "计划练习" : "待完成") : "今天不安排"
+        }()
+        let activityText = displayNumber(day["activity"], digits: 0) + " / " + displayNumber(day["goals"]["dailyActivity"], digits: 0) + " 千卡"
+        return Button { showingDay = true } label: {
+            HStack(spacing: 16) {
+                PineDayGlyph(activity: fraction, halves: halves(day, sessions), posture: postureDone(day, sessions), future: future, size: 104)
+                VStack(spacing: 0) {
+                    goalLine("活动 · 外圈", activityText, done: (fraction ?? 0) >= 1)
+                    Divider()
+                    goalLine("力量 · 中圈", strengthText, done: target > 0 && sets >= target)
+                    Divider()
+                    goalLine("体态 · 圆点", postureText, done: postureDone(day, sessions))
+                }
+            }.padding(16).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
+        }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
+    }
+    private func goalLine(_ title: String, _ detail: String, done: Bool) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            if done { Image(systemName: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine).accessibilityLabel("已完成") }
+        }.frame(minHeight: 46)
+    }
+
+    // MARK: Week
+    private func weekCard(_ sessions: [String: [NativeDaySession]]) -> some View {
+        let days = home["days"].array
+        let past = days.filter { $0["date"].text <= home["date"].text }
+        let energy = past.compactMap { $0["activity"].number }
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ForEach(Array(days.enumerated()), id: \.element["date"].text) { index, row in
+                    let date = row["date"].text, list = sessions[date] ?? []
+                    let selected = date == day["date"].text, future = date > home["date"].text
+                    Button {
+                        guard date != day["date"].text else { return }
+                        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { selectedDay = date }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(["一","二","三","四","五","六","日"][min(index, 6)]).font(.caption.weight(selected ? .bold : .regular)).foregroundStyle(selected ? pine : Color.secondary)
+                            PineDayGlyph(activity: activityFraction(row), halves: halves(row, list), posture: postureDone(row, list), future: future, size: 36)
+                            Text(planLabel(row["short"].text)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }.frame(maxWidth: .infinity, minHeight: 76).padding(.vertical, 4)
+                            .background(selected ? pineTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .contentShape(Rectangle())
+                    }.buttonStyle(PinePressStyle(scale: 0.97))
+                        .accessibilityLabel(weekAccessibility(row, list))
+                        .accessibilityIdentifier("home-day-" + date)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+            Divider().padding(.top, 10)
+            HStack(alignment: .top) {
+                weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/ " + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
+                weekTotal("力量", "\(past.filter { $0["sets"].integer > 0 }.count)", "/ \(home["goals"]["weeklyStrength"].integer) 天")
+                weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/ \(home["goals"]["weeklyPosture"].integer) 天")
+            }.padding(.top, 10)
+        }.padding(12).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+    private func weekTotal(_ title: String, _ value: String, _ target: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) { Text(value).font(.headline).monospacedDigit(); Text(target).font(.caption).foregroundStyle(.secondary) }
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+    }
+    private func weekAccessibility(_ row: JSONValue, _ sessions: [NativeDaySession]) -> String {
+        let title = dayTitle(row["date"].text) + "，" + planLabel(row["short"].text)
+        if row["date"].text > home["date"].text { return title + "，未来日期" }
+        return title + "，日常活动 " + displayNumber(row["activity"], digits: 0) + " 千卡，力量 \(row["sets"].integer)/\(row["target"].integer) 组，体态" + (postureDone(row, sessions) ? "已完成" : row["posture_planned"].flag ? "待完成" : "未安排")
+    }
+
+    // MARK: Body
+    private var bodyList: some View {
+        let steps = home["today"]["steps"].number, goal = home["step_goal"]["target"].number
+        let stepsDetail: String = {
+            guard let steps, let goal, goal > 0 else { return "" }
+            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "还差 " + displayNumber(.number(goal - steps), digits: 0)
+        }()
+        return VStack(spacing: 0) {
+            NavigationLink(value: NativeOverviewRoute.recovery) {
+                listRow("恢复", home["recovery"]["score"], home["recovery"]["label"].text.isEmpty ? "待更新" : home["recovery"]["label"].text)
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("recovery-score")
+            Divider().padding(.leading, 16)
+            Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
+                listRow("步数", home["today"]["steps"], stepsDetail)
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-steps")
+        }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+    private func listRow(_ title: String, _ value: JSONValue, _ detail: String) -> some View {
+        HStack(spacing: 8) {
+            Text(title).foregroundStyle(.primary)
+            Spacer(minLength: 8)
+            Text(displayNumber(value, digits: 0)).fontWeight(.semibold).monospacedDigit().foregroundStyle(.primary)
+                .contentTransition(reduceMotion ? .identity : .numericText(value: value.number ?? 0))
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: value.number)
+            if !detail.isEmpty { Text(detail).font(.subheadline).foregroundStyle(.secondary) }
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }.padding(.horizontal, 16).frame(minHeight: 50).contentShape(Rectangle())
     }
 }
 private struct NativeHomeBrief: View {

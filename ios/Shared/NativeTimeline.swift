@@ -57,3 +57,48 @@ public enum NativeTimeline {
         guard let value else { return "" }; return NativeDate.label(value, format: "HH:mm", timezone: timezone)
     }
 }
+
+/// One recorded session placed on its local calendar day, for the day glyph.
+public struct NativeDaySession: Equatable, Sendable, Identifiable {
+    public let id: String
+    public let title: String
+    public let start: Date?
+    public let end: Date?
+    /// Completed share of planned work sets (posture: practice sets), 0...1.
+    public let ratio: Double
+    public let posture: Bool
+}
+
+public enum NativeDays {
+    /// Groups this app's completed and active sessions by local day, oldest first.
+    /// Strength sessions fill the glyph's middle halves in order; a day with any
+    /// completed posture practice fills the centre dot.
+    public static func sessions(records: [NativeRecord], timezone: String) -> [String: [NativeDaySession]] {
+        var days: [String: [NativeDaySession]] = [:]
+        for record in records {
+            let s = record.session, status = s["status"].text
+            guard status == "completed" || status == "active", let start = NativeDate.parse(s["started_at"]) else { continue }
+            let movements = s["exercises"].array
+            guard !movements.isEmpty else { continue }
+            let posture = movements.allSatisfy(NativeTraining.mobility)
+            let counted = posture ? movements : movements.filter { !NativeTraining.mobility($0) }
+            let planned = counted.reduce(0) { $0 + $1["sets"].array.filter { !$0["warmup"].flag }.count }
+            let done = counted.reduce(0) { $0 + NativeTraining.done($1).filter { !$0["warmup"].flag }.count }
+            guard done > 0 || status == "active" else { continue }
+            let zone = s["timezone"].text.isEmpty ? timezone : s["timezone"].text
+            let ratio = planned > 0 ? min(1, Double(done) / Double(planned)) : 0
+            days[NativeDate.day(start, timezone: zone), default: []].append(NativeDaySession(
+                id: s.id, title: s["title"].text, start: start, end: NativeDate.parse(s["ended_at"]),
+                ratio: posture && status == "completed" ? 1 : ratio, posture: posture))
+        }
+        for key in days.keys { days[key]?.sort { ($0.start ?? .distantPast) < ($1.start ?? .distantPast) } }
+        return days
+    }
+    /// Strength halves for the glyph: the first two strength sessions' completion.
+    public static func halves(_ sessions: [NativeDaySession]) -> [Double] {
+        Array(sessions.filter { !$0.posture }.prefix(2).map(\.ratio))
+    }
+    public static func postureDone(_ sessions: [NativeDaySession]) -> Bool {
+        sessions.contains { $0.posture && $0.ratio > 0 }
+    }
+}

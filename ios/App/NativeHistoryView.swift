@@ -12,7 +12,18 @@ struct NativeHistoryView: View {
     @State private var failed = false
     @State private var rows: [NativeTimelineItem] = []
     @State private var archiveRevision = 0
+    @AppStorage("pine.records.calendar") private var calendarMode = false
     var body: some View {
+        Group { if calendarMode { NativeMonthCalendar() } else { listBody } }
+            .navigationTitle("运动记录").navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Picker("显示方式", selection: $calendarMode) { Text("列表").tag(false); Text("日历").tag(true) }
+                        .pickerStyle(.segmented).frame(width: 120).accessibilityIdentifier("records-mode")
+                }
+            }
+    }
+    @ViewBuilder private var listBody: some View {
         let filtered = NativeTimeline.filter(rows, kind: kind, query: query, month: month)
         let visible = Array(filtered.prefix(limit))
         let grouped = Dictionary(grouping: visible, by: \.date)
@@ -371,5 +382,118 @@ struct NativeObservationDetail: View {
             }
             if report["findings"].array.isEmpty { Text(report["summary"].text.isEmpty ? observation["content"].text : report["summary"].text).font(.body).lineSpacing(6).pineCard() }
         }.navigationTitle("观察详情").navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Month grid of day glyphs built from this app's local records; tapping a day
+/// shows that day's activity, strength sessions and posture practice.
+struct NativeMonthCalendar: View {
+    @Environment(NativeStore.self) var store
+    @PineReducedMotion private var reduceMotion
+    @State private var monthOffset = 0
+    @State private var selected = ""
+    private var timezone: String { store.home["timezone"].text.isEmpty ? TimeZone.current.identifier : store.home["timezone"].text }
+    private var calendar: Calendar {
+        var value = Calendar(identifier: .gregorian); value.timeZone = TimeZone(identifier: timezone) ?? .current; value.firstWeekday = 2; return value
+    }
+    private var today: String { store.home["date"].text.isEmpty ? NativeDate.day(Date(), timezone: timezone) : store.home["date"].text }
+    private struct Cell: Identifiable { let id: String; let key: String; let number: Int }
+    var body: some View {
+        let cal = calendar
+        let current = cal.date(from: cal.dateComponents([.year, .month], from: Date())) ?? Date()
+        let shown = cal.date(byAdding: .month, value: monthOffset, to: current) ?? current
+        let sessions = NativeDays.sessions(records: store.records, timezone: timezone)
+        let count = cal.range(of: .day, in: .month, for: shown)?.count ?? 30
+        let lead = (cal.component(.weekday, from: shown) - cal.firstWeekday + 7) % 7
+        let cells: [Cell] = (0..<lead).map { Cell(id: "blank-\($0)", key: "", number: 0) } + (0..<count).compactMap { offset -> Cell? in
+            guard let date = cal.date(byAdding: .day, value: offset, to: shown) else { return nil }
+            let key = NativeDate.day(date, timezone: timezone); return Cell(id: key, key: key, number: offset + 1)
+        }
+        let focus = selected.isEmpty ? today : selected
+        PinePage {
+            VStack(spacing: 6) {
+                HStack {
+                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset -= 1 } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.accessibilityLabel("上个月")
+                    Spacer()
+                    Text(NativeDate.label(shown, format: "yyyy年M月", timezone: timezone)).font(.headline)
+                    Spacer()
+                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset += 1 } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }.disabled(monthOffset >= 0).accessibilityLabel("下个月")
+                }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
+                    ForEach(["一","二","三","四","五","六","日"], id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary).frame(height: 20) }
+                    ForEach(cells) { cell in cellView(cell, sessions[cell.key] ?? [], focus: focus) }
+                }
+            }.padding(.horizontal, 8).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            Text("外圈活动 · 中圈两次力量 · 圆点体态").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            dayDetail(focus, sessions[focus] ?? [])
+        }
+    }
+    @ViewBuilder private func cellView(_ cell: Cell, _ list: [NativeDaySession], focus: String) -> some View {
+        if cell.key.isEmpty { Color.clear.frame(height: 56) }
+        else {
+            let future = cell.key > today
+            let chosen = cell.key == focus
+            let numberColor: Color = chosen ? pine : (future ? .secondary : .primary)
+            Button { selected = cell.key } label: {
+                VStack(spacing: 2) {
+                    Text("\(cell.number)").font(.caption.weight(chosen ? .bold : .regular)).monospacedDigit().foregroundStyle(numberColor)
+                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list), posture: posture(cell.key, list), future: future, size: 34)
+                }
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(chosen ? pineTint : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PinePressStyle(scale: 0.97))
+            .accessibilityLabel(accessibility(cell.key, list, future: future))
+            .accessibilityAddTraits(chosen ? .isSelected : [])
+        }
+    }
+    /// Current week: the server's daily activity (training windows excluded).
+    /// Earlier days: Google's total active calories, so a training day can read fuller.
+    private func activity(_ key: String) -> Double? {
+        guard let goal = store.home["goals"]["dailyActivity"].number, goal > 0 else { return nil }
+        if let row = store.home["days"].array.first(where: { $0["date"].text == key }) { return row["activity"].number.map { $0 / goal } }
+        return store.home["metrics"].array.first { $0["date"].text == key }?["calories_burned"].number.map { $0 / goal }
+    }
+    private func posture(_ key: String, _ list: [NativeDaySession]) -> Bool {
+        NativeDays.postureDone(list) || store.home["days"].array.contains { $0["date"].text == key && $0["posture"].flag }
+    }
+    private func accessibility(_ key: String, _ list: [NativeDaySession], future: Bool) -> String {
+        let title = dayTitle(key, format: "M月d日")
+        if future { return title + "，未来日期" }
+        let strength = list.filter { !$0.posture }.count
+        return title + "，活动 " + (activity(key).map { "\(Int(($0 * 100).rounded()))%" } ?? "无数据") + "，力量 \(strength) 次，体态" + (posture(key, list) ? "已做" : "未做")
+    }
+    private func dayDetail(_ key: String, _ list: [NativeDaySession]) -> some View {
+        let strength = list.filter { !$0.posture }, practice = list.filter(\.posture)
+        let inWeek = store.home["days"].array.first { $0["date"].text == key }
+        let kcal = inWeek?["activity"] ?? store.home["metrics"].array.first { $0["date"].text == key }?["calories_burned"] ?? .null
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                PineDayGlyph(activity: activity(key), halves: NativeDays.halves(list), posture: posture(key, list), future: key > today, size: 60)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(dayTitle(key, format: "M月d日 EEE")).font(.headline)
+                    Text("活动 " + displayNumber(kcal, digits: 0) + " 千卡" + (inWeek == nil && !kcal.isNull ? "（含训练）" : "")).font(.footnote).foregroundStyle(.secondary)
+                    Text(strength.isEmpty ? "力量 没有记录" : "力量 \(strength.count) 次").font(.footnote).foregroundStyle(.secondary)
+                    Text(practice.isEmpty ? "体态 没有记录" : "体态 已做").font(.footnote).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            if !list.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(list.enumerated()), id: \.element.id) { index, session in
+                        if index > 0 { Divider() }
+                        NavigationLink { NativeReportView(id: session.id) } label: {
+                            HStack(spacing: 10) {
+                                Text(session.start.map { NativeDate.label($0, format: "HH:mm", timezone: timezone) } ?? "—").font(.subheadline).monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .leading)
+                                Text(session.title).font(.subheadline).foregroundStyle(.primary).lineLimit(1)
+                                Spacer(minLength: 4)
+                                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                            }.frame(minHeight: 44).contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                    }
+                }
+            }
+        }.pineCard()
     }
 }

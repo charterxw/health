@@ -2,10 +2,67 @@ import SwiftUI
 import UIKit
 import Charts
 
-let pine = Color(uiColor: .systemBlue)
-let activityColor = Color(uiColor: .systemPink)
-let strengthColor = Color(uiColor: .systemGreen)
-let postureColor = Color(uiColor: .systemTeal)
+/// One brand hue for actions, selection and completion. Differences between
+/// goals are carried by shape and position, never by extra hues.
+private func pineDynamic(_ light: UInt32, _ dark: UInt32) -> Color {
+    func color(_ hex: UInt32) -> UIColor {
+        UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+    }
+    return Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? color(dark) : color(light) })
+}
+let pine = pineDynamic(0x2F6B4C, 0x7CC49C)
+/// Unfilled parts of a goal glyph.
+let pineTrack = pineDynamic(0xE1E8E3, 0x2C3631)
+/// Future days: drawn but clearly not yet due.
+let pineFaint = pineDynamic(0xEEF0EE, 0x1E2420)
+/// Selected-day and selected-row backgrounds.
+let pineTint = pineDynamic(0xEEF3EF, 0x1F2B24)
+let pineCanvas = pineDynamic(0xF4F5F1, 0x000000)
+let pineSurface = pineDynamic(0xFFFFFF, 0x1A1D1B)
+let activityColor = pine
+let strengthColor = pine
+let postureColor = pine
+
+/// The day's three goals in one mark: outer ring = daily activity (continuous),
+/// middle ring = the day's two strength sessions as left and right halves that
+/// join into one full circle, centre dot = posture practice.
+struct PineDayGlyph: View {
+    var activity: Double?
+    var halves: [Double] = []
+    var posture = false
+    var future = false
+    var size: CGFloat = 36
+    var body: some View {
+        let unit = size / 88
+        let base = future ? pineFaint : pineTrack
+        ZStack {
+            Circle().stroke(base, lineWidth: 8 * unit).frame(width: 72 * unit, height: 72 * unit)
+            if !future, let activity, activity > 0 {
+                Circle().trim(from: 0, to: min(1, activity))
+                    .stroke(pine, style: StrokeStyle(lineWidth: 8 * unit, lineCap: .round))
+                    .rotationEffect(.degrees(-90)).frame(width: 72 * unit, height: 72 * unit)
+            }
+            Circle().stroke(base, lineWidth: 7 * unit).frame(width: 42 * unit, height: 42 * unit)
+            ForEach(0..<min(2, halves.count), id: \.self) { index in
+                if !future, halves[index] > 0 {
+                    // Left half fills bottom→top, right half top→bottom; butt caps so
+                    // two complete halves meet as one seamless circle.
+                    Circle().trim(from: 0.25, to: 0.25 + 0.5 * min(1, halves[index]))
+                        .stroke(pine, style: StrokeStyle(lineWidth: 7 * unit, lineCap: .butt))
+                        .rotationEffect(.degrees(index == 0 ? 0 : 180)).frame(width: 42 * unit, height: 42 * unit)
+                }
+            }
+            Circle().fill(!future && posture ? pine : base).frame(width: 18 * unit, height: 18 * unit)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Expands the server's one-character plan tags for display.
+func planLabel(_ short: String) -> String {
+    ["家": "家庭", "腹": "腹部", "上": "上胸", "胸": "胸部", "背": "背部", "休": "休息", "练": "训练"][short] ?? short
+}
 
 private struct PinePreviewReduceMotionKey: EnvironmentKey {
     static let defaultValue = false
@@ -26,11 +83,11 @@ struct PineReducedMotion: DynamicProperty {
 }
 
 extension View {
-    func pineCard() -> some View { padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24)) }
+    func pineCard() -> some View { padding(16).frame(maxWidth: .infinity, alignment: .leading).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)) }
 }
 struct PinePage<Content: View>: View {
     @ViewBuilder let content: Content
-    var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 16) { content }.padding(.horizontal, 20).padding(.vertical, 16) }.frame(maxWidth: .infinity).background(Color(uiColor: .systemGroupedBackground)).scrollDismissesKeyboard(.interactively) }
+    var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 16) { content }.padding(.horizontal, 20).padding(.vertical, 16) }.frame(maxWidth: .infinity).background(pineCanvas).scrollDismissesKeyboard(.interactively) }
 }
 struct PineHeading: View {
     let title: String
