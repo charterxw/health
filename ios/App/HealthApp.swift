@@ -86,14 +86,9 @@ struct NativeRootView: View {
     }
 }
 struct ReportSelection: Identifiable { let id: String }
+/// Tab roots draw their own PineTabHeader; pushed pages keep the system bar.
 struct NativeToolbar: ViewModifier {
-    @Environment(NativeStore.self) var store
-    func body(content: Content) -> some View {
-        content.toolbar {
-            if store.active != nil { ToolbarItem(placement: .topBarLeading) { Button("继续训练", systemImage: "play.fill") { store.workoutPresented = true } } }
-            ToolbarItem(placement: .topBarTrailing) { Button("设置", systemImage: "gearshape") { store.showingSettings = true }.labelStyle(.iconOnly) }
-        }
-    }
+    func body(content: Content) -> some View { content.toolbar(.hidden, for: .navigationBar) }
 }
 extension View { func nativeToolbar() -> some View { modifier(NativeToolbar()) } }
 

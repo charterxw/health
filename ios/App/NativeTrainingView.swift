@@ -44,6 +44,13 @@ struct NativeTrainingView: View {
     @State private var slotChoice = 0
     var body: some View {
         PinePage {
+            PineTabHeader(title: "训练") {
+                Menu {
+                    Button("自由训练", systemImage: "plus") { store.start() }.disabled(store.catalog.isNull)
+                    NavigationLink("动作库", destination: NativeExerciseLibrary())
+                    NavigationLink("全部模板", destination: NativeTemplateLibrary())
+                } label: { PineCircleIcon(systemImage: "ellipsis") }.accessibilityLabel("训练工具").accessibilityIdentifier("training-tools")
+            }
             if let active = store.active { continueCard(active) }
             if let message = store.message { PineBanner(text: message) }
             roundProgress
@@ -52,7 +59,7 @@ struct NativeTrainingView: View {
             if store.catalog.isNull { PineEmpty(title: "正在读取训练安排", symbol: "dumbbell", detail: "联网后下拉刷新即可读取你的模板。") }
             let rotation = groups.filter { $0.letter.count == 1 }
             if !rotation.isEmpty {
-                Text("本轮计划").font(.title3.weight(.semibold)).padding(.top, 8)
+                PineSectionHeader(title: "本轮计划")
                 VStack(spacing: 0) {
                     ForEach(Array(rotation.enumerated()), id: \.element.id) { index, group in
                         if index > 0 { Divider().padding(.leading, 60) }
@@ -60,7 +67,7 @@ struct NativeTrainingView: View {
                     }
                 }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
-            Text("其他").font(.title3.weight(.semibold)).padding(.top, 8)
+            PineSectionHeader(title: "其他")
             VStack(spacing: 0) {
                 ForEach(groups.filter { $0.letter.count > 1 && $0.letter != "体态" }) { group in
                     NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { plainRow(group.letter == "周末" ? "周末 · 保底训练" : group.title) }.buttonStyle(.plain)
@@ -73,14 +80,7 @@ struct NativeTrainingView: View {
                 NavigationLink { PinePage { weeklyMuscles.pineCard() }.navigationTitle("本周肌群工作组") } label: { plainRow("本周肌群工作组") }.buttonStyle(.plain)
             }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             ForEach(store.records.filter { $0.blocked != nil }, id: \.id) { NativeConflictView(record: $0) }
-        }.navigationTitle("训练").navigationBarTitleDisplayMode(.large).refreshable { await store.refresh() }
-            .toolbar { ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("自由训练", systemImage: "plus") { store.start() }.disabled(store.catalog.isNull)
-                    NavigationLink("动作库", destination: NativeExerciseLibrary())
-                    NavigationLink("全部模板", destination: NativeTemplateLibrary())
-                } label: { Label("训练工具", systemImage: "ellipsis") }.accessibilityIdentifier("training-tools")
-            } }
+        }.navigationTitle("训练").refreshable { await store.refresh() }
             .sheet(isPresented: $showingPlan) { NavigationStack { NativePlanView() } }
     }
 

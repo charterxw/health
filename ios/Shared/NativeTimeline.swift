@@ -24,7 +24,7 @@ public enum NativeTimeline {
             let zone = s["timezone"].text.isEmpty ? "America/New_York" : s["timezone"].text
             let date = start.map { NativeDate.day($0, timezone: zone) } ?? String(s["started_at"].text.prefix(10))
             let duration: String
-            if let start, let end { duration = WorkoutSnapshot.clock(max(0, end.timeIntervalSince(start) - (s["paused_seconds"].number ?? 0))) }
+            if let start, let end { duration = "\(max(1, Int((max(0, end.timeIntervalSince(start) - (s["paused_seconds"].number ?? 0)) / 60).rounded()))) 分钟" }
             else { duration = "时长未记录" }
             let detail = duration + " · \(p.done)/\(p.planned) \(posture ? "练习组" : "工作组")" + (p.warmup > 0 ? " · 热身 \(p.warmup) 组" : "")
             rows.append(NativeTimelineItem(id: s.id, date: date, time: clock(start, timezone: zone), title: s["title"].text, kind: posture ? "posture" : "strength", detail: detail, search: ms.map { $0["name"].text }.joined(separator: " "), source: "app", pending: record.dirty || record.blocked != nil, document: s))

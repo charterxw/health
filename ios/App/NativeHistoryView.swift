@@ -14,21 +14,36 @@ struct NativeHistoryView: View {
     @State private var archiveRevision = 0
     @AppStorage("pine.records.calendar") private var calendarMode = false
     var body: some View {
-        Group { if calendarMode { NativeMonthCalendar() } else { listBody } }
-            .navigationTitle("运动记录").navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Picker("显示方式", selection: $calendarMode) { Text("列表").tag(false); Text("日历").tag(true) }
-                        .pickerStyle(.segmented).frame(width: 120).accessibilityIdentifier("records-mode")
-                }
-            }
+        PinePage {
+            PineTabHeader(title: "运动记录")
+            Picker("显示方式", selection: $calendarMode) { Text("列表").tag(false); Text("日历").tag(true) }
+                .pickerStyle(.segmented).accessibilityIdentifier("records-mode")
+            if calendarMode { NativeMonthCalendar() } else { listBody }
+        }
+        .navigationTitle("运动记录")
+        .refreshable { await store.refresh(); await loadArchive() }
+        .onChange(of: kind) { _, _ in limit = 30 }.onChange(of: query) { _, _ in limit = 30 }.onChange(of: month) { _, _ in limit = 30 }
+        .task { await loadArchive() }
+        .task(id: NativeTimelineRevision(history: store.historyRevision, archive: archiveRevision)) {
+            let records = store.completedRecords, source = archive, imported = store.imported.array
+            let prepared = await Task.detached(priority: .userInitiated) { NativeTimeline.items(records: records, archive: source, imported: imported) }.value
+            guard !Task.isCancelled else { return }; rows = prepared
+        }
+    }
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("搜索动作或训练名称", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
+            if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }.accessibilityLabel("清除搜索") }
+        }.padding(.horizontal, 12).frame(height: 40).background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
     @ViewBuilder private var listBody: some View {
         let filtered = NativeTimeline.filter(rows, kind: kind, query: query, month: month)
         let visible = Array(filtered.prefix(limit))
         let grouped = Dictionary(grouping: visible, by: \.date)
         let dates = grouped.keys.sorted(by: >)
-        PinePage {
+        VStack(alignment: .leading, spacing: 16) {
+            searchField
             Picker("记录类型", selection: $kind) { Text("全部").tag("all"); Text("力量").tag("strength"); Text("体态").tag("posture"); Text("散步").tag("walk") }.pickerStyle(.segmented).accessibilityIdentifier("record-kind")
             HStack {
                 Menu {
@@ -42,7 +57,7 @@ struct NativeHistoryView: View {
             if filtered.isEmpty { PineEmpty(title: rows.isEmpty ? "还没有运动记录" : "没有匹配的记录", symbol: "list.bullet.clipboard", detail: rows.isEmpty ? "完成训练后，实际记录会显示在这里。" : "试试其他类型、月份或搜索词。"); if !rows.isEmpty { Button("清除筛选") { kind = "all"; query = ""; month = "" } } }
             ForEach(dates, id: \.self) { date in
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(date == store.home["date"].text ? "今日" : dayTitle(date, format: "M月d日 EEEE")).font(.headline).padding(.bottom, 12)
+                    Text(date == store.home["date"].text ? "今天" : dayTitle(date, format: "M月d日 EEE")).font(.headline).padding(.bottom, 4)
                     let items = grouped[date] ?? []
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, row in
                         if index > 0 { Divider() }
@@ -51,16 +66,7 @@ struct NativeHistoryView: View {
                 }.pineCard()
             }
             if filtered.count > limit { Button("显示更早记录") { limit += 30 }.buttonStyle(.bordered).frame(maxWidth: .infinity).frame(minHeight: 44) }
-        }.navigationTitle("运动记录").navigationBarTitleDisplayMode(.large)
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索动作或训练名称")
-            .onChange(of: kind) { _, _ in limit = 30 }.onChange(of: query) { _, _ in limit = 30 }.onChange(of: month) { _, _ in limit = 30 }
-            .task { await loadArchive() }
-            .task(id: NativeTimelineRevision(history: store.historyRevision, archive: archiveRevision)) {
-                let records = store.completedRecords, source = archive, imported = store.imported.array
-                let prepared = await Task.detached(priority: .userInitiated) { NativeTimeline.items(records: records, archive: source, imported: imported) }.value
-                guard !Task.isCancelled else { return }; rows = prepared
-            }
-            .refreshable { await store.refresh(); await loadArchive() }
+        }
     }
     private func updateArchive(_ value: JSONValue) {
         guard archive != value else { return }; archive = value; archiveRevision += 1
@@ -470,7 +476,7 @@ struct NativeMonthCalendar: View {
             let key = NativeDate.day(date, timezone: timezone); return Cell(id: key, key: key, number: offset + 1)
         }
         let focus = selected.isEmpty ? today : selected
-        PinePage {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(spacing: 6) {
                 HStack {
                     Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset -= 1 } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.accessibilityLabel("上个月")

@@ -87,7 +87,7 @@ extension View {
 }
 struct PinePage<Content: View>: View {
     @ViewBuilder let content: Content
-    var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 16) { content }.padding(.horizontal, 20).padding(.vertical, 16) }.frame(maxWidth: .infinity).background(pineCanvas).scrollDismissesKeyboard(.interactively) }
+    var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 16) { content }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24) }.frame(maxWidth: .infinity).background(pineCanvas).scrollDismissesKeyboard(.interactively) }
 }
 struct PineHeading: View {
     let title: String
@@ -288,4 +288,62 @@ struct NativeLoginView: View {
             busy = false
         }
     }
+}
+
+/// Shared top of the three tab roots: same title size, height and action style on
+/// every tab, instead of the system bar whose large/inline title varies by page.
+struct PineTabHeader<Actions: View>: View {
+    @Environment(NativeStore.self) var store
+    let title: String
+    @ViewBuilder var actions: Actions
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text(title).font(.system(size: 30, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            if store.active != nil {
+                Button { store.workoutPresented = true } label: {
+                    Label("继续训练", systemImage: "play.fill").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 14).frame(height: 36).background(pine, in: Capsule())
+                }.buttonStyle(PinePressStyle()).frame(minHeight: 44)
+            }
+            actions
+            PineCircleButton(title: "设置", systemImage: "gearshape") { store.showingSettings = true }
+        }.frame(minHeight: 44)
+    }
+}
+extension PineTabHeader where Actions == EmptyView {
+    init(title: String) { self.init(title: title) { EmptyView() } }
+}
+/// A quiet round icon button on the page surface (not a glass toolbar item).
+struct PineCircleButton: View {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) { PineCircleIcon(systemImage: systemImage) }
+            .buttonStyle(PinePressStyle(scale: 0.94)).accessibilityLabel(title)
+    }
+}
+struct PineCircleIcon: View {
+    let systemImage: String
+    var body: some View {
+        Image(systemName: systemImage).font(.body.weight(.medium)).foregroundStyle(.primary)
+            .frame(width: 40, height: 40).background(pineSurface, in: Circle()).frame(width: 44, height: 44).contentShape(Circle())
+    }
+}
+/// Section title used on every page: one size, trailing accessories on the baseline.
+struct PineSectionHeader<Accessory: View>: View {
+    let title: String
+    @ViewBuilder var accessory: Accessory
+    var body: some View {
+        HStack(alignment: .center, spacing: 4) {
+            Text(title).font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            accessory
+        }.frame(minHeight: 44)
+    }
+}
+extension PineSectionHeader where Accessory == EmptyView {
+    init(title: String) { self.init(title: title) { EmptyView() } }
 }

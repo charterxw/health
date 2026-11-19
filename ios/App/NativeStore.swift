@@ -264,7 +264,7 @@ final class NativeStore {
                 case "catalog": next.catalog = data
                 case "imported": next.imported = .array(data.array.filter { $0["source"].text != "local" })
                 case "observations": next.observations = data
-                case "brief": next.brief = data
+                case "brief": next.brief = Self.mergedBrief(next.brief, data)
                 case "integrations": next.integrations = data
                 default: break
                 }
@@ -281,7 +281,7 @@ final class NativeStore {
         // follow it with a Google Health pull. The server skips sources read within
         // 90 seconds, so repeated foregrounds stay cheap. The unstructured task keeps
         // a brief inactive scene phase from cancelling the pull.
-        if stamp == epoch, phase == .ready { startHealthRefresh() }
+        if stamp == epoch, phase == .ready { startHealthRefresh(); await ensureBrief() }
     }
     private func startHealthRefresh() {
         guard healthTask == nil else { return }
@@ -445,6 +445,7 @@ final class NativeStore {
         do {
             try await mutateHome("/home/refresh", method: "POST")
             if !cache.home["refresh_failed"].array.isEmpty { message = partial } else if message == partial { message = nil }
+            await loadBrief(); await ensureBrief()
         } catch {
             // Server errors (409 "Google Health 未连接", 401 → login) and local storage
             // failures are shown. Connectivity failures were already reported by
@@ -456,8 +457,28 @@ final class NativeStore {
         let stamp = epoch
         do {
             let result = try await api.request("/home/brief", method: generate ? "POST" : "GET")
-            guard stamp == epoch, phase == .ready else { return }; var next = cache; next.brief = result; try commit(next)
+            guard stamp == epoch, phase == .ready else { return }; var next = cache; next.brief = Self.mergedBrief(next.brief, result); try commit(next)
         } catch { handle(error) }
+    }
+    /// The server only reports sentences while its inputs are unchanged. Keep the
+    /// period's last ready observation on screen until a newer one is ready.
+    nonisolated static func mergedBrief(_ old: JSONValue, _ new: JSONValue) -> JSONValue {
+        guard new["sentences"].array.isEmpty, !old["sentences"].array.isEmpty,
+              old["date"] == new["date"], old["period"] == new["period"] else { return new }
+        var kept = new; kept["sentences"] = old["sentences"]; kept["generated_at"] = old["generated_at"]; return kept
+    }
+    /// Like the web dashboard: ask the server to write the current period's
+    /// observation when none is ready. At most once per period every two hours,
+    /// so changing inputs (steps through the day) do not regenerate it repeatedly.
+    func ensureBrief() async {
+        guard !isDesignPreview, phase == .ready else { return }
+        let status = cache.brief["status"].text
+        let current = !cache.brief["sentences"].array.isEmpty && status == "ready"
+        guard !current, status != "pending", !cache.brief["date"].text.isEmpty else { return }
+        let key = "pine.brief.requested." + cache.brief["date"].text + "." + cache.brief["period"].text
+        if let last = UserDefaults.standard.object(forKey: key) as? Date, Date().timeIntervalSince(last) < 2 * 3600 { return }
+        UserDefaults.standard.set(Date(), forKey: key)
+        await loadBrief(generate: true)
     }
     func open(_ url: URL) { guard let id = HealthRoute.workoutID(from: url) else { return }; pendingWorkout = id; Task { await openPending() } }
     private func openPending() async {
