@@ -314,11 +314,24 @@ struct NativeArchiveView: View {
             if let error { Text(error).foregroundStyle(.secondary) }
             ForEach(Array(archive["training"].or(store.imported).array.enumerated()), id: \.offset) { _, workout in
                 DisclosureGroup(workout["datestr"].text + " · " + workout["title"].text) {
-                    ForEach(Array(workout["movements"].array.enumerated()), id: \.offset) { _, m in VStack(alignment: .leading, spacing: 5) { Text(m["name"].text).font(.headline); ForEach(Array(m["sets"].array.filter { $0["done"].flag }.enumerated()), id: \.offset) { _, row in Text(displayNumber(row["weight"]) + " " + row["unit"].text + " × " + displayNumber(row["reps"]) + " 次").font(.subheadline) } } }
+                    ForEach(Array(workout["movements"].array.enumerated()), id: \.offset) { _, m in archiveMovement(m) }
                 }
             }
             Section("Google Health 历史活动") { ForEach(Array(archive["exercises"].array.enumerated()), id: \.offset) { _, row in VStack(alignment: .leading, spacing: 5) { Text(row["name"].or(row["title"].or(row["type"])).text); Text(row["date"].or(row["start_time"]).text).font(.caption).foregroundStyle(.secondary) } } }
         }.navigationTitle("历史档案").task { do { archive = try await store.api.request("/workouts/archive") } catch { self.error = "暂时无法读取完整档案。" } }
+    }
+    // Split out so older Swift type checkers (Xcode 26) finish within their time limit.
+    private func archiveMovement(_ m: JSONValue) -> some View {
+        let rows: [JSONValue] = m["sets"].array.filter { $0["done"].flag }
+        return VStack(alignment: .leading, spacing: 5) {
+            Text(m["name"].text).font(.headline)
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in Text(archiveSetText(row)).font(.subheadline) }
+        }
+    }
+    private func archiveSetText(_ row: JSONValue) -> String {
+        let weight: String = displayNumber(row["weight"])
+        let reps: String = displayNumber(row["reps"])
+        return "\(weight) \(row["unit"].text) × \(reps) 次"
     }
 }
 struct NativeObservationsView: View {
