@@ -87,12 +87,22 @@ struct NativeDashboardView: View {
         let lines = store.brief["sentences"].array.map { $0.text.isEmpty ? $0["text"].text : $0.text }.filter { !$0.isEmpty }
         let summary = lines.isEmpty ? home["tip"].text : lines.joined(separator: " ")
         let evening = store.brief["title"].text.contains("晚") || store.brief["period"].text == "evening"
-        return NavigationLink { NativeBriefDetail() } label: {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: evening ? "moon" : "sun.max").font(.body.weight(.semibold)).foregroundStyle(pine).padding(.top, 2)
-                Text(summary).font(.body).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
-            }.padding(14).background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation").accessibilityHint("点按查看完整观察")
+        let pending = store.brief["status"].text == "pending"
+        return HStack(alignment: .top, spacing: 0) {
+            NavigationLink { NativeBriefDetail() } label: {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: evening ? "moon" : "sun.max").font(.body.weight(.semibold)).foregroundStyle(pine).padding(.top, 2)
+                    Text(pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.body).foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
+                        .multilineTextAlignment(.leading).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(.vertical, 14).padding(.leading, 14).contentShape(Rectangle())
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation").accessibilityHint("点按查看完整观察")
+            // Manual trigger: rewrite the observation now, even if the data is unchanged.
+            Button { Task { await store.loadBrief(force: true) } } label: {
+                Group { if pending { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.subheadline.weight(.semibold)).foregroundStyle(pine) } }
+                    .frame(width: 44, height: 44)
+            }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview).padding(.top, 2).padding(.trailing, 2)
+                .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
+        }.background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     // MARK: Goals of the selected day
@@ -337,7 +347,7 @@ struct NativeBriefDetail: View {
             if !brief["generated_at"].isNull { PineRow(label: "观察更新", value: dateLabel(brief["generated_at"])) }
             NavigationLink("查看恢复依据") { NativeRecoveryContent() }
             NavigationLink("历史观察") { NativeObservationsView() }
-            Button(brief["status"].text == "pending" ? "正在分析…" : "重新分析", systemImage: "arrow.clockwise") { Task { await store.loadBrief(generate: true) } }.buttonStyle(.bordered).disabled(store.isDesignPreview || brief["status"].text == "pending")
+            Button(brief["status"].text == "pending" ? "正在分析…" : "立即重新分析", systemImage: "arrow.clockwise") { Task { await store.loadBrief(force: true) } }.buttonStyle(.bordered).disabled(store.isDesignPreview || brief["status"].text == "pending")
         }.navigationTitle(store.brief["title"].text.isEmpty ? "今日观察" : store.brief["title"].text).navigationBarTitleDisplayMode(.inline)
     }
 }

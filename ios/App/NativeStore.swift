@@ -453,10 +453,12 @@ final class NativeStore {
             if !(error is URLError) && !Self.isCancellation(error) { handle(error) }
         }
     }
-    func loadBrief(generate: Bool = false) async {
+    /// `force` asks the server to write a fresh observation even when its inputs
+    /// are unchanged (the manual "analyse now").
+    func loadBrief(generate: Bool = false, force: Bool = false) async {
         let stamp = epoch
         do {
-            let result = try await api.request("/home/brief", method: generate ? "POST" : "GET")
+            let result = try await api.request(force ? "/home/brief?force=true" : "/home/brief", method: generate || force ? "POST" : "GET")
             guard stamp == epoch, phase == .ready else { return }; var next = cache; next.brief = Self.mergedBrief(next.brief, result); try commit(next)
         } catch { handle(error) }
     }
