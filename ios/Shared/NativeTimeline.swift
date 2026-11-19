@@ -136,7 +136,64 @@ public enum NativeDays {
         }
         return total
     }
+    /// Best-set performance of one lift: estimated 1RM (Epley) for external load,
+    /// reps for bodyweight, and less assistance scoring higher for assisted lifts.
+    public static func liftScore(_ movement: JSONValue, _ set: JSONValue) -> Double? {
+        guard !set["warmup"].flag, let reps = set["reps"].number, reps > 0 else { return nil }
+        let factor = movement["unit"].text == "kg" ? 2.2046226 : 1
+        let epley = 1 + min(reps, 20) / 30
+        switch movement["load_mode"].text {
+        case "bodyweight": return reps
+        case "assistance":
+            guard let weight = set["weight"].number, weight > 0 else { return nil }
+            return epley / (weight * factor)
+        default:
+            guard let weight = set["weight"].number, weight > 0 else { return nil }
+            return weight * factor * epley
+        }
+    }
+    /// Each lift's best set in [from, to) against its own best over the `baselineDays`
+    /// before; the week's index is the median change, so swapping or skipping a lift
+    /// does not move it.
+    public static func strength(sessions: [JSONValue], from: Date, to: Date, baselineDays: Int = 28) -> NativeStrengthWeek {
+        let baselineStart = from.addingTimeInterval(-Double(baselineDays) * 86400)
+        var current: [String: (name: String, score: Double)] = [:], baseline: [String: Double] = [:]
+        for session in sessions where ["completed", "active"].contains(session["status"].text) {
+            let started = NativeDate.parse(session["started_at"])
+            for movement in session["exercises"].array where !NativeTraining.timed(movement) && !NativeTraining.mobility(movement) {
+                let key = movement["exercise_id"].text + "|" + movement["load_mode"].text
+                for set in movement["sets"].array where !set["completed_at"].isNull {
+                    guard let at = NativeDate.parse(set["completed_at"]) ?? started, let score = liftScore(movement, set) else { continue }
+                    if at >= from && at < to { if score > (current[key]?.score ?? 0) { current[key] = (movement["name"].text, score) } }
+                    else if at >= baselineStart && at < from { baseline[key] = max(baseline[key] ?? 0, score) }
+                }
+            }
+        }
+        let lifts = current.compactMap { key, value -> NativeLiftProgress? in
+            guard let best = baseline[key], best > 0 else { return nil }
+            return NativeLiftProgress(id: key, name: value.name, current: value.score, best: best)
+        }.sorted { $0.change > $1.change }
+        let changes = lifts.map(\.change).sorted()
+        let median: Double? = changes.isEmpty ? nil : changes.count % 2 == 1 ? changes[changes.count / 2] : (changes[changes.count / 2 - 1] + changes[changes.count / 2]) / 2
+        return NativeStrengthWeek(change: median, lifts: lifts, newCount: current.count - lifts.count)
+    }
     public static func postureDone(_ sessions: [NativeDaySession]) -> Bool {
         sessions.contains { $0.posture && $0.ratio > 0 }
     }
+}
+
+public struct NativeLiftProgress: Identifiable, Equatable, Sendable {
+    public let id: String
+    public let name: String
+    public let current: Double
+    public let best: Double
+    public var change: Double { current / best - 1 }
+}
+public struct NativeStrengthWeek: Equatable, Sendable {
+    /// Median change against each lift's own recent best; nil without comparable lifts.
+    public let change: Double?
+    public let lifts: [NativeLiftProgress]
+    /// Lifts done this week with no history in the baseline window.
+    public let newCount: Int
+    public var records: Int { lifts.filter { $0.change > 0.005 }.count }
 }

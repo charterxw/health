@@ -13,6 +13,7 @@ struct NativeDashboardView: View {
     @State private var showingDay = false
     @State private var showingSync = false
     @State private var showingWeight = false
+    @State private var showingStrength = false
     private var home: JSONValue { store.home }
     private var day: JSONValue { home["days"].array.first { $0["date"].text == selectedDay } ?? home["days"].array.first { $0["date"] == home["date"] } ?? .null }
     private var isToday: Bool { day["date"] == home["date"] }
@@ -48,6 +49,7 @@ struct NativeDashboardView: View {
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
         .sheet(isPresented: $showingDay) { NavigationStack { NativeDayDetail(day: day) } }
         .sheet(isPresented: $showingSync) { NavigationStack { NativeSyncDetail() } }
+        .sheet(isPresented: $showingStrength) { NavigationStack { NativeStrengthProgressView() } }
         .sheet(isPresented: $showingWeight) { NavigationStack { NativeWeightList(rows: home["weights"].array) } }
         .task(id: store.brief["status"].text) {
             guard !store.isDesignPreview, store.brief["status"].text == "pending" else { return }
@@ -211,29 +213,23 @@ struct NativeDashboardView: View {
                 }
                 GridRow {
                     weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/\(home["goals"]["weeklyPosture"].integer) 天")
-                    volumeTotal
+                    strengthTotal
                 }
             }.padding(.horizontal, 4).padding(.top, 8)
         }.padding(.horizontal, 12).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
-    /// Load × reps this week so far, against last week up to the same moment.
-    private var volumeTotal: some View {
-        let calendar: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: timezone) ?? .current; c.firstWeekday = 2; return c }()
-        let now = Date()
-        let start = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? now
-        let lastStart = calendar.date(byAdding: .day, value: -7, to: start) ?? start
-        let lastNow = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-        let current = NativeDays.volume(records: store.records, from: start, to: now)
-        let previous = NativeDays.volume(records: store.records, from: lastStart, to: lastNow)
-        let change = previous > 0 ? Int(((current / previous - 1) * 100).rounded()) : nil
-        return HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text("容量").font(.footnote).foregroundStyle(.secondary)
-            if let change { Text((change >= 0 ? "+" : "") + "\(change)%").font(.caption.weight(.semibold)).foregroundStyle(change >= 0 ? pine : Color.secondary) }
-            Spacer(minLength: 4)
-            Text(displayNumber(.number(current), digits: 0)).font(.headline).monospacedDigit()
-            Text("磅").font(.caption).foregroundStyle(.secondary)
-        }.lineLimit(1).frame(maxWidth: .infinity).accessibilityElement(children: .combine)
-            .accessibilityLabel("本周训练容量 " + displayNumber(.number(current), digits: 0) + " 磅" + (change.map { "，比上周同期 \($0 >= 0 ? "多" : "少") \(abs($0))%" } ?? ""))
+    /// Median change of this week's lifts against each lift's own best of the four weeks before.
+    private var strengthTotal: some View {
+        let week = NativeStrengthWeeks.current(store: store, timezone: timezone)
+        let text = week.change.map(NativeStrengthWeeks.percent) ?? "—"
+        return Button { showingStrength = true } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("力量指数").font(.footnote).foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Text(text).font(.headline).monospacedDigit().foregroundStyle((week.change ?? 0) > 0.005 ? pine : Color.primary)
+            }.lineLimit(1).frame(maxWidth: .infinity).contentShape(Rectangle())
+        }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-strength-index")
+            .accessibilityLabel("本周力量指数 " + text + "，点按查看每个动作")
     }
     private func weekTotal(_ title: String, _ value: String, _ target: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -573,7 +569,7 @@ struct NativeRecoveryContent: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) { Text(displayNumber(score["score"], digits: 0)).font(.system(size: 64, weight: .semibold, design: .rounded)).monospacedDigit(); Text("/ 100").font(.headline).foregroundStyle(.secondary) }
                 Text(score["label"].text.isEmpty ? "待更新" : "状态" + score["label"].text).font(.title3.weight(.semibold))
             }.frame(maxWidth: .infinity)
-            Text(score["score"].isNull ? "等待当日指标及足够的个人基线记录。" : "结合昨夜睡眠时长、HRV 和静息心率相对个人基线计算，用于观察恢复状态。指数不代表肌肉修复比例，训练仍结合今天的体感。").font(.subheadline).foregroundStyle(.secondary)
+            Text(score["score"].isNull ? "等待当日指标及至少 7 天的个人记录。" : "HRV、静息心率和睡眠分别和你自己近 4 周的正常范围比较：昨夜和近 7 天各占一半，单晚波动不会左右结果。在正常范围内是「平稳」，明显高于是「充分」，低于是「偏低」。睡眠不足 6.5 小时不会显示「充分」。指数不代表肌肉修复比例，训练仍结合今天的体感。").font(.subheadline).foregroundStyle(.secondary)
             if score["caution"].flag { PineBanner(text:"近期有几次恢复信号偏弱，留意热身和身体感受。") }
             VStack(spacing: 0) {
                 NavigationLink { NativeSleepView() } label: { NativeOverviewLink(title: "睡眠与作息", value: sleepDuration(home["sleep"]["minutes_asleep"]), symbol: "moon.fill", color: .indigo) }.accessibilityIdentifier("recovery-sleep")
@@ -585,11 +581,25 @@ struct NativeRecoveryContent: View {
                 NavigationLink { NativeObservationsView() } label: { NativeOverviewLink(title: "观察记录", value: "早间 · 晚间 · 每周", symbol: "sparkles", color: .teal) }
             }.buttonStyle(.plain).pineCard()
             VStack(spacing: 12) {
-                PineRow(label: "HRV 基线", value: displayNumber(score["hrv_baseline"]) + " 毫秒")
-                PineRow(label: "静息心率基线", value: displayNumber(score["rhr_baseline"]) + " 次/分")
+                PineRow(label: "HRV", value: recoveryPosition(score["components"]["hrv"]) + " · 正常 " + range(score["hrv_range"], fallback: score["hrv_baseline"]) + " 毫秒")
+                PineRow(label: "静息心率", value: recoveryPosition(score["components"]["resting_hr"]) + " · 正常 " + range(score["rhr_range"], fallback: score["rhr_baseline"]) + " 次/分")
+                if !score["sleep_need"].isNull {
+                    PineRow(label: "睡眠", value: recoveryPosition(score["components"]["sleep"]) + " · 需要约 " + displayNumber(score["sleep_need"]) + " 小时")
+                    PineRow(label: "近 7 晚平均欠睡", value: displayNumber(score["sleep_debt"]) + " 小时")
+                }
                 PineRow(label: "今天感受", value: [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · "))
             }.pineCard()
         }.navigationTitle("恢复指数").navigationBarTitleDisplayMode(.inline)
+    }
+    /// Where a signal sits against the personal normal range (±0.5 SD).
+    private func recoveryPosition(_ z: JSONValue) -> String {
+        guard let z = z.number else { return "—" }
+        return z >= 0.5 ? "好于平时" : z <= -0.5 ? "弱于平时" : "正常范围"
+    }
+    private func range(_ value: JSONValue, fallback: JSONValue) -> String {
+        let bounds = value.array.compactMap(\.number)
+        guard bounds.count == 2 else { return displayNumber(fallback) }
+        return displayNumber(.number(bounds[0])) + "–" + displayNumber(.number(bounds[1]))
     }
 }
 struct NativeDayDetail: View {
@@ -644,5 +654,97 @@ struct NativeWeightList: View {
             }
         }.navigationTitle("体重").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+    }
+}
+
+/// Week boundaries for the strength index, in the home timezone.
+enum NativeStrengthWeeks {
+    static func calendar(_ timezone: String) -> Calendar {
+        var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: timezone) ?? .current; c.firstWeekday = 2; return c
+    }
+    static func sessions(_ store: NativeStore) -> [JSONValue] { store.history + (store.active.map { [$0.session] } ?? []) }
+    static func current(store: NativeStore, timezone: String) -> NativeStrengthWeek {
+        let now = Date(), start = calendar(timezone).dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        return NativeDays.strength(sessions: sessions(store), from: start, to: now.addingTimeInterval(60))
+    }
+    static func percent(_ change: Double) -> String {
+        let value = (change * 1000).rounded() / 10
+        return (value > 0 ? "+" : "") + String(format: "%.1f%%", value)
+    }
+}
+
+struct NativeStrengthProgressView: View {
+    @Environment(NativeStore.self) var store
+    @Environment(\.dismiss) private var dismiss
+    private var timezone: String { store.home["timezone"].text.isEmpty ? TimeZone.current.identifier : store.home["timezone"].text }
+    var body: some View {
+        let sessions = NativeStrengthWeeks.sessions(store)
+        let calendar = NativeStrengthWeeks.calendar(timezone)
+        let now = Date(), start = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let week = NativeDays.strength(sessions: sessions, from: start, to: now.addingTimeInterval(60))
+        let past: [(Date, Double?)] = (1...8).map { offset -> (Date, Double?) in
+            let from = calendar.date(byAdding: .day, value: -7 * offset, to: start) ?? start
+            let to = calendar.date(byAdding: .day, value: 7, to: from) ?? start
+            return (from, NativeDays.strength(sessions: sessions, from: from, to: to).change)
+        }
+        PinePage {
+            VStack(spacing: 4) {
+                Text(week.change.map(NativeStrengthWeeks.percent) ?? "—").font(.system(size: 56, weight: .semibold, design: .rounded)).monospacedDigit()
+                    .foregroundStyle((week.change ?? 0) > 0.005 ? pine : Color.primary)
+                Text(week.records > 0 ? "本周 \(week.records) 个动作超过近 4 周最好成绩" : "本周力量指数").font(.subheadline).foregroundStyle(.secondary)
+            }.frame(maxWidth: .infinity).padding(.top, 8)
+            Text("每个动作取本周最好的一组，按“重量 ×（1 + 次数 ÷ 30）”估算最大力量，和这个动作前 4 周的最好成绩比；所有动作取中位数。换动作或少练一个动作不会拉低它。自重动作比次数，辅助动作辅助越少越好。").font(.footnote).foregroundStyle(.secondary)
+            if week.lifts.isEmpty {
+                PineEmpty(title: "还没有可比较的动作", symbol: "chart.line.uptrend.xyaxis", detail: "本周练过、且前 4 周也练过的动作会出现在这里。")
+            } else {
+                PineSectionHeader(title: "本周动作")
+                VStack(spacing: 0) {
+                    ForEach(Array(week.lifts.enumerated()), id: \.element.id) { index, lift in
+                        if index > 0 { Divider() }
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(lift.name).font(.subheadline.weight(.semibold))
+                                Text(detail(lift)).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+                            }
+                            Spacer(minLength: 8)
+                            Text(NativeStrengthWeeks.percent(lift.change)).font(.subheadline.weight(.semibold)).monospacedDigit()
+                                .foregroundStyle(lift.change > 0.005 ? pine : lift.change < -0.005 ? Color.secondary : Color.primary)
+                        }.padding(.vertical, 10)
+                    }
+                }.pineCard()
+            }
+            if week.newCount > 0 { Text("另有 \(week.newCount) 个动作前 4 周没练过，下周起参与比较。").font(.footnote).foregroundStyle(.secondary) }
+            PineSectionHeader(title: "之前几周")
+            VStack(spacing: 0) {
+                ForEach(Array(past.enumerated()), id: \.offset) { index, item in
+                    if index > 0 { Divider() }
+                    HStack {
+                        Text(NativeDate.label(item.0, format: "M月d日起", timezone: timezone)).font(.subheadline)
+                        Spacer()
+                        Text(item.1.map(NativeStrengthWeeks.percent) ?? "—").font(.subheadline.weight(.semibold)).monospacedDigit()
+                            .foregroundStyle((item.1 ?? 0) > 0.005 ? pine : Color.secondary)
+                    }.padding(.vertical, 10)
+                }
+            }.pineCard()
+            volumeRow(sessions: sessions, calendar: calendar, start: start, now: now)
+        }
+        .navigationTitle("力量指数").navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+    }
+    private func detail(_ lift: NativeLiftProgress) -> String {
+        if lift.id.hasSuffix("|bodyweight") { return "最多 \(Int(lift.current)) 次 · 之前 \(Int(lift.best)) 次" }
+        if lift.id.hasSuffix("|assistance") { return "辅助动作 · 按辅助重量和次数比较" }
+        return "估算 " + displayNumber(.number(lift.current), digits: 0) + " 磅 · 之前 " + displayNumber(.number(lift.best), digits: 0) + " 磅"
+    }
+    /// Volume load stays available here as the amount of work, not progress.
+    private func volumeRow(sessions: [JSONValue], calendar: Calendar, start: Date, now: Date) -> some View {
+        let lastStart = calendar.date(byAdding: .day, value: -7, to: start) ?? start
+        let lastNow = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+        let current = NativeDays.volume(records: store.records, from: start, to: now)
+        let previous = NativeDays.volume(records: store.records, from: lastStart, to: lastNow)
+        return VStack(spacing: 12) {
+            PineRow(label: "本周容量（重量 × 次数）", value: displayNumber(.number(current), digits: 0) + " 磅")
+            PineRow(label: "上周同期", value: displayNumber(.number(previous), digits: 0) + " 磅")
+        }.pineCard()
     }
 }

@@ -34,6 +34,22 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         for i in 1..<3 { s["exercises"][1]["sets"][i]["weight"] = 50; s = try NativeTraining.toggle(s, movement: 1, set: i, at: Date().addingTimeInterval(Double(10 + i))) }
         try check(NativeTraining.resumeIndex(s) == 2, "Resume did not move past a finished movement")
     }
+    static func strengthIndex() throws {
+        let now = Date(), week = now.addingTimeInterval(-3 * 86400)
+        func session(_ days: Double, _ lifts: [(String, String, Double, Double)]) -> JSONValue {
+            let at = NativeDate.stamp(now.addingTimeInterval(-days * 86400))
+            return ["id": .string(UUID().uuidString), "status": "completed", "started_at": at, "exercises": .array(lifts.map { id, mode, weight, reps -> JSONValue in
+                ["exercise_id": .string(id), "name": .string(id), "load_mode": .string(mode), "unit": "lb", "tracking": "reps", "training_type": "strength",
+                 "sets": [["weight": .number(weight), "reps": .number(reps), "completed_at": at, "warmup": false], ["weight": 200, "reps": 10, "completed_at": at, "warmup": true]]]
+            })]
+        }
+        let rows = [session(10, [("press", "external", 50, 10), ("row", "external", 100, 8), ("dip", "bodyweight", 0, 10)]),
+                    session(1, [("press", "external", 50, 12), ("row", "external", 100, 8), ("dip", "bodyweight", 0, 9), ("new", "external", 30, 10)])]
+        let result = NativeDays.strength(sessions: rows, from: week, to: now.addingTimeInterval(60))
+        try check(result.lifts.count == 3 && result.newCount == 1, "Strength index compared lifts without history")
+        try check(abs((result.lifts.first { $0.id == "press|external" }?.change ?? 0) - (50 * 1.4 / (50 * (1 + 10.0 / 30)) - 1)) < 1e-9, "Estimated 1RM progress is wrong")
+        try check(result.change == 0 && result.records == 1, "Median strength change ignored a flat lift")
+    }
     static func timers() throws {
         let now=Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970));var s=try make();s["exercises"][0]["sets"][0]["weight"]=50
         s=try NativeTraining.toggle(s,movement:0,set:0,at:now)
@@ -125,7 +141,7 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         try payload.data().write(to:URL(fileURLWithPath:output));print("Emitted \(sessions.count) sessions from the latest Pi template catalog")
     }
     static func main() throws {
-        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
+        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Strength index against each lift's own best",strengthIndex),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
         for (name,run) in cases { try run();print("PASS: \(name)") }
         if CommandLine.arguments.count==4 && CommandLine.arguments[1]=="--contracts" { try emitContracts(CommandLine.arguments[2],CommandLine.arguments[3]) }
         if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--performance" { try measurePerformance(CommandLine.arguments[2]) }

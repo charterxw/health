@@ -360,24 +360,55 @@ def step_goal(conn, metrics):
     return dict(conn.execute('SELECT target,basis FROM home_step_goal WHERE id=1').fetchone())
 
 
+def _positive(rows, key):
+    return [r[key] for r in rows if isinstance(r.get(key), (float, int)) and r[key] > 0]
+
+
 def readiness(today, metrics):
-    history = [x for x in metrics if x['date'] < today['date']][:28]
-    baselines = {k: [r[k] for r in history if isinstance(r.get(k), (float, int)) and r[k] > 0] for k in ['hrv', 'resting_hr']}
-    if any(len(v) < 7 for v in baselines.values()) or any(not today.get(k) for k in ['sleep_hours', 'hrv', 'resting_hr']):
-        return {'score': None, 'label': '待更新', 'version': 'personal-v1'}
-    hrv, rhr = (statistics.median(baselines[k]) for k in ['hrv', 'resting_hr'])
-    clamp = lambda v: min(100, max(0, v))
-    sleep_score = clamp((today['sleep_hours']-4)/4*100)
-    hs = clamp(78 + (today['hrv']/hrv-1)*100)
-    rs = clamp(78 + (rhr-today['resting_hr'])*3)
-    score = round(.45*sleep_score+.30*hs+.25*rs)
-    # A low sleep duration cannot be masked by a relative personal baseline.
-    if today['sleep_hours'] < 6:
-        score = min(score, 55)
-    recent = [today, *history[:2]]
-    caution = sum(bool(r.get('hrv') and r.get('resting_hr') and r['hrv'] < hrv*.8 and r['resting_hr'] > rhr+5) for r in recent) >= 2
-    return {'score': score, 'label': '平稳' if score >= 65 else '稍作调整', 'caution': caution, 'version': 'personal-v1',
-            'hrv_baseline': round(hrv, 1), 'rhr_baseline': round(rhr, 1)}
+    """Recovery against the person's own normal range (personal-v2).
+
+    HRV is compared on a log scale and resting heart rate in beats, each as a
+    z-score against the previous 28 days; half of each signal is last night and
+    half the 7-day rolling mean, so one noisy night cannot swing the result.
+    Sleep compares last night and the 7-night average with a personal sleep need.
+    Within half a standard deviation of normal reads as 平稳.
+    """
+    previous = [x for x in metrics if x['date'] < today['date']]
+    history = previous[:28]
+    hrvs, rhrs = _positive(history, 'hrv'), _positive(history, 'resting_hr')
+    if len(hrvs) < 7 or len(rhrs) < 7 or any(not today.get(k) for k in ['sleep_hours', 'hrv', 'resting_hr']):
+        return {'score': None, 'label': '待更新', 'version': 'personal-v2'}
+    clamp = lambda v, lo, hi: min(hi, max(lo, v))
+    logs = [math.log(v) for v in hrvs]
+    hrv_mean, hrv_sd = statistics.mean(logs), max(statistics.pstdev(logs), 0.08)
+    rhr_mean, rhr_sd = statistics.mean(rhrs), max(statistics.pstdev(rhrs), 2.5)
+    week = [today, *previous[:6]]
+    week_hrv = statistics.mean(math.log(v) for v in _positive(week, 'hrv'))
+    week_rhr = statistics.mean(_positive(week, 'resting_hr'))
+    hrv_z = clamp(.5*(math.log(today['hrv'])-hrv_mean)/hrv_sd + .5*(week_hrv-hrv_mean)/hrv_sd, -3, 3)
+    rhr_z = clamp(.5*(rhr_mean-today['resting_hr'])/rhr_sd + .5*(rhr_mean-week_rhr)/rhr_sd, -3, 3)
+    sleeps = _positive(history, 'sleep_hours')
+    need = clamp(statistics.median(sleeps) if len(sleeps) >= 7 else 7.5, 7, 8.5)
+    nights = _positive(week, 'sleep_hours')
+    debt = sum(max(0, need-h) for h in nights) / len(nights)
+    sleep_z = clamp(.7*clamp((today['sleep_hours']-need)/.75, -3, 1.5) - .3*debt/.75, -3, 1.5)
+    z = .4*hrv_z + .25*rhr_z + .35*sleep_z
+    score = round(clamp(70 + 16*z, 0, 100))
+    # Short sleep cannot be offset by heart signals that look normal.
+    if today['sleep_hours'] < 5.5:
+        score = min(score, 61)
+    elif today['sleep_hours'] < 6.5:
+        score = min(score, 77)
+    label = '充分' if score >= 78 else '平稳' if score >= 62 else '偏低'
+    def weak(r):
+        return bool(r.get('hrv') and r.get('resting_hr') and (math.log(r['hrv'])-hrv_mean)/hrv_sd < -1 and (r['resting_hr']-rhr_mean)/rhr_sd > 1)
+    caution = sum(weak(r) for r in week[:3]) >= 2
+    return {'score': score, 'label': label, 'caution': caution, 'version': 'personal-v2',
+            'hrv_baseline': round(math.exp(hrv_mean), 1), 'rhr_baseline': round(rhr_mean, 1),
+            'hrv_range': [round(math.exp(hrv_mean-.5*hrv_sd), 1), round(math.exp(hrv_mean+.5*hrv_sd), 1)],
+            'rhr_range': [round(rhr_mean-.5*rhr_sd, 1), round(rhr_mean+.5*rhr_sd, 1)],
+            'sleep_need': round(need, 1), 'sleep_debt': round(debt, 1),
+            'components': {'hrv': round(hrv_z, 2), 'resting_hr': round(rhr_z, 2), 'sleep': round(sleep_z, 2)}}
 
 
 def summary():
