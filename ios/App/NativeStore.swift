@@ -10,6 +10,8 @@ final class NativeStore {
     @ObservationIgnored private var cache = NativeCacheState() { didSet { projectChanges(from: oldValue) } }
     var message: String?
     var refreshing = false
+    private(set) var healthRefreshing = false
+    @ObservationIgnored private var healthTask: Task<Void, Never>?
     var syncing = false
     private(set) var storageFailed = false
     var showingSettings = false
@@ -270,6 +272,15 @@ final class NativeStore {
         do { try commit(next); message = failure == nil ? nil : "部分数据暂未刷新，已保留本机记录。" }
         catch { message = "本机记录保存失败：" + error.localizedDescription }
         refreshing = false; publishActivity(); await synchronize()
+        // GET /home only returns the server's cached snapshot. Like the web dashboard,
+        // follow it with a Google Health pull. The server skips sources read within
+        // 90 seconds, so repeated foregrounds stay cheap. The unstructured task keeps
+        // a brief inactive scene phase from cancelling the pull.
+        if stamp == epoch, phase == .ready { startHealthRefresh() }
+    }
+    private func startHealthRefresh() {
+        guard healthTask == nil else { return }
+        healthTask = Task { await pullHealth(); healthTask = nil }
     }
     func foreground() async { guard phase == .ready else { return }; await refresh(); await openPending(); publishActivity(force: true) }
     func retrySync() {
@@ -393,11 +404,18 @@ final class NativeStore {
         let stamp = epoch; let home = try await api.request(path, method: method, body: body, timeout: path == "/home/refresh" ? 90 : 25)
         guard stamp == epoch, phase == .ready else { return }; var next = cache; next.home = home; try commit(next)
     }
+    /// Pulls the latest Google Health data; joins a pull that is already running.
     func refreshHealth() async {
-        guard !isDesignPreview else { return }
-        guard !refreshing else { return }; refreshing = true
-        do { try await mutateHome("/home/refresh", method: "POST"); message = cache.home["refresh_failed"].array.isEmpty ? nil : "部分来源暂未更新，保留了已有数据。" }
-        catch { handle(error) }; refreshing = false
+        startHealthRefresh(); await healthTask?.value
+    }
+    private func pullHealth() async {
+        guard !isDesignPreview, phase == .ready else { return }
+        let partial = "部分来源暂未更新，保留了已有数据。"
+        healthRefreshing = true; defer { healthRefreshing = false }
+        do {
+            try await mutateHome("/home/refresh", method: "POST")
+            if !cache.home["refresh_failed"].array.isEmpty { message = partial } else if message == partial { message = nil }
+        } catch { if !(error is CancellationError) { handle(error) } }
     }
     func loadBrief(generate: Bool = false) async {
         let stamp = epoch

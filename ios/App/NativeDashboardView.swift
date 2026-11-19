@@ -56,9 +56,9 @@ struct NativeDashboardView: View {
             Spacer(minLength: 6)
             Button { showingSync = true } label: {
                 HStack(spacing: 5) {
-                    if store.refreshing { ProgressView().controlSize(.mini) }
+                    if store.refreshing || store.healthRefreshing { ProgressView().controlSize(.mini) }
                     else { Image(systemName: store.message == nil ? "arrow.triangle.2.circlepath" : "exclamationmark.circle").imageScale(.small) }
-                    Text(store.refreshing ? "正在同步" : store.message == nil ? syncTime : "同步需重试")
+                    Text(store.refreshing || store.healthRefreshing ? "正在同步" : store.message == nil ? syncTime : "同步需重试")
                 }.font(.caption).foregroundStyle(.secondary).frame(minHeight: 44)
             }.buttonStyle(PinePressStyle()).accessibilityLabel("数据与同步，" + syncTime)
         }.frame(minHeight: 44)
@@ -263,7 +263,7 @@ struct NativeSyncDetail: View {
                 PineRow(label: "设备同步", value: dateLabel(store.home["freshness"]["device"]["last_sync_at"]))
             }
             Section("App 最近读取") { ForEach(store.home["sources"].object.keys.sorted(), id: \.self) { key in PineRow(label: ["metrics":"每日指标","sleep":"睡眠","weight":"体重","activity":"活动拆分","walks":"散步记录"][key] ?? key, value: dateLabel(store.home["sources"][key]["fetched_at"])) } }
-            Button("重新读取数据", systemImage: "arrow.clockwise") { Task { await store.refreshHealth() } }.disabled(store.refreshing || store.isDesignPreview)
+            Button("重新读取数据", systemImage: "arrow.clockwise") { Task { await store.refreshHealth() } }.disabled(store.healthRefreshing || store.isDesignPreview)
         }.navigationTitle("数据与同步").toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
     }
 }

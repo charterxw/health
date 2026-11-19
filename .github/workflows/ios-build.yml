@@ -1,0 +1,45 @@
+name: iOS build
+
+on:
+  push:
+    paths: ['ios/**', '.github/workflows/ios-build.yml']
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios-build.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          xcode="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          echo "DEVELOPER_DIR=$xcode/Contents/Developer" >> "$GITHUB_ENV"
+          DEVELOPER_DIR="$xcode/Contents/Developer" xcodebuild -version
+          DEVELOPER_DIR="$xcode/Contents/Developer" xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Project structure check
+        run: python3 ios/scripts/check-project.py
+
+      - name: Core checks
+        run: |
+          swift run --package-path ios --jobs 2 HealthCoreChecks
+          swift run --package-path ios --jobs 2 NativeCoreChecks
+
+      - name: Build unsigned IPA
+        run: bash ios/scripts/build.sh --unsigned-ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pine-unsigned-${{ github.sha }}
+          path: ios/build/Pine-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
