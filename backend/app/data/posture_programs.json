@@ -1,0 +1,93 @@
+[
+  {
+    "id": "posture-daily",
+    "name": "每日体态 · 5–8分钟",
+    "description": "前臂滑手、胸椎伸展、左右胸肌拉伸，最后可选下巴轻收。逐组记录次数或秒数。",
+    "notes": "按原计划每周4–6天，动作舒适、正常呼吸。前臂滑手1×8–12，胸椎伸展1×6–8，门框胸肌拉伸每侧2×20–30秒。下巴轻收可选1×8–10、每次约3秒；不做时可以直接结束并保留其余完成记录。体态练习不计入力量训练工作组统计。",
+    "duration_min": 5,
+    "duration_max": 8,
+    "exercises": [
+      {
+        "exercise_id": "posture-forearm-wall-slide",
+        "set_count": 1,
+        "warmup_count": 0,
+        "unit": "kg",
+        "rest_seconds": 15,
+        "target_reps": 10,
+        "target_seconds": null,
+        "progression": "off"
+      },
+      {
+        "exercise_id": "posture-thoracic-extension",
+        "set_count": 1,
+        "warmup_count": 0,
+        "unit": "kg",
+        "rest_seconds": 15,
+        "target_reps": 8,
+        "target_seconds": null,
+        "progression": "off"
+      },
+      {
+        "exercise_id": "posture-doorway-left",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "kg",
+        "rest_seconds": 15,
+        "target_reps": null,
+        "target_seconds": 25,
+        "progression": "off"
+      },
+      {
+        "exercise_id": "posture-doorway-right",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "kg",
+        "rest_seconds": 15,
+        "target_reps": null,
+        "target_seconds": 25,
+        "progression": "off"
+      },
+      {
+        "exercise_id": "posture-chin-tuck",
+        "set_count": 1,
+        "warmup_count": 0,
+        "unit": "kg",
+        "rest_seconds": 15,
+        "target_reps": 8,
+        "target_seconds": null,
+        "progression": "off"
+      }
+    ]
+  },
+  {
+    "id": "posture-bd-y-raise",
+    "name": "独立体态 · 胸托 Y 字举",
+    "description": "每周2次，每次2组，独立安排，不占用正式增肌训练时段。",
+    "notes": "徒手或极轻重量，每组10–12次，组间休息45秒。凳子30–45°、胸口贴凳、拇指大致向上，肩胛自然上旋。保留充足余力，不计入主计划72组。",
+    "duration_min": 5,
+    "duration_max": 5,
+    "exercises": [
+      {
+        "exercise_id": "posture-chest-supported-y-raise",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "kg",
+        "rest_seconds": 45,
+        "target_reps": 10,
+        "target_seconds": null,
+        "progression": "off",
+        "set_targets": [
+          {
+            "weight": 0,
+            "reps": 10
+          },
+          {
+            "weight": 0,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  }
+]

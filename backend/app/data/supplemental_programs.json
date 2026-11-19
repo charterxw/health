@@ -1,0 +1,169 @@
+[
+  {
+    "id": "personal-company-e",
+    "name": "E · 公司｜腹部·小腿",
+    "description": "三个动作各3组；抗旋转每组包含左右两侧。绳索卷腹另有1组热身。",
+    "notes": "周三补充日：腹肌和小腿为主，核心控制保留余力。负重动作首次轻重量试练，按实际使用重量填写；多数正式组保留约2次余力。绳索卷腹3×10–15，休息90秒；抗旋转3轮、每轮左右各10–12，换侧约15秒，一轮后休息60秒；站姿提踵3×12–20，休息60秒，重量记录每只哑铃。E独立安排，不加入A/B/C/D的72组轮转。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "kneeling-cable-crunch",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 12,
+        "set_targets": [
+          {
+            "weight": null,
+            "reps": 8
+          },
+          {
+            "weight": null,
+            "reps": 12
+          },
+          {
+            "weight": null,
+            "reps": 12
+          },
+          {
+            "weight": null,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-18T04:26:47.982218+00:00"
+      },
+      {
+        "exercise_id": "cable-pallof-press-bilateral",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 12,
+        "target_reps": 10,
+        "set_targets": [
+          {
+            "weight": null,
+            "reps": 10
+          },
+          {
+            "weight": null,
+            "reps": 10
+          },
+          {
+            "weight": null,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-18T04:26:47.982218+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-standing-calf-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "progression": "off",
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 15,
+        "set_targets": [
+          {
+            "weight": null,
+            "reps": 15
+          },
+          {
+            "weight": null,
+            "reps": 15
+          },
+          {
+            "weight": null,
+            "reps": 15
+          }
+        ],
+        "targets_updated_at": "2026-11-18T04:26:47.982218+00:00"
+      }
+    ]
+  },
+  {
+    "id": "personal-home-e",
+    "name": "E · 家庭｜腹部·小腿",
+    "description": "三个动作各3组；平板支撑按秒记录。",
+    "notes": "周三补充日：腹肌和小腿为主，核心控制保留余力。负重动作首次轻重量试练，按实际使用重量填写；多数正式组保留约2次余力。垫上卷腹3×12–20，休息60秒；平板支撑3×20–40秒，先以30秒为目标，休息60秒；坐姿提踵3×15–25，休息60秒，重量记录两腿上哑铃合计。E独立安排，不加入A/B/C/D的72组轮转。",
+    "duration_min": 15,
+    "duration_max": 25,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "floor-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "progression": "off",
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 15,
+        "set_targets": [
+          {
+            "weight": null,
+            "reps": 15
+          },
+          {
+            "weight": null,
+            "reps": 15
+          },
+          {
+            "weight": null,
+            "reps": 15
+          }
+        ],
+        "targets_updated_at": "2026-11-18T04:26:47.982218+00:00"
+      },
+      {
+        "exercise_id": "forearm-plank",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_seconds": 30
+      },
+      {
+        "exercise_id": "dumbbell-seated-calf-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "progression": "off",
+        "rep_min": 15,
+        "rep_max": 25,
+        "target_reps": 20,
+        "set_targets": [
+          {
+            "weight": null,
+            "reps": 20
+          },
+          {
+            "weight": null,
+            "reps": 20
+          },
+          {
+            "weight": null,
+            "reps": 20
+          }
+        ],
+        "targets_updated_at": "2026-11-18T04:26:47.982218+00:00"
+      }
+    ]
+  }
+]

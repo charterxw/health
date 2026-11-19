@@ -1,0 +1,1011 @@
+[
+  {
+    "id": "guided-upper-a",
+    "name": "A · 公司｜胸·肩·三头",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。推肩70/70/60 lb各8次，下压80/80/70 lb各10次；较重组接近力竭时下调重量。卧推65 lb×8/8/8，重量沿用原记录口径；疲劳时次数可自然下降。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": 0,
+    "exercises": [
+      {
+        "exercise_id": "barbell-bench-press",
+        "set_count": 5,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 6,
+        "rep_max": 10,
+        "increment": null,
+        "warmup_count": 2,
+        "set_targets": [
+          {
+            "weight": 25,
+            "reps": 6
+          },
+          {
+            "weight": 45,
+            "reps": 5
+          },
+          {
+            "weight": 65,
+            "reps": 8
+          },
+          {
+            "weight": 65,
+            "reps": 8
+          },
+          {
+            "weight": 65,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "machine-shoulder-press",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 50,
+            "reps": 6
+          },
+          {
+            "weight": 70,
+            "reps": 8
+          },
+          {
+            "weight": 70,
+            "reps": 8
+          },
+          {
+            "weight": 60,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "cable-triceps-pushdown",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 50,
+            "reps": 6
+          },
+          {
+            "weight": 80,
+            "reps": 10
+          },
+          {
+            "weight": 80,
+            "reps": 10
+          },
+          {
+            "weight": 70,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "personal-home-a",
+    "name": "A · 家庭｜肩·三头·胸",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。飞鸟每只5 lb为首练试重值，先熟悉舒适幅度。过顶20 lb沿用原持铃方式。哑铃一般记每只重量，高脚杯深蹲记单只总重。Y字举移至独立体态训练，每周2次。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 12,
+        "progression": "off",
+        "rep_min": 12,
+        "rep_max": 20,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 8
+          },
+          {
+            "weight": 10,
+            "reps": 12
+          },
+          {
+            "weight": 10,
+            "reps": 12
+          },
+          {
+            "weight": 10,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 10,
+            "reps": 6
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-fly",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 12,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 6
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "guided-lower-a",
+    "name": "B · 公司｜二头·背",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。B先弯举，下拉90 lb；D先练背，下拉100 lb。划船40 lb为首练试重值，按动作质量和余力调整。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": 1,
+    "exercises": [
+      {
+        "exercise_id": "machine-preacher-curl",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 40,
+            "reps": 5
+          },
+          {
+            "weight": 50,
+            "reps": 8
+          },
+          {
+            "weight": 50,
+            "reps": 8
+          },
+          {
+            "weight": 50,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "wide-grip-pulldown",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 50,
+            "reps": 8
+          },
+          {
+            "weight": 90,
+            "reps": 8
+          },
+          {
+            "weight": 90,
+            "reps": 8
+          },
+          {
+            "weight": 90,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "seated-cable-row",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 20,
+            "reps": 8
+          },
+          {
+            "weight": 40,
+            "reps": 10
+          },
+          {
+            "weight": 40,
+            "reps": 10
+          },
+          {
+            "weight": 40,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "personal-home-b",
+    "name": "B · 家庭｜二头·肩后束·腿",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。哑铃一般记每只重量，高脚杯深蹲记单只总重。Y字举移至独立体态训练，每周2次。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-biceps-curl",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 10,
+            "reps": 6
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-reverse-fly",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 12,
+        "progression": "off",
+        "rep_min": 12,
+        "rep_max": 20,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 6
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "goblet-squat",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 10,
+            "reps": 8
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "guided-upper-b",
+    "name": "C · 公司｜上胸·肩·三头",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。推肩70/70/60 lb各8次，下压80/80/70 lb各10次；较重组接近力竭时下调重量。上斜凳约30°，哑铃记每只重量。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": 2,
+    "exercises": [
+      {
+        "exercise_id": "incline-dumbbell-press",
+        "set_count": 5,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 2,
+        "set_targets": [
+          {
+            "weight": 10,
+            "reps": 8
+          },
+          {
+            "weight": 20,
+            "reps": 4
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "machine-shoulder-press",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 50,
+            "reps": 6
+          },
+          {
+            "weight": 70,
+            "reps": 8
+          },
+          {
+            "weight": 70,
+            "reps": 8
+          },
+          {
+            "weight": 60,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "cable-triceps-pushdown",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 50,
+            "reps": 6
+          },
+          {
+            "weight": 80,
+            "reps": 10
+          },
+          {
+            "weight": 80,
+            "reps": 10
+          },
+          {
+            "weight": 70,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "personal-home-c",
+    "name": "C · 家庭｜肩·三头·胸",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。飞鸟每只5 lb为首练试重值，先熟悉舒适幅度。过顶20 lb沿用原持铃方式。哑铃一般记每只重量，高脚杯深蹲记单只总重。Y字举移至独立体态训练，每周2次。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 12,
+        "progression": "off",
+        "rep_min": 12,
+        "rep_max": 20,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 8
+          },
+          {
+            "weight": 10,
+            "reps": 12
+          },
+          {
+            "weight": 10,
+            "reps": 12
+          },
+          {
+            "weight": 10,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 10,
+            "reps": 6
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-fly",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 12,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 6
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "guided-lower-b",
+    "name": "D · 公司｜背·二头",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。B先弯举，下拉90 lb；D先练背，下拉100 lb。划船40 lb为首练试重值，按动作质量和余力调整。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": 3,
+    "exercises": [
+      {
+        "exercise_id": "wide-grip-pulldown",
+        "set_count": 5,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 2,
+        "set_targets": [
+          {
+            "weight": 50,
+            "reps": 8
+          },
+          {
+            "weight": 90,
+            "reps": 4
+          },
+          {
+            "weight": 100,
+            "reps": 8
+          },
+          {
+            "weight": 100,
+            "reps": 8
+          },
+          {
+            "weight": 100,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "seated-cable-row",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 20,
+            "reps": 8
+          },
+          {
+            "weight": 40,
+            "reps": 10
+          },
+          {
+            "weight": 40,
+            "reps": 10
+          },
+          {
+            "weight": 40,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "machine-preacher-curl",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 8,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 40,
+            "reps": 5
+          },
+          {
+            "weight": 50,
+            "reps": 8
+          },
+          {
+            "weight": 50,
+            "reps": 8
+          },
+          {
+            "weight": 50,
+            "reps": 8
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "personal-home-d",
+    "name": "D · 家庭｜二头·肩后束·腿",
+    "description": "3个动作，每个3个正式组；热身另算。",
+    "notes": "333计划：公司与家庭各9个正式组，一轮72组。多数正式组保留约2次余力，按实际完成次数记录。首次按逐组预设开始，之后沿用本模板的实际表现；达到次数上限且动作稳定后，再增加可用的最小重量。热身默认休息60秒，复合动作120秒、必要时180秒；孤立动作按模板75或90秒。哑铃一般记每只重量，高脚杯深蹲记单只总重。Y字举移至独立体态训练，每周2次。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-biceps-curl",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 10,
+            "reps": 6
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          },
+          {
+            "weight": 20,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-reverse-fly",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "target_reps": 12,
+        "progression": "off",
+        "rep_min": 12,
+        "rep_max": 20,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 6
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          },
+          {
+            "weight": 5,
+            "reps": 12
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      },
+      {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "set_count": 4,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 10,
+        "progression": "off",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": null,
+        "warmup_count": 1,
+        "set_targets": [
+          {
+            "weight": 5,
+            "reps": 8
+          },
+          {
+            "weight": 10,
+            "reps": 10
+          },
+          {
+            "weight": 10,
+            "reps": 10
+          },
+          {
+            "weight": 10,
+            "reps": 10
+          }
+        ],
+        "targets_updated_at": "2026-11-17T04:07:43.901835+00:00"
+      }
+    ]
+  },
+  {
+    "id": "personal-weekend-saturday",
+    "name": "周六 · 家庭保底",
+    "description": "8个正式工作组；用于工作日家庭训练全部遗漏时替代补练。",
+    "notes": "复核修订版 2.6，2026-11-14。第1周多数工作组保留2–3次余力；熟悉后复合动作约2次、孤立动作1–2次，疲劳时保留更多。复合动作默认休息120秒，必要时延长至180秒或更多；孤立动作默认75秒，可在60–90秒内调整。所有工作组达到次数上限、动作稳定且仍保留目标余力，再按实际器材最小步长加重；系统只能按次数给出建议，采纳前自行确认动作与余力。准备组不计入正式组数，可根据状态增减，不能省去必要热身。重量记录沿用已有历史，不重置。工作日家庭训练全部漏掉时使用，不与已完成家庭组数重复叠加。周末两天共14组，公司28组全完成时当轮合计42组。仍忙或影响下一轮恢复时继续减少。不推进公司轮换。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 5,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 12,
+        "progression": "double",
+        "rep_min": 12,
+        "rep_max": 20,
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 10,
+        "progression": "double",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-reverse-fly",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 12,
+        "progression": "double",
+        "rep_min": 12,
+        "rep_max": 20,
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "personal-weekend-sunday",
+    "name": "周日 · 家庭保底",
+    "description": "6个正式工作组；用于工作日家庭训练全部遗漏时替代补练。",
+    "notes": "复核修订版 2.6，2026-11-14。第1周多数工作组保留2–3次余力；熟悉后复合动作约2次、孤立动作1–2次，疲劳时保留更多。复合动作默认休息120秒，必要时延长至180秒或更多；孤立动作默认75秒，可在60–90秒内调整。所有工作组达到次数上限、动作稳定且仍保留目标余力，再按实际器材最小步长加重；系统只能按次数给出建议，采纳前自行确认动作与余力。准备组不计入正式组数，可根据状态增减，不能省去必要热身。重量记录沿用已有历史，不重置。工作日家庭训练全部漏掉时使用，不与已完成家庭组数重复叠加。周末两天共14组，公司28组全完成时当轮合计42组。仍忙或影响下一轮恢复时继续减少。不推进公司轮换。",
+    "duration_min": 20,
+    "duration_max": 30,
+    "rotation_order": null,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-biceps-curl",
+        "set_count": 3,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "target_reps": 10,
+        "progression": "double",
+        "rep_min": 10,
+        "rep_max": 15,
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "goblet-squat",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "double",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": 5
+      },
+      {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "set_count": 2,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "target_reps": 8,
+        "progression": "double",
+        "rep_min": 8,
+        "rep_max": 12,
+        "increment": 5
+      }
+    ]
+  },
+  {
+    "description": "时间或日程不固定时使用的全身方案；不推进上/下肢轮换顺序。",
+    "duration_max": 40,
+    "duration_min": 30,
+    "exercises": [
+      {
+        "exercise_id": "goblet-squat",
+        "increment": 5.0,
+        "progression": "double",
+        "rep_max": 12,
+        "rep_min": 8,
+        "rest_seconds": 120,
+        "set_count": 3,
+        "target_reps": 8,
+        "unit": "lb",
+        "warmup_count": 1
+      },
+      {
+        "exercise_id": "machine-chest-press",
+        "increment": 5.0,
+        "progression": "double",
+        "rep_max": 12,
+        "rep_min": 8,
+        "rest_seconds": 90,
+        "set_count": 3,
+        "target_reps": 8,
+        "unit": "lb",
+        "warmup_count": 0
+      },
+      {
+        "exercise_id": "seated-cable-row",
+        "increment": 5.0,
+        "progression": "double",
+        "rep_max": 12,
+        "rep_min": 8,
+        "rest_seconds": 90,
+        "set_count": 3,
+        "target_reps": 8,
+        "unit": "lb",
+        "warmup_count": 0
+      },
+      {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "increment": 5.0,
+        "progression": "double",
+        "rep_max": 12,
+        "rep_min": 8,
+        "rest_seconds": 90,
+        "set_count": 2,
+        "target_reps": 8,
+        "unit": "lb",
+        "warmup_count": 0
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "increment": 5.0,
+        "progression": "double",
+        "rep_max": 20,
+        "rep_min": 12,
+        "rest_seconds": 60,
+        "set_count": 2,
+        "target_reps": 12,
+        "unit": "lb",
+        "warmup_count": 0
+      }
+    ],
+    "id": "guided-full-body",
+    "name": "全身备用 · 35 分钟",
+    "notes": "先活动 3–5 分钟；首个动作安排 1 个轻重量热身组，可按需增加。工作组结束时以还能做约 2 次的余力为参考，保持动作稳定。时间包含热身与换器械的估算，排队或额外热身会延长。重量步长按实际器械调整。",
+    "rotation_order": null
+  }
+]

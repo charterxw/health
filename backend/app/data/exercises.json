@@ -1,0 +1,938 @@
+[
+  {
+    "id": "single-arm-pulldown",
+    "name": "单手下拉",
+    "english_name": "single arm cable pulldown",
+    "aliases": [
+      "单臂高位下拉"
+    ],
+    "muscles": [
+      "背部"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "forearm"
+    ],
+    "equipment": "绳索",
+    "load_mode": "external",
+    "description": "单臂将绳索向下拉向身体侧面，主要训练背部。",
+    "instructions": [
+      "将滑轮调高，单手握住手柄，身体保持稳定。",
+      "肩部自然向上伸展后，带动肘部向身体侧面下拉。",
+      "手腕保持稳定，避免转动躯干或向后猛拉。",
+      "控制手柄回到起始位置，每侧按相同计数方式记录。"
+    ],
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "wide-grip-pulldown",
+    "name": "宽距高位下拉",
+    "english_name": "wide grip lat pulldown",
+    "aliases": [
+      "宽握下拉"
+    ],
+    "muscles": [
+      "背部"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "forearm"
+    ],
+    "equipment": "高位下拉器",
+    "load_mode": "external",
+    "description": "宽握下拉杆，将肘部拉向身体两侧，主要训练背部。",
+    "instructions": [
+      "调整座椅和腿垫，让双脚着地、身体稳定。",
+      "正手宽握下拉杆，保持胸部自然抬起。",
+      "将杆拉向上胸附近，肘部向两侧下方移动，避免后仰借力。",
+      "缓慢伸展手臂回到起始位置，保持重量可控。"
+    ],
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "cable-y-raise",
+    "name": "Y字绳索侧平举",
+    "english_name": "cable Y raise",
+    "aliases": [
+      "绳索Y字上举"
+    ],
+    "equipment": "绳索",
+    "muscles": [
+      "肩部"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "trapezius",
+      "upper-back"
+    ],
+    "load_mode": "external",
+    "description": "双臂沿肩胛平面向前上方举成 Y 字，主要训练肩部，并由上背部协同。",
+    "instructions": [
+      "将滑轮调到较低位置，双手握住手柄，身体站稳并收紧躯干。",
+      "肘部保持轻微弯曲，双臂向两侧前上方抬起，逐渐形成 Y 字。",
+      "在可控制的活动范围内抬举，保持肩部稳定，避免借助身体摆动。",
+      "缓慢放回起始位置，再完成下一次。"
+    ],
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "machine-preacher-curl",
+    "name": "牧师器弯举",
+    "english_name": "lever preacher curl",
+    "aliases": [
+      "杠杆牧师凳弯举"
+    ],
+    "muscles": [
+      "肱二头肌"
+    ],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "equipment": "牧师椅器械",
+    "load_mode": "external",
+    "instructions": [
+      "调整座椅高度并将自己放在杠杆机上。",
+      "将上臂放在垫子上，并用反手握住手柄。",
+      "保持背部挺直，并将肘部放在垫子上。",
+      "呼气并将前臂向上臂弯曲，收缩二头肌。",
+      "在动作的最高点暂停片刻，挤压你的二头肌。",
+      "吸气并慢慢将手柄放回起始位置。",
+      "重复所需的重复次数。"
+    ],
+    "description": "主要训练肱二头肌。",
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "face-pull",
+    "name": "面拉",
+    "english_name": "cable face pull",
+    "aliases": [
+      "绳索面拉"
+    ],
+    "equipment": "绳索",
+    "muscles": [
+      "肩后束",
+      "背部"
+    ],
+    "primary_muscles": [
+      "deltoids",
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "trapezius"
+    ],
+    "load_mode": "external",
+    "description": "将绳索拉向面部，训练肩后束和上背部。",
+    "instructions": [
+      "将绳索滑轮调到接近面部的高度，双手握住绳端，后退至绳索绷紧。",
+      "身体保持稳定，肘部向两侧打开，将绳索拉向面部两侧。",
+      "肩胛骨自然向后移动，避免耸肩或后仰借力。",
+      "控制速度伸直手臂，回到起始位置。"
+    ],
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "barbell-bench-press",
+    "name": "杠铃卧推",
+    "english_name": "barbell bench press",
+    "aliases": [
+      "杠铃卧推"
+    ],
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "triceps",
+      "deltoids",
+      "biceps"
+    ],
+    "equipment": "杠铃",
+    "load_mode": "external",
+    "instructions": [
+      "平躺在长凳上，双脚平放在地上，背部紧贴长凳。",
+      "正手握住杠铃，握距略宽于肩宽。",
+      "将杠铃从架子上提起，并将其直接放在胸部上方，双臂完全伸展。",
+      "将杠铃慢慢降低到胸部，保持肘部内收。",
+      "当杠铃触及胸部时暂停片刻。",
+      "伸展双臂，将杠铃推回到起始位置。",
+      "重复所需的重复次数。"
+    ],
+    "description": "主要训练胸部。",
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "incline-dumbbell-press",
+    "name": "上斜哑铃卧推",
+    "english_name": "dumbbell incline bench press",
+    "aliases": [
+      "哑铃上斜卧推"
+    ],
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "triceps",
+      "deltoids",
+      "biceps"
+    ],
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "instructions": [
+      "设置一个 45 度角的上斜凳。",
+      "坐在长凳上，双脚平放在地上，背部紧贴长凳。",
+      "双手各握一个哑铃，掌心向前，将哑铃举至肩高。",
+      "慢慢地将哑铃降低到胸部两侧，保持肘部呈 90 度角。",
+      "将哑铃推回起始位置，充分伸展手臂。",
+      "重复所需的重复次数。"
+    ],
+    "description": "主要训练胸部。",
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "assisted-dip",
+    "name": "双杠臂屈伸（辅助）",
+    "english_name": "assisted chest dip (kneeling)",
+    "aliases": [
+      "辅助胸部双杠臂屈伸(跪姿)"
+    ],
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "triceps",
+      "deltoids"
+    ],
+    "equipment": "辅助双杠器",
+    "load_mode": "assistance",
+    "instructions": [
+      "将机器调整到您想要的高度，并将膝盖固定在垫子上。",
+      "手掌朝下，抓住手柄，双臂完全伸展。",
+      "弯曲肘部降低身体，直到上臂与地板平行。",
+      "暂停片刻，然后将自己推回到起始位置。",
+      "重复所需的重复次数。"
+    ],
+    "description": "主要训练胸部。使用辅助重量抵消部分体重，辅助量越小，难度越高。",
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "reverse-preacher-curl",
+    "name": "正握牧师器弯举",
+    "english_name": "reverse preacher curl machine",
+    "aliases": [
+      "反握牧师弯举",
+      "正握器械牧师弯举"
+    ],
+    "equipment": "牧师椅器械",
+    "muscles": [
+      "前臂",
+      "肱二头肌"
+    ],
+    "primary_muscles": [
+      "forearm",
+      "biceps"
+    ],
+    "secondary_muscles": [],
+    "load_mode": "external",
+    "description": "掌心向下握持，上臂保持在牧师垫上，完成受控的肘屈动作。",
+    "instructions": [
+      "调整座椅，让上臂稳定贴住牧师垫，掌心向下握住手柄。",
+      "保持手腕与前臂大致成一直线，弯曲肘部抬起重量。",
+      "在上臂保持贴垫的范围内完成动作，不靠抬肩借力。",
+      "缓慢放低手柄，避免肘部突然伸直。"
+    ],
+    "weight_note": "保持与既有记录相同的记重口径。"
+  },
+  {
+    "id": "machine-chest-press",
+    "name": "器械推胸",
+    "english_name": "machine chest press",
+    "equipment": "推胸机",
+    "load_mode": "external",
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "deltoids",
+      "triceps"
+    ],
+    "aliases": [
+      "推胸",
+      "坐姿推胸"
+    ],
+    "description": "主要训练胸部。",
+    "instructions": [
+      "调整座椅，让手柄大致位于胸部中段，双脚踩稳，背部贴住靠垫。",
+      "握稳手柄，将手柄向前推起，保持肩部稳定。",
+      "在自己可控制的范围内缓慢回放，避免配重片撞击。"
+    ],
+    "equipment_evidence": "IMG_3010",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "seated-cable-row",
+    "name": "坐姿绳索划船",
+    "english_name": "seated cable row",
+    "equipment": "低位划船器",
+    "load_mode": "external",
+    "muscles": [
+      "背部"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "deltoids",
+      "forearm"
+    ],
+    "aliases": [
+      "坐姿划船",
+      "低位划船"
+    ],
+    "description": "主要训练背部。",
+    "instructions": [
+      "坐稳并踩住脚踏，膝盖微屈，握住低位绳索手柄。",
+      "保持躯干稳定，将肘部向后拉，手柄靠近腹部。",
+      "控制手臂向前伸展，避免通过大幅后仰来拉动重量。"
+    ],
+    "equipment_evidence": "IMG_3020",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "assisted-pull-up",
+    "name": "辅助引体向上",
+    "english_name": "assisted pull-up",
+    "equipment": "辅助引体器",
+    "load_mode": "assistance",
+    "muscles": [
+      "背部"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "forearm"
+    ],
+    "aliases": [
+      "助力引体",
+      "辅助引体"
+    ],
+    "description": "辅助量越小，难度越高。主要训练背部。",
+    "instructions": [
+      "选择辅助重量，握稳上方手柄，再按器械说明缓慢将膝部放到辅助垫上。",
+      "保持身体稳定，向下带动肘部，把身体拉高到可控制的位置。",
+      "缓慢下降并伸展手臂；结束时扶稳把手，按器械说明离开辅助垫。"
+    ],
+    "equipment_evidence": "IMG_3005",
+    "weight_note": "记录辅助重量，数值越小越难。"
+  },
+  {
+    "id": "machine-shoulder-press",
+    "name": "器械推肩",
+    "english_name": "machine shoulder press",
+    "equipment": "推肩机",
+    "load_mode": "external",
+    "muscles": [
+      "肩部"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "triceps"
+    ],
+    "aliases": [
+      "肩上推举",
+      "坐姿推肩"
+    ],
+    "description": "主要训练肩部。",
+    "instructions": [
+      "调整座椅，让手柄起始位置略高于肩部，背部贴住靠垫。",
+      "选择握持舒适的手柄，稳定躯干，向上推起。",
+      "在可控制的范围内缓慢放下，不靠腰部后仰完成动作。"
+    ],
+    "equipment_evidence": "IMG_3009",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "dumbbell-lateral-raise",
+    "name": "哑铃侧平举",
+    "muscles": [
+      "肩部"
+    ],
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "english_name": "dumbbell lateral raise",
+    "aliases": [
+      "侧平举",
+      "三角肌中束"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "trapezius"
+    ],
+    "description": "主要训练肩部。",
+    "instructions": [
+      "双手持哑铃，站稳或坐稳，肘部保持轻微弯曲。",
+      "上臂向两侧略偏前方抬起，在可控制的范围内接近肩高。",
+      "允许肩胛自然上旋和适度抬升，避免突然抬肩抢动作、颈部明显紧绷或摆动躯干。",
+      "缓慢控制下放，保持肩部舒适。"
+    ],
+    "equipment_evidence": "用户确认有哑铃",
+    "weight_note": "每只哑铃重量；高脚杯深蹲记录单只总重。"
+  },
+  {
+    "id": "machine-triceps-extension",
+    "name": "器械三头伸展",
+    "english_name": "machine triceps extension",
+    "equipment": "三头伸展机",
+    "load_mode": "external",
+    "muscles": [
+      "肱三头肌"
+    ],
+    "primary_muscles": [
+      "triceps"
+    ],
+    "secondary_muscles": [],
+    "aliases": [
+      "器械臂屈伸",
+      "三头肌伸展"
+    ],
+    "description": "主要训练肱三头肌。",
+    "instructions": [
+      "调整座椅，使上臂稳定贴在支撑垫上，握住手柄。",
+      "保持上臂位置稳定，伸展肘部推下手柄。",
+      "缓慢屈肘回放，不通过抬肩或甩动身体完成动作。"
+    ],
+    "equipment_evidence": "IMG_3011",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "cable-triceps-pushdown",
+    "name": "绳索三头下压",
+    "english_name": "cable triceps pushdown",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "muscles": [
+      "肱三头肌"
+    ],
+    "primary_muscles": [
+      "triceps"
+    ],
+    "secondary_muscles": [],
+    "aliases": [
+      "绳索下压",
+      "三头下压"
+    ],
+    "description": "主要训练肱三头肌。",
+    "instructions": [
+      "将滑轮调高，连接绳索或短杆，站稳并握住把手。",
+      "上臂靠近身体两侧，通过伸肘将把手向下压。",
+      "保持上臂大致不动，控制把手回升，避免后仰借力。"
+    ],
+    "equipment_evidence": "用户确认有龙门架",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "cable-overhead-triceps-extension",
+    "name": "绳索过顶臂屈伸",
+    "english_name": "overhead cable triceps extension",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "muscles": [
+      "肱三头肌"
+    ],
+    "primary_muscles": [
+      "triceps"
+    ],
+    "secondary_muscles": [],
+    "aliases": [
+      "过顶三头伸展",
+      "过头臂屈伸"
+    ],
+    "description": "主要训练肱三头肌。",
+    "instructions": [
+      "将滑轮和把手调到适合的位置，背向滑轮，双手在头后握稳把手。",
+      "站姿保持稳定，上臂抬高，在肩部舒适的范围内伸展肘部。",
+      "控制屈肘回到起点，不靠腰部后仰借力；肩部不适时改用下压或器械伸展。"
+    ],
+    "equipment_evidence": "用户确认有龙门架",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "goblet-squat",
+    "name": "哑铃高脚杯深蹲",
+    "english_name": "dumbbell goblet squat",
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "muscles": [
+      "大腿、臀部"
+    ],
+    "primary_muscles": [
+      "quadriceps",
+      "gluteal"
+    ],
+    "secondary_muscles": [
+      "adductors",
+      "abs"
+    ],
+    "aliases": [
+      "高脚杯深蹲",
+      "杯式深蹲"
+    ],
+    "description": "主要训练大腿、臀部。",
+    "instructions": [
+      "双手在胸前抱住一只哑铃，双脚站稳，脚尖略向外。",
+      "保持躯干稳定，屈髋屈膝下蹲，让膝盖大致沿脚尖方向移动。",
+      "下蹲到自己可控制的深度，再通过双脚蹬地站起。"
+    ],
+    "equipment_evidence": "用户确认有哑铃",
+    "weight_note": "每只哑铃重量；高脚杯深蹲记录单只总重。"
+  },
+  {
+    "id": "barbell-back-squat",
+    "name": "杠铃背蹲",
+    "english_name": "barbell back squat",
+    "equipment": "深蹲架",
+    "load_mode": "external",
+    "muscles": [
+      "大腿、臀部"
+    ],
+    "primary_muscles": [
+      "quadriceps",
+      "gluteal"
+    ],
+    "secondary_muscles": [
+      "adductors",
+      "lower-back",
+      "abs"
+    ],
+    "aliases": [
+      "杠铃深蹲",
+      "背蹲"
+    ],
+    "description": "主要训练大腿、臀部。",
+    "instructions": [
+      "先调整杠铃和保护杆高度，确认卡箍、架位和保护条件合适。",
+      "将杠铃稳定放在上背部，握稳后出架，双脚站稳。",
+      "保持躯干稳定，屈髋屈膝下蹲到可控制的深度，再蹬地站起。",
+      "完成后向前回架；不熟悉架位或保护设置时先使用高脚杯深蹲。"
+    ],
+    "equipment_evidence": "IMG_3014",
+    "weight_note": "记录杠铃杆与两侧片的总重。"
+  },
+  {
+    "id": "dumbbell-romanian-deadlift",
+    "name": "哑铃罗马尼亚硬拉",
+    "english_name": "dumbbell Romanian deadlift",
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "muscles": [
+      "大腿后侧、臀部"
+    ],
+    "primary_muscles": [
+      "hamstring",
+      "gluteal"
+    ],
+    "secondary_muscles": [
+      "lower-back",
+      "forearm"
+    ],
+    "aliases": [
+      "哑铃RDL",
+      "罗马尼亚硬拉"
+    ],
+    "description": "主要训练大腿后侧、臀部。",
+    "instructions": [
+      "双手持哑铃放在大腿前方，膝盖保持轻微弯曲。",
+      "将臀部向后送，哑铃贴近腿部下降，躯干保持稳定。",
+      "下降到能够控制且大腿后侧有拉伸感的位置，再伸髋站起；不以触地为目标。"
+    ],
+    "equipment_evidence": "用户确认有哑铃",
+    "weight_note": "每只哑铃重量；高脚杯深蹲记录单只总重。"
+  },
+  {
+    "id": "prone-leg-curl",
+    "name": "俯卧腿弯举",
+    "english_name": "prone leg curl",
+    "equipment": "俯卧腿弯举机",
+    "load_mode": "external",
+    "muscles": [
+      "大腿后侧"
+    ],
+    "primary_muscles": [
+      "hamstring"
+    ],
+    "secondary_muscles": [
+      "calves"
+    ],
+    "aliases": [
+      "俯卧勾腿",
+      "腿弯举"
+    ],
+    "description": "主要训练大腿后侧。",
+    "instructions": [
+      "调整腿垫使其位于脚踝后侧附近，让膝关节与机器转轴大致对齐。",
+      "俯卧并握稳把手，保持髋部贴垫，通过屈膝带动滚垫。",
+      "在可控制的范围内慢慢伸膝回放，避免抬起髋部借力。"
+    ],
+    "equipment_evidence": "IMG_3006 / IMG_3007",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "machine-leg-extension",
+    "name": "器械腿屈伸",
+    "english_name": "leg extension",
+    "equipment": "腿屈伸机",
+    "load_mode": "external",
+    "muscles": [
+      "大腿前侧"
+    ],
+    "primary_muscles": [
+      "quadriceps"
+    ],
+    "secondary_muscles": [],
+    "aliases": [
+      "腿伸展",
+      "坐姿腿屈伸"
+    ],
+    "description": "主要训练大腿前侧。",
+    "instructions": [
+      "调整靠背，让膝关节与器械转轴大致对齐，滚垫放在小腿前侧靠近脚踝处。",
+      "握稳把手，背部贴住靠垫，伸膝抬起滚垫。",
+      "在可控制的范围内缓慢屈膝回放，避免靠摆动身体甩起重量。"
+    ],
+    "equipment_evidence": "IMG_3008",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "dumbbell-standing-calf-raise",
+    "name": "哑铃站姿提踵",
+    "english_name": "standing dumbbell calf raise",
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "muscles": [
+      "小腿"
+    ],
+    "primary_muscles": [
+      "calves"
+    ],
+    "secondary_muscles": [],
+    "aliases": [
+      "站姿提踵",
+      "小腿提踵"
+    ],
+    "description": "主要训练小腿。",
+    "instructions": [
+      "在平稳地面站立，手持哑铃；需要时用另一只手轻扶稳固支撑物。",
+      "保持身体稳定，抬起脚跟，用前脚掌支撑身体。",
+      "缓慢落下脚跟，避免通过弹跳完成动作。"
+    ],
+    "equipment_evidence": "用户确认有哑铃",
+    "weight_note": "每只哑铃重量；高脚杯深蹲记录单只总重。"
+  },
+  {
+    "id": "machine-abdominal-crunch",
+    "name": "器械卷腹",
+    "english_name": "machine abdominal crunch",
+    "equipment": "卷腹机",
+    "load_mode": "external",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs"
+    ],
+    "secondary_muscles": [],
+    "aliases": [
+      "卷腹机",
+      "坐姿卷腹"
+    ],
+    "description": "主要训练腹部。",
+    "instructions": [
+      "调整座椅，使上背部贴住支撑垫，双手握稳把手。",
+      "通过躯干屈曲向前卷起，避免只用手臂拉动把手。",
+      "控制躯干回到起始位置，不让配重片突然落下。"
+    ],
+    "equipment_evidence": "IMG_3004",
+    "weight_note": "记录器械显示重量。"
+  },
+  {
+    "id": "dumbbell-biceps-curl",
+    "name": "普通哑铃弯举",
+    "muscles": [
+      "肱二头肌"
+    ],
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "english_name": "Dumbbell biceps curl",
+    "aliases": [],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "description": "主要训练二头肌，家庭训练使用。",
+    "instructions": [
+      "站稳，双手持哑铃，保持上臂大致稳定。",
+      "弯曲肘部抬起哑铃，避免摆动躯干。",
+      "控制下放，使用肘部舒适的幅度。"
+    ],
+    "equipment_evidence": "用户确认家庭有哑铃和可调训练凳",
+    "weight_note": "记录每只哑铃重量；单只哑铃双手过顶臂屈伸记录该只哑铃总重。"
+  },
+  {
+    "id": "dumbbell-overhead-triceps-extension",
+    "name": "哑铃过顶臂屈伸",
+    "muscles": [
+      "肱三头肌"
+    ],
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "english_name": "Dumbbell overhead triceps extension",
+    "aliases": [],
+    "primary_muscles": [
+      "triceps"
+    ],
+    "secondary_muscles": [],
+    "description": "主要训练三头肌；双手持一只哑铃时记录该只哑铃总重。",
+    "instructions": [
+      "坐姿或站姿稳定躯干，双手握住一只哑铃，或使用舒适的单臂方式。",
+      "在肩肘舒适的幅度内屈肘下放，再伸肘抬起。",
+      "避免明显挺腰，出现肩肘不适时缩小幅度或调整动作。"
+    ],
+    "equipment_evidence": "用户确认家庭有哑铃和可调训练凳",
+    "weight_note": "记录每只哑铃重量；单只哑铃双手过顶臂屈伸记录该只哑铃总重。"
+  },
+  {
+    "id": "dumbbell-reverse-fly",
+    "name": "哑铃反向飞鸟",
+    "muscles": [
+      "肩后束",
+      "背部"
+    ],
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "english_name": "Dumbbell reverse fly",
+    "aliases": [],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "upper-back"
+    ],
+    "description": "主要训练三角肌后束，可采用胸托方式减少躯干代偿。",
+    "instructions": [
+      "俯身或胸托训练凳，保持躯干稳定，肘部轻微弯曲。",
+      "以可控重量向两侧打开双臂，感受肩后侧发力。",
+      "允许肩胛自然运动，避免甩动、突然抬肩和颈部明显紧绷。"
+    ],
+    "equipment_evidence": "用户确认家庭有哑铃和可调训练凳",
+    "weight_note": "记录每只哑铃重量；单只哑铃双手过顶臂屈伸记录该只哑铃总重。"
+  },
+  {
+    "id": "dumbbell-lying-triceps-extension",
+    "name": "哑铃仰卧臂屈伸",
+    "muscles": [
+      "肱三头肌"
+    ],
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "english_name": "Lying dumbbell triceps extension",
+    "aliases": [],
+    "primary_muscles": [
+      "triceps"
+    ],
+    "secondary_muscles": [],
+    "description": "公司漏做绳索下压时可按原组数在家替代，不额外增加组数。",
+    "instructions": [
+      "仰卧训练凳，双手持哑铃，上臂保持相对稳定。",
+      "在肘部舒适范围内屈肘下放，再控制伸肘。",
+      "使用轻到中等重量，避免强行追求深度。"
+    ],
+    "equipment_evidence": "用户确认家庭有哑铃和可调训练凳",
+    "weight_note": "记录每只哑铃重量；单只哑铃双手过顶臂屈伸记录该只哑铃总重。"
+  },
+  {
+    "id": "dumbbell-fly",
+    "name": "哑铃飞鸟",
+    "muscles": [
+      "胸部"
+    ],
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "english_name": "Dumbbell fly",
+    "aliases": [
+      "平板哑铃飞鸟"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "deltoids"
+    ],
+    "description": "仰卧训练凳，以可控重量进行胸部飞鸟。",
+    "instructions": [
+      "仰卧稳住躯干，肘部保持微屈。",
+      "在肩部舒适范围内缓慢打开双臂，再向上合拢。",
+      "避免为追求幅度过度下探。"
+    ],
+    "equipment_evidence": "用户已确认家庭有哑铃和可调训练凳",
+    "weight_note": "记录每只哑铃重量。"
+  },
+  {
+    "id": "kneeling-cable-crunch",
+    "name": "跪姿绳索卷腹",
+    "english_name": "Kneeling Cable Crunch",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs"
+    ],
+    "secondary_muscles": [],
+    "aliases": [],
+    "description": "收缩腹部，让肋骨向骨盆靠近。",
+    "instructions": [
+      "高位滑轮接绳索，跪稳，双手将绳索保持在头侧。",
+      "呼气卷起躯干，避免只用髋部折叠或手臂下拉。",
+      "控制回到起始位，保持绳索张力。"
+    ],
+    "equipment_evidence": "用户确认有龙门架、哑铃、训练凳和瑜伽垫",
+    "weight_note": "记录当前滑轮器械显示重量；首次用轻重量试练。"
+  },
+  {
+    "id": "cable-pallof-press-bilateral",
+    "name": "绳索抗旋转推（双侧）",
+    "english_name": "Bilateral Pallof Press",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs",
+      "obliques"
+    ],
+    "secondary_muscles": [],
+    "aliases": [],
+    "description": "每组左右各做一次；次数栏记录每侧次数，左右完成后再勾选。",
+    "instructions": [
+      "滑轮约胸口高度，侧身站立，双手将手柄握于胸前。",
+      "向前推出并停1–2秒，胸口和骨盆保持朝前。",
+      "每轮左右各10–12次，换侧约15秒；两侧完成后勾选一组，再休息60秒。"
+    ],
+    "equipment_evidence": "用户确认有龙门架、哑铃、训练凳和瑜伽垫",
+    "weight_note": "记录器械显示重量；次数为每侧次数，一组包含左右两侧。"
+  },
+  {
+    "id": "floor-crunch",
+    "name": "瑜伽垫卷腹",
+    "english_name": "Floor Crunch",
+    "equipment": "瑜伽垫",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs"
+    ],
+    "secondary_muscles": [],
+    "aliases": [],
+    "description": "肩胛骨稍离地，缓慢下放，不拉脖子。",
+    "instructions": [
+      "仰卧屈膝，脚掌落地，双手放胸前。",
+      "呼气使肋骨靠近骨盆，肩胛骨稍离地即可。",
+      "控制下放，不靠甩动或拉脖子完成。"
+    ],
+    "equipment_evidence": "用户确认有龙门架、哑铃、训练凳和瑜伽垫",
+    "weight_note": ""
+  },
+  {
+    "id": "forearm-plank",
+    "name": "前臂平板支撑",
+    "english_name": "Forearm Plank",
+    "equipment": "瑜伽垫",
+    "load_mode": "bodyweight",
+    "tracking": "duration",
+    "training_type": "strength",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs"
+    ],
+    "secondary_muscles": [],
+    "aliases": [],
+    "description": "以保持躯干稳定为标准，每组20–40秒。",
+    "instructions": [
+      "前臂撑地，肘部大致位于肩下。",
+      "肋骨与骨盆保持稳定，正常呼吸。",
+      "避免塌腰、抬臀；姿势开始失控时结束本组。"
+    ],
+    "equipment_evidence": "用户确认有龙门架、哑铃、训练凳和瑜伽垫",
+    "weight_note": ""
+  },
+  {
+    "id": "dumbbell-seated-calf-raise",
+    "name": "坐姿哑铃提踵",
+    "english_name": "Seated Dumbbell Calf Raise",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "小腿"
+    ],
+    "primary_muscles": [
+      "calves"
+    ],
+    "secondary_muscles": [],
+    "aliases": [],
+    "description": "坐稳后抬起脚跟，缓慢下放，偏重比目鱼肌。",
+    "instructions": [
+      "坐在稳固凳上，双脚落地，膝盖约90度。",
+      "将哑铃稳放在大腿靠近膝盖处，手扶住哑铃。",
+      "用前脚掌支撑抬起脚跟，再缓慢落下，避免弹动。"
+    ],
+    "equipment_evidence": "用户确认有龙门架、哑铃、训练凳和瑜伽垫",
+    "weight_note": "记录两腿上哑铃的合计重量；双脚同时完成。"
+  }
+]

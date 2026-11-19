@@ -1,0 +1,138 @@
+[
+  {
+    "id": "posture-forearm-wall-slide",
+    "name": "面墙前臂滑手",
+    "english_name": "Forearm Wall Slide",
+    "equipment": "墙面",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "mobility",
+    "muscles": [
+      "serratus",
+      "trapezius"
+    ],
+    "primary_muscles": [
+      "serratus",
+      "trapezius"
+    ],
+    "secondary_muscles": [],
+    "description": "日常体态与活动控制练习。动作保持舒适、正常呼吸；不强行压肩或追求极限幅度。",
+    "instructions": [
+      "面对墙站立，前臂轻贴墙，肋骨自然收住。",
+      "沿墙缓慢向上滑手，允许肩胛自然上旋，不强行压肩。",
+      "在舒适范围内缓慢返回，完成8–12次。"
+    ],
+    "weight_note": ""
+  },
+  {
+    "id": "posture-thoracic-extension",
+    "name": "坐姿胸椎伸展",
+    "english_name": "Seated Thoracic Extension",
+    "equipment": "椅子",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "mobility",
+    "muscles": [
+      "upper-back"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [],
+    "description": "日常体态与活动控制练习。动作保持舒适、正常呼吸；不强行压肩或追求极限幅度。",
+    "instructions": [
+      "坐稳，椅背上缘支撑胸椎附近，双手轻托后脑。",
+      "轻轻向后伸展上背，避免用腰部大幅后仰代偿。",
+      "正常呼吸，回到起始姿势；完成6–8次。"
+    ],
+    "weight_note": ""
+  },
+  {
+    "id": "posture-doorway-left",
+    "name": "门框胸肌拉伸 · 左侧",
+    "english_name": "Doorway Chest Stretch Left",
+    "equipment": "门框",
+    "load_mode": "bodyweight",
+    "tracking": "duration",
+    "training_type": "mobility",
+    "muscles": [
+      "chest"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [],
+    "description": "日常体态与活动控制练习。动作保持舒适、正常呼吸；不强行压肩或追求极限幅度。",
+    "instructions": [
+      "左前臂轻扶门框，手肘高度以舒适为准。",
+      "身体缓慢向前，至左胸前侧有轻柔牵拉感，不顶肩、不憋气。",
+      "保持20–30秒后放松；完成2组。"
+    ],
+    "weight_note": ""
+  },
+  {
+    "id": "posture-doorway-right",
+    "name": "门框胸肌拉伸 · 右侧",
+    "english_name": "Doorway Chest Stretch Right",
+    "equipment": "门框",
+    "load_mode": "bodyweight",
+    "tracking": "duration",
+    "training_type": "mobility",
+    "muscles": [
+      "chest"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [],
+    "description": "日常体态与活动控制练习。动作保持舒适、正常呼吸；不强行压肩或追求极限幅度。",
+    "instructions": [
+      "右前臂轻扶门框，手肘高度以舒适为准。",
+      "身体缓慢向前，至右胸前侧有轻柔牵拉感，不顶肩、不憋气。",
+      "保持20–30秒后放松；完成2组。"
+    ],
+    "weight_note": ""
+  },
+  {
+    "id": "posture-chin-tuck",
+    "name": "下巴轻收（可选）",
+    "english_name": "Chin Tuck",
+    "equipment": "自重",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "mobility",
+    "muscles": [],
+    "primary_muscles": [],
+    "secondary_muscles": [],
+    "description": "日常体态与活动控制练习。动作保持舒适、正常呼吸；不强行压肩或追求极限幅度。",
+    "instructions": [
+      "坐姿或站姿自然，目视前方。",
+      "下巴轻轻向后收，避免低头或用力挤压颈部。",
+      "每次保持约3秒后放松，完成8–10次；不适时跳过。"
+    ],
+    "weight_note": ""
+  },
+  {
+    "id": "posture-chest-supported-y-raise",
+    "name": "胸托 Y Raise",
+    "english_name": "Chest Supported Y Raise",
+    "equipment": "哑铃、上斜凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "mobility",
+    "muscles": [
+      "trapezius"
+    ],
+    "primary_muscles": [
+      "trapezius"
+    ],
+    "secondary_muscles": [],
+    "description": "日常体态与活动控制练习。动作保持舒适、正常呼吸；不强行压肩或追求极限幅度。",
+    "instructions": [
+      "凳子调至30–45°，胸口贴凳，拇指大致朝上。",
+      "双臂向斜前上方伸远，允许肩胛自然上旋和适度抬升。",
+      "避免突然抬肩、颈部紧绷与挺腰；2组，每组10–12次，保留充足余力。"
+    ],
+    "weight_note": "可先徒手熟悉动作；独立体态练习，不计入主计划72组。"
+  }
+]
