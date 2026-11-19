@@ -53,13 +53,13 @@ def _require_ai_configured() -> None:
 
 
 def _call_openai(prompt: str, _target_length: int = 1200, *, schema: dict | None = None,
-                 wall_timeout: float | None = None) -> str:
+                 wall_timeout: float | None = None, effort: str | None = None) -> str:
     try:
         deadline = monotonic() + wall_timeout if wall_timeout is not None else None
         client = OpenAI(
             api_key=get_access_token(),
             base_url="https://api.openai.com/v1",
-            timeout=90.0,
+            timeout=180.0 if effort in {"high", "xhigh", "max"} else 90.0,
             max_retries=0,
         )
         chunks = []
@@ -75,7 +75,7 @@ def _call_openai(prompt: str, _target_length: int = 1200, *, schema: dict | None
                 "invent measurements. Do not diagnose disease or replace medical advice."
             ),
             input=[{"role": "user", "content": prompt}],
-            reasoning={"effort": get_reasoning_effort()},
+            reasoning={"effort": effort or get_reasoning_effort()},
             store=False,
             stream=True,
             **format_options,
