@@ -32,27 +32,30 @@ struct NativeDashboardView: View {
                     observation.padding(.top, 4).layoutPriority(1)
                     // The page fills exactly one screen: whatever the observation's
                     // length, the leftover height goes to these gaps and the goal rows.
-                    flexGap(min: 4, max: 20)
-                    PineSectionHeader(title: "目标") {
+                    flexGap(min: 2, max: 8)
+                    PineSectionHeader(title: "目标", minHeight: 36) {
                         Text(isToday ? "今日" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
                     }
                     goalsCard(sessions[day["date"].text] ?? [])
-                    flexGap(min: 2, max: 20)
-                    PineSectionHeader(title: "本周") {
-                        Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
-                        Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 44)
+                    flexGap(min: 2, max: 8)
+                    // 36 pt header; the buttons keep a 44 pt hit area through their content shape.
+                    PineSectionHeader(title: "本周", minHeight: 36) {
+                        Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 36).contentShape(Rectangle().inset(by: -4))
+                        Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 36).contentShape(Rectangle().inset(by: -4))
                     }
                     weekCard(sessions)
-                    flexGap(min: 10, max: 22)
+                    flexGap(min: 10, max: 14)
                     bodyList
                     Spacer(minLength: 0)
                 }
-            }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
+            }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 16)
             .fillHeight(viewport)
         }
         .background {
             GeometryReader { proxy in
-                let visible = proxy.size.height - proxy.safeAreaInsets.top - proxy.safeAreaInsets.bottom
+                // The floating tab bar reaches about 24 pt above the reported bottom
+                // inset; keep the last row clear of it.
+                let visible = proxy.size.height - proxy.safeAreaInsets.top - proxy.safeAreaInsets.bottom - 24
                 Color.clear.onAppear { viewport = visible }.onChange(of: visible) { _, value in viewport = value }
             }
         }
@@ -185,17 +188,17 @@ struct NativeDashboardView: View {
                     Divider()
                     goalLine("体态 · 圆点", postureText, done: postureDone(day, sessions))
                 }
-            }.padding(.horizontal, 16).padding(.vertical, 8).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
+            }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
         }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
     }
     private func goalLine(_ title: String, _ detail: String, done: Bool) -> some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.pineRow.weight(.semibold)).foregroundStyle(.primary)
                 Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
             }.frame(maxWidth: .infinity, alignment: .leading)
             if done { Image(systemName: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine).accessibilityLabel("已完成") }
-        }.frame(minHeight: 40, maxHeight: 54)
+        }.frame(minHeight: 46, maxHeight: 58)
     }
 
     // MARK: Week

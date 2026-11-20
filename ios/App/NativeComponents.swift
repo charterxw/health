@@ -341,13 +341,14 @@ struct PineCircleIcon: View {
 /// Section title used on every page: one size, trailing accessories on the baseline.
 struct PineSectionHeader<Accessory: View>: View {
     let title: String
+    var minHeight: CGFloat = 44
     @ViewBuilder var accessory: Accessory
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             Text(title).font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             accessory
-        }.frame(minHeight: 44)
+        }.frame(minHeight: minHeight)
     }
 }
 extension PineSectionHeader where Accessory == EmptyView {
