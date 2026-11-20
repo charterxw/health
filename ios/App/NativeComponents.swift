@@ -41,6 +41,18 @@ struct PineDayGlyph: View {
                 Circle().trim(from: 0, to: min(1, activity))
                     .stroke(pine, style: StrokeStyle(lineWidth: 8 * unit, lineCap: .round))
                     .rotationEffect(.degrees(-90)).frame(width: 72 * unit, height: 72 * unit)
+                if activity > 1 {
+                    // Past the goal the ring keeps going over itself (up to a second
+                    // lap); a soft shadow under the leading tip shows where it overlaps.
+                    let end = min(1, activity - 1)
+                    Circle().trim(from: 0, to: end)
+                        .stroke(pine, style: StrokeStyle(lineWidth: 8 * unit, lineCap: .round))
+                        .rotationEffect(.degrees(-90)).frame(width: 72 * unit, height: 72 * unit)
+                    Circle().trim(from: max(0, end - 0.015), to: end)
+                        .stroke(pine, style: StrokeStyle(lineWidth: 8 * unit, lineCap: .round))
+                        .rotationEffect(.degrees(-90)).frame(width: 72 * unit, height: 72 * unit)
+                        .shadow(color: .black.opacity(0.35), radius: max(0.8, 3 * unit))
+                }
             }
             Circle().stroke(base, lineWidth: 7 * unit).frame(width: 42 * unit, height: 42 * unit)
             ForEach(0..<min(2, halves.count), id: \.self) { index in

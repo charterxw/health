@@ -215,28 +215,34 @@ struct NativeDashboardView: View {
             }.lineLimit(1).minimumScaleFactor(0.8)
         }.frame(maxWidth: .infinity, minHeight: 46, maxHeight: 58, alignment: .leading)
     }
-    /// This week's steps, one bar per day; a full-height bar meets the goal.
+    /// This week's steps, one bar per day. The lower part runs up to the goal; a day
+    /// past the goal adds its extra above a small gap (capped at two thirds more).
     private func stepBars(goal: Double?) -> some View {
         let rows: [(date: String, steps: Double?)] = home["days"].array.map { row in
             let date = row["date"].text
             let value = date == home["date"].text ? home["today"]["steps"].number : home["metrics"].array.first { $0["date"].text == date }?["steps"].number
             return (date, date > home["date"].text ? nil : value)
         }
-        let top = max(goal ?? 0, rows.compactMap(\.steps).max() ?? 0, 1)
-        return HStack(alignment: .bottom, spacing: 3) {
+        let target = max(goal ?? 0, 1), goalHeight: CGFloat = 18, extraCap: CGFloat = 12
+        return HStack(alignment: .bottom, spacing: 0) {
             ForEach(rows, id: \.date) { row in
-                let ratio = (row.steps ?? 0) / top, met = (row.steps ?? 0) >= (goal ?? .infinity)
-                Capsule().fill(row.steps == nil ? pineTrack : met ? pine : pine.opacity(0.35))
-                    .frame(height: max(3, 26 * ratio))
-                    .frame(maxWidth: .infinity, maxHeight: 26, alignment: .bottom)
-                    .overlay(alignment: .bottom) { if row.date == day["date"].text { Circle().fill(pine).frame(width: 3, height: 3).offset(y: 6) } }
+                let steps = row.steps ?? 0
+                let below = CGFloat(min(1, steps / target)) * goalHeight
+                let extra = min(extraCap, CGFloat(max(0, steps / target - 1)) * goalHeight)
+                VStack(spacing: 2) {
+                    if extra > 0 { RoundedRectangle(cornerRadius: 2).fill(pine).frame(width: 6, height: max(2, extra)) }
+                    RoundedRectangle(cornerRadius: 2).fill(row.steps == nil ? pineTrack : steps >= target ? pine : pine.opacity(0.35))
+                        .frame(width: 6, height: row.steps == nil ? 2 : max(2, below))
+                    Circle().fill(row.date == day["date"].text ? pine : .clear).frame(width: 3, height: 3).padding(.top, 1)
+                }.frame(maxWidth: .infinity)
             }
-        }.frame(height: 26).padding(.bottom, 6).accessibilityHidden(true)
+        }.frame(height: goalHeight + extraCap + 2 + 6, alignment: .bottom).accessibilityHidden(true)
     }
     private var stepsTile: some View {
         // The selected day's steps: today's live count, or the daily history.
         let stepsValue: JSONValue = isToday ? home["today"]["steps"] : home["metrics"].array.first { $0["date"] == day["date"] }?["steps"] ?? .null
         let steps = stepsValue.number, goal = home["step_goal"]["target"].number
+        let distance: JSONValue = isToday ? home["today"]["distance_km"] : home["metrics"].array.first { $0["date"] == day["date"] }?["distance_km"] ?? .null
         let fraction = steps.flatMap { s in goal.flatMap { $0 > 0 ? min(1, s / $0) : nil } } ?? 0
         let detail: String = {
             guard let steps, let goal, goal > 0 else { return "" }
@@ -245,13 +251,14 @@ struct NativeDashboardView: View {
         return Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text("步数").font(.caption).foregroundStyle(.secondary)
-                Spacer(minLength: 6)
                 Text(displayNumber(stepsValue, digits: 0)).font(.title3.weight(.semibold)).monospacedDigit()
                     .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.7)
                     .contentTransition(reduceMotion ? .identity : .numericText(value: steps ?? 0))
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: steps)
                 if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(fraction >= 1 ? pine : Color.secondary).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8) }
-                stepBars(goal: goal).padding(.top, 8)
+                if let km = distance.number, km > 0 { Text(displayNumber(.number(km), digits: 1) + " 公里").font(.caption).foregroundStyle(.secondary).monospacedDigit() }
+                Spacer(minLength: 6)
+                stepBars(goal: goal)
             }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
         }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine)
