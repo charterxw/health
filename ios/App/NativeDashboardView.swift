@@ -35,7 +35,7 @@ struct NativeDashboardView: View {
                     // length, the leftover height goes to these gaps and the goal rows.
                     flexGap(min: 2, max: 8)
                     PineSectionHeader(title: "目标", minHeight: 36) {
-                        Text(isToday ? "今日" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
+                        Text(isToday ? "" : dayTitle(day["date"].text, format: "M/d")).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("home-selected-date")
                     }
                     goalsCard(sessions[day["date"].text] ?? [])
                     flexGap(min: 2, max: 8)
@@ -117,29 +117,33 @@ struct NativeDashboardView: View {
         let summary = lines.isEmpty ? home["tip"].text : lines.joined(separator: " ")
         let evening = store.brief["title"].text.contains("晚") || store.brief["period"].text == "evening"
         let pending = store.brief["status"].text == "pending"
-        // The whole observation is readable on the overview (smaller type, no line
-        // cap); the detail page keeps sources and history.
-        return HStack(alignment: .top, spacing: 0) {
+        let written = NativeDate.parse(store.brief["generated_at"]).map { " · " + NativeDate.label($0, format: "HH:mm", timezone: timezone) } ?? ""
+        // The whole observation is readable on the overview; the text runs the full
+        // width, and the re-analyse control sits on the label line instead of
+        // taking a column of its own.
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
+                Text((evening ? "晚间观察" : "早间观察") + (lines.isEmpty ? "" : written)).font(.caption.weight(.semibold)).foregroundStyle(pine)
+                Spacer(minLength: 8)
+                // Manual trigger: rewrite the observation now, even if the data is unchanged.
+                Button { Task { await store.loadBrief(force: true) } } label: {
+                    Group { if pending { ProgressView().controlSize(.mini) } else { Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pine) } }
+                        .frame(width: 28, height: 20).contentShape(Rectangle().inset(by: -12))
+                }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview)
+                    .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
+            }
             NavigationLink { NativeBriefDetail() } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(evening ? "晚间观察" : "早间观察").font(.caption.weight(.semibold)).foregroundStyle(pine)
-                    Text(pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.subheadline).lineSpacing(2)
-                        .foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
-                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }.padding(.vertical, 12).padding(.leading, 14).contentShape(Rectangle())
+                Text(pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.subheadline).lineSpacing(2)
+                    .foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
+                    .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-observation").accessibilityHint("点按查看来源和历史")
-            // Manual trigger: rewrite the observation now, even if the data is unchanged.
-            Button { Task { await store.loadBrief(force: true) } } label: {
-                Group { if pending { ProgressView().controlSize(.mini) } else { Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pine) } }
-                    .frame(width: 44, height: 40)
-            }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview)
-                .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
         }
+        .padding(.horizontal, 16).padding(.vertical, 12)
         // A steady card: it reserves about five lines, so a short or long observation
         // does not move the sections below.
         .frame(maxWidth: .infinity, maxHeight: 150, alignment: .top)
-        .background(pineSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     // MARK: Goals of the selected day
