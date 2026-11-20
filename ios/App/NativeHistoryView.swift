@@ -478,36 +478,38 @@ struct NativeMonthCalendar: View {
             let key = NativeDate.day(date, timezone: timezone); return Cell(id: key, key: key, number: offset + 1)
         }
         let focus = selected.isEmpty ? today : selected
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(spacing: 6) {
+        // Sized so a six-row month and the selected day fit one iPhone screen.
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(spacing: 2) {
                 HStack {
-                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset -= 1 } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.accessibilityLabel("上个月")
+                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset -= 1 } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 36) }.accessibilityLabel("上个月")
                     Spacer()
                     Text(NativeDate.label(shown, format: "yyyy年M月", timezone: timezone)).font(.headline)
                     Spacer()
-                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset += 1 } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }.disabled(monthOffset >= 0).accessibilityLabel("下个月")
+                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset += 1 } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 36) }.disabled(monthOffset >= 0).accessibilityLabel("下个月")
                 }
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
-                    ForEach(["一","二","三","四","五","六","日"], id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary).frame(height: 20) }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
+                    ForEach(["一","二","三","四","五","六","日"], id: \.self) { Text($0).font(.caption2).foregroundStyle(.secondary).frame(height: 16) }
                     ForEach(cells) { cell in cellView(cell, sessions[cell.key] ?? [], focus: focus) }
                 }
-            }.padding(.horizontal, 8).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            Text("外圈活动 · 中圈两次力量 · 圆点体态").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            }.padding(.horizontal, 8).padding(.vertical, 6).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                // The legend lives on the overview's goal card; here it stays for VoiceOver.
+                .accessibilityHint("外圈活动，中圈两次力量，圆点体态")
             dayDetail(focus, sessions[focus] ?? [])
         }
     }
     @ViewBuilder private func cellView(_ cell: Cell, _ list: [NativeDaySession], focus: String) -> some View {
-        if cell.key.isEmpty { Color.clear.frame(height: 56) }
+        if cell.key.isEmpty { Color.clear.frame(height: 46) }
         else {
             let future = cell.key > today
             let chosen = cell.key == focus
             let numberColor: Color = chosen ? pine : (future ? .secondary : .primary)
             Button { selected = cell.key } label: {
-                VStack(spacing: 2) {
-                    Text("\(cell.number)").font(.caption.weight(chosen ? .bold : .regular)).monospacedDigit().foregroundStyle(numberColor)
-                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(cell.key)), posture: posture(cell.key, list), future: future, size: 34)
+                VStack(spacing: 1) {
+                    Text("\(cell.number)").font(.caption2.weight(chosen ? .bold : .regular)).monospacedDigit().foregroundStyle(numberColor)
+                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(cell.key)), posture: posture(cell.key, list), future: future, size: 30)
                 }
-                .frame(maxWidth: .infinity, minHeight: 56)
+                .frame(maxWidth: .infinity, minHeight: 46)
                 .background(chosen ? pineTint : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .contentShape(Rectangle())
             }
@@ -536,14 +538,14 @@ struct NativeMonthCalendar: View {
         let strength = list.filter { !$0.posture }, practice = list.filter(\.posture)
         let inWeek = store.home["days"].array.first { $0["date"].text == key }
         let kcal = inWeek?["activity"] ?? store.home["metrics"].array.first { $0["date"].text == key }?["calories_burned"] ?? .null
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 14) {
-                PineDayGlyph(activity: activity(key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(key)), posture: posture(key, list), future: key > today, size: 60)
-                VStack(alignment: .leading, spacing: 3) {
+        let summary = ["活动 " + displayNumber(kcal, digits: 0) + " 千卡" + (inWeek == nil && !kcal.isNull ? "（含训练）" : ""),
+                       strength.isEmpty ? "力量 —" : "力量 \(strength.count) 次", practice.isEmpty ? "体态 —" : "体态 已做"].joined(separator: " · ")
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 12) {
+                PineDayGlyph(activity: activity(key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(key)), posture: posture(key, list), future: key > today, size: 40)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(dayTitle(key, format: "M月d日 EEE")).font(.headline)
-                    Text("活动 " + displayNumber(kcal, digits: 0) + " 千卡" + (inWeek == nil && !kcal.isNull ? "（含训练）" : "")).font(.footnote).foregroundStyle(.secondary)
-                    Text(strength.isEmpty ? "力量 没有记录" : "力量 \(strength.count) 次").font(.footnote).foregroundStyle(.secondary)
-                    Text(practice.isEmpty ? "体态 没有记录" : "体态 已做").font(.footnote).foregroundStyle(.secondary)
+                    Text(summary).font(.footnote).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85)
                 }
                 Spacer(minLength: 0)
             }
@@ -554,10 +556,10 @@ struct NativeMonthCalendar: View {
                         NavigationLink { NativeReportView(id: session.id) } label: {
                             HStack(spacing: 10) {
                                 Text(session.start.map { NativeDate.label($0, format: "HH:mm", timezone: timezone) } ?? "—").font(.subheadline).monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .leading)
-                                Text(session.title).font(.subheadline).foregroundStyle(.primary).lineLimit(1)
+                                Text(session.title).font(.pineRow).foregroundStyle(.primary).lineLimit(1)
                                 Spacer(minLength: 4)
                                 Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-                            }.frame(minHeight: 44).contentShape(Rectangle())
+                            }.frame(minHeight: 42).contentShape(Rectangle())
                         }.buttonStyle(.plain)
                     }
                 }
