@@ -161,52 +161,56 @@ struct NativeDashboardView: View {
         let target = day["target"].integer, sets = day["sets"].integer
         let places = sessions.filter { !$0.posture }.map { $0.title.contains("公司") ? "公司" : $0.title.contains("家庭") ? "家庭" : "训练" }
         let weekend = NativeDays.isWeekend(day["date"].text)
-        // Each row reads like a list cell: what on the left, the number on the right.
-        let strength: (value: String, note: String) = {
-            if places.count >= 2 { return ("\(sets) 组", "两次已练") }
-            if let place = places.first { return (weekend || target <= sets ? "\(sets) 组" : "\(sets)/\(target) 组", place + "已练") }
-            if weekend { return ("可选", "休息为主 · 家庭") }
-            guard strengthPlanned(day) else { return ("休息", "今天不安排") }
-            return ("\(target) 组", (future ? "计划" : "待练") + (day["strength_optional"].flag ? " · 可选" : ""))
+        // Each row: a small label, the value as the main line, and a compact status
+        // on the right (share of the goal or sessions done), so no column sits empty.
+        let half = halves(day, sessions)
+        let strength: (value: String, status: String) = {
+            let done = half.filter { $0 >= 1 }.count, status = half.isEmpty ? "" : "\(done)/\(half.count)"
+            if places.count >= 2 { return ("两次已练 · \(sets) 组", status) }
+            if let place = places.first { return (place + "已练 · " + (weekend || target <= sets ? "\(sets) 组" : "\(sets)/\(target) 组"), status) }
+            if weekend { return ("休息为主 · 家庭可练", "") }
+            guard strengthPlanned(day) else { return ("今天休息", "") }
+            return ((future ? "计划 " : "待练 · ") + "\(target) 组" + (day["strength_optional"].flag ? " · 可选" : ""), status)
         }()
-        let strengthDone: Bool = { let h = halves(day, sessions); return h.count == 2 && h.allSatisfy { $0 >= 1 } }()
+        let strengthDone = half.count >= 1 && half.allSatisfy { $0 >= 1 } && (weekend || half.count == 2)
         let posture = sessions.last { $0.posture }
-        let postureValue: (value: String, note: String) = {
+        let postureMet = postureDone(day, sessions)
+        let postureText: String = {
             if let posture, let start = posture.start {
                 let minutes = posture.end.map { max(1, Int(($0.timeIntervalSince(start) / 60).rounded())) }
-                return (NativeDate.label(start, format: "HH:mm", timezone: timezone), minutes.map { "\($0) 分钟" } ?? "已完成")
+                return NativeDate.label(start, format: "HH:mm", timezone: timezone) + (minutes.map { " · \($0) 分钟" } ?? "")
             }
-            if day["posture"].flag { return ("已完成", "") }
-            return day["posture_planned"].flag ? (future ? "计划" : "待完成", "5–8 分钟") : ("—", "今天不安排")
+            if day["posture"].flag { return "已完成" }
+            return day["posture_planned"].flag ? (future ? "计划 · 5–8 分钟" : "待完成 · 5–8 分钟") : "今天不安排"
         }()
-        let activity = (displayNumber(day["activity"], digits: 0) + " 千卡", "目标 " + displayNumber(day["goals"]["dailyActivity"], digits: 0))
+        let activityValue = displayNumber(day["activity"], digits: 0) + " / " + displayNumber(day["goals"]["dailyActivity"], digits: 0) + " 千卡"
+        let activityStatus = fraction.map { "\(Int(($0 * 100).rounded()))%" } ?? ""
         return Button { showingDay = true } label: {
             HStack(spacing: 16) {
-                PineDayGlyph(activity: fraction, halves: halves(day, sessions), posture: postureDone(day, sessions), future: future, size: 96)
+                PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 96)
                 VStack(spacing: 0) {
-                    goalLine("活动", ring: "外圈", activity.0, activity.1, done: (fraction ?? 0) >= 1)
+                    goalLine("活动 · 外圈", activityValue, activityStatus, done: (fraction ?? 0) >= 1)
                     Divider()
-                    goalLine("力量", ring: "中圈", strength.value, strength.note, done: strengthDone)
+                    goalLine("力量 · 中圈", strength.value, strength.status, done: strengthDone)
                     Divider()
-                    goalLine("体态", ring: "圆点", postureValue.value, postureValue.note, done: postureDone(day, sessions))
+                    goalLine("体态 · 圆点", postureText, postureMet ? "" : (day["posture_planned"].flag ? "0/1" : ""), done: postureMet)
                 }
             }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
         }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
     }
-    private func goalLine(_ title: String, ring: String, _ value: String, _ note: String, done: Bool) -> some View {
+    private func goalLine(_ label: String, _ value: String, _ status: String, done: Bool) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.pineRow.weight(.semibold)).foregroundStyle(.primary)
-                Text(ring).font(.caption).foregroundStyle(.tertiary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).font(.caption).foregroundStyle(.secondary)
+                Text(value).font(.pineRow.weight(.semibold)).monospacedDigit().foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.85)
             }
             Spacer(minLength: 4)
-            VStack(alignment: .trailing, spacing: 3) {
-                HStack(spacing: 4) {
-                    if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
-                    Text(value).font(.pineRow.weight(.semibold)).monospacedDigit().foregroundStyle(done ? pine : Color.primary)
-                }
-                if !note.isEmpty { Text(note).font(.footnote).foregroundStyle(.secondary).monospacedDigit() }
-            }.lineLimit(1)
+            if done {
+                Label(status.isEmpty || status.hasSuffix("%") == false ? "完成" : status, systemImage: "checkmark")
+                    .labelStyle(.titleAndIcon).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(pine)
+            } else if !status.isEmpty {
+                Text(status).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
+            }
         }.frame(minHeight: 46, maxHeight: 58)
     }
 
