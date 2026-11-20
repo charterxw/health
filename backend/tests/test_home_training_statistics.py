@@ -48,32 +48,6 @@ class HomeTrainingStatistics(unittest.TestCase):
         report = h.summary()
         return next(d for d in report['days'] if d['date'] == report['date'])
 
-    def test_confirmed_old_template_advances_plan_without_inventing_work(self):
-        session=self.session('old-template')
-        ids=[x for pair in zip(h.COMPANY,h.HOME) for x in pair]
-        templates={key:{'name':key,'exercises':[{'exercise_id':'barbell-bench-press','set_count':3}]} for key in ids}
-        slots=[{'template_id':key,'name':key,'exercises':[{'exercise_id':'barbell-bench-press','target':3}]} for key in ids]
-        slots[0]['completion_confirmation']={'session_ids':[session['id']],'date':'2026-11-16','reason':'template_mismatch'}
-        with database.get_db() as c:
-            c.execute('INSERT INTO home_rounds(created_at,document) VALUES (?,?)',('2026-11-16T00:00:00-05:00',json.dumps(slots)))
-            c.commit()
-        result=h.plan_state([session],templates)
-        self.assertTrue(result['slots'][0]['completed'])
-        self.assertTrue(result['slots'][0]['completion_confirmed'])
-        self.assertEqual((result['slots'][0]['done'],result['slots'][0]['target']),(1,3))
-        self.assertEqual(result['slots'][0]['remaining'][0]['target'],2)
-        self.assertEqual(result['next']['template_id'],ids[1])
-        # A deleted or no-longer-completed source cannot sustain confirmation.
-        self.assertFalse(h.plan_state([],templates)['slots'][0]['completed'])
-        active=copy.deepcopy(session);active['status']='active'
-        self.assertFalse(h.plan_state([active],templates)['slots'][0]['completed'])
-        # The confirmation belongs to this round, never to the reusable template.
-        with database.get_db() as c:
-            c.execute('UPDATE home_rounds SET closed=1');c.commit()
-        fresh=h.plan_state([],templates)
-        self.assertFalse(fresh['slots'][0]['completed'])
-        self.assertNotIn('completion_confirmation',fresh['slots'][0])
-
     def test_posture_does_not_add_strength_sets_or_energy_windows(self):
         strength=self.session('strength');posture=self.session('posture',posture=True)
         self.save(strength);self.save(posture)
@@ -103,45 +77,77 @@ class HomeTrainingStatistics(unittest.TestCase):
             c.execute("DELETE FROM strength_sessions WHERE id='plank'");c.commit()
         self.assertEqual(self.today()['sets'],0)
 
-    def test_optional_e_is_third_day_without_changing_mandatory_slots_or_confirmations(self):
+    def plan_templates(self, store=False):
         from app import strength_training as strength
-        ids=[x for pair in zip(h.COMPANY,h.HOME) for x in pair]
-        templates={key:{'id':key,'name':key,'exercises':[{'exercise_id':'barbell-bench-press','set_count':3}]} for key in ids}
-        templates.update({t.id:t.model_dump(mode='json') for t in strength.TEMPLATES if t.id in ['personal-company-e','personal-home-e']})
-        with patch.object(h,'now',lambda:datetime(2026,11,16,0,tzinfo=h.TZ)):
-            initial=h.plan_state([],templates)
-        records=[]
-        for i,key in enumerate(ids[:4]):
-            s=self.session('main-'+str(i));s['template_id']=key
-            s['exercises'][0]['sets']=[{**s['exercises'][0]['sets'][0],'id':f'set-{i}-{n}'} for n in range(3)]
-            records.append(s)
-        wednesday=datetime(2026,11,18,12,tzinfo=h.TZ)
-        with patch.object(h,'now',lambda:wednesday):
-            result=h.plan_state(records,templates)
-            self.assertEqual([d['letter'] for d in result['schedule']],['A','B','E','C','D'])
-            self.assertEqual(result['current']['letter'],'E')
-            self.assertTrue(result['current']['optional'])
-            self.assertEqual(result['next']['template_id'],h.COMPANY[2])
-            self.assertEqual(len(result['slots']),8)
-            self.assertEqual(result['target'],initial['target'])
-            active=self.session('started-c',status='active');active['template_id']=h.COMPANY[2]
-            self.assertEqual(h.plan_state(records+[active],templates)['current']['letter'],'C')
-        with patch.object(h,'now',lambda:wednesday+__import__('datetime').timedelta(days=1)):
-            self.assertEqual(h.plan_state(records,templates)['current']['letter'],'C')
+        templates={t.id:t.model_dump(mode='json') for t in strength.TEMPLATES if t.id.startswith('pine-')}
+        if store:
+            with database.get_db() as c:
+                for key,doc in templates.items():
+                    c.execute('INSERT INTO strength_templates VALUES (?,?,1)',(key,strength.encode(doc)))
+                c.commit()
+        return templates
 
-    def test_wednesday_overview_and_guidance_mark_e_as_optional(self):
-        from app import strength_training as strength
+    def plan_session(self, ident, template, sets, when='2026-11-17T18:00:00Z'):
+        movements,left=[],sets
+        for m in template['exercises']:
+            work=m['set_count']-(m.get('warmup_count') or 0)
+            rows=[{'id':f'{ident}-{m["exercise_id"]}-{n}','completed_at':when if n<min(work,left) else None,'warmup':False,'reps':10,'weight':20}
+                  for n in range(work)]
+            left-=min(work,left)
+            movements.append({'exercise_id':m['exercise_id'],'tracking':'reps','training_type':'strength','sets':rows})
+        return {'id':ident,'template_id':template['id'],'title':template['name'],'status':'completed',
+                'started_at':when,'ended_at':when,'exercises':movements}
+
+    def test_plan_days_accept_halves_or_a_whole_day_session(self):
+        templates=self.plan_templates()
+        start=h.plan_state([],templates)
+        self.assertEqual([d['letter'] for d in start['schedule']],['A','B','E','C','D'])
+        self.assertEqual((start['done'],start['target']),(0,90))
+        self.assertEqual(start['next']['template_id'],'pine-a-company')
+        self.assertEqual(len(start['slots']),20)
+        records=[self.plan_session('a-company',templates['pine-a-company'],9),
+                 self.plan_session('b-gym',templates['pine-b-gym'],18),
+                 self.plan_session('e-house',templates['pine-e-house'],5)]
+        result=h.plan_state(records,templates)
+        a,b,e=result['schedule'][:3]
+        self.assertTrue(a['slots'][0]['completed']);self.assertFalse(a['completed'])
+        self.assertEqual(result['next']['template_id'],'pine-a-home')
+        self.assertEqual(result['current']['letter'],'A')
+        self.assertTrue(b['completed']);self.assertTrue(all(x['completed'] for x in b['slots']))
+        self.assertEqual((e['done'],e['slots'][0]['done'],e['slots'][1]['done']),(5,5,0))
+        self.assertEqual(result['done'],9+18+5)
+        # A whole-day session counts once even when both halves are also present.
+        extra=h.plan_state(records+[self.plan_session('b-company',templates['pine-b-company'],9)],templates)
+        self.assertEqual(extra['schedule'][1]['done'],18)
+
+    def test_previous_plan_round_is_closed_when_the_new_plan_starts(self):
+        templates=self.plan_templates()
         with database.get_db() as c:
-            for t in strength.TEMPLATES:
-                if t.id in ['personal-company-e','personal-home-e']:
-                    c.execute('INSERT INTO strength_templates VALUES (?,?,1)',(t.id,strength.encode(t.model_dump(mode='json'))))
+            c.execute('INSERT INTO home_rounds(created_at,document) VALUES (?,?)',('2026-11-09T00:00:00-05:00',json.dumps([{'template_id':'guided-upper-a'}])))
             c.commit()
-        with patch.object(h,'now',lambda:datetime(2026,11,18,12,tzinfo=h.TZ)):
-            report=h.summary();day=next(d for d in report['days'] if d['date']==report['date'])
-            self.assertTrue(day['strength_optional'])
-            self.assertFalse(day['strength_planned'])
-            self.assertEqual((day['short'],day['target']),('腹',18))
-            self.assertIn('可选',report['tip'])
+        result=h.plan_state([],templates)
+        with database.get_db() as c:
+            rounds=c.execute('SELECT id,closed FROM home_rounds ORDER BY id').fetchall()
+        self.assertEqual([tuple(r) for r in rounds],[(1,1),(2,0)])
+        self.assertEqual(result['id'],2)
+
+    def test_week_rows_follow_the_round_and_saturday_is_optional(self):
+        templates=self.plan_templates(store=True)
+        with patch.object(h,'now',lambda:datetime(2026,11,16,9,tzinfo=h.TZ)):
+            report=h.summary()
+        days=report['days']
+        self.assertEqual([d['short'] for d in days],['肩','背','腹','肩','背','选','休'])
+        self.assertEqual([d['target'] for d in days[:5]],[18]*5)
+        self.assertTrue(all(d['strength_planned'] for d in days[:5]))
+        self.assertTrue(days[5]['strength_optional']);self.assertFalse(days[5]['strength_planned'])
+        self.assertEqual(report['action']['template_id'],'pine-a-company')
+        # Once today's day is finished, tomorrow takes the next day of the round.
+        self.save(self.plan_session('mon',templates['pine-a-gym'],18,'2026-11-16T15:00:00Z'))
+        with patch.object(h,'now',lambda:datetime(2026,11,16,18,tzinfo=h.TZ)):
+            report=h.summary()
+        self.assertEqual([d['short'] for d in report['days'][:5]],['肩','背','腹','肩','背'])
+        self.assertEqual(report['days'][0]['sets'],18)
+        self.assertEqual(report['action']['template_id'],'pine-b-company')
 
     def test_empty_unchecked_and_warmup_timed_strength_are_excluded(self):
         session=self.session('plank',timed=True)

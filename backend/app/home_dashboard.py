@@ -24,6 +24,13 @@ FAMILY = 'users/me/dataSourceFamilies/google-wearables'
 COMPANY = ['guided-upper-a', 'guided-lower-a', 'guided-upper-b', 'guided-lower-b']
 HOME = ['personal-home-a', 'personal-home-b', 'personal-home-c', 'personal-home-d']
 SHORT = ['胸', '背', '上', '背']
+# The 2026-11 plan: five training days in order. Each day can be done as a
+# company half plus a home half, all at the company, or all at home.
+PLAN_DAYS = [('A', '肩'), ('B', '背'), ('E', '腹'), ('C', '肩'), ('D', '背')]
+VARIANTS = ['company', 'home', 'gym', 'house']
+PLAN_IDS = [f'pine-{letter.lower()}-{variant}' for letter, _ in PLAN_DAYS for variant in VARIANTS]
+PLAN_DAY_OF = {tid: i // len(VARIANTS) for i, tid in enumerate(PLAN_IDS)}
+OPTIONAL_ID = 'pine-sat-optional'
 _lock = asyncio.Lock()
 
 
@@ -256,86 +263,80 @@ async def refresh():
         return await asyncio.gather(*jobs) if jobs else None
 
 
+def _work(template):
+    return [{'exercise_id': m['exercise_id'], 'target': m['set_count'] - (m.get('warmup_count') or 0)} for m in template['exercises']]
+
+
 def plan_state(sessions, templates):
-    ids = [x for pair in zip(COMPANY, HOME) for x in pair]
+    """Progress through the current round of five days.
+
+    A day's 18 sets can come from either half, or from a company-only or
+    home-only session; whole-day sessions fill the company half first.
+    """
+    if not all(x in templates for x in PLAN_IDS):
+        return None
     with get_db() as conn:
         schema(conn)
         current = conn.execute('SELECT * FROM home_rounds WHERE closed=0 ORDER BY id DESC LIMIT 1').fetchone()
-        if not current and all(x in templates for x in ids):
-            slots = [{'template_id': x, 'name': templates[x]['name'], 'short': '家' if i % 2 else SHORT[i//2],
-                      'exercises': [{'exercise_id': m['exercise_id'], 'target': m['set_count'] - (m.get('warmup_count') or 0)}
-                                    for m in templates[x]['exercises']]} for i, x in enumerate(ids)]
-            conn.execute('INSERT INTO home_rounds(created_at,document) VALUES (?,?)', (now().isoformat(), json.dumps(slots, ensure_ascii=False)))
-            current = conn.execute('SELECT * FROM home_rounds ORDER BY id DESC LIMIT 1').fetchone()
+        if current and not isinstance(json.loads(current['document']), dict):
+            # A round of the previous plan stays in history as closed.
+            conn.execute('UPDATE home_rounds SET closed=1 WHERE id=?', (current['id'],))
+            current = None
         if not current:
-            return None
-        slots = json.loads(current['document'])
-        # Known template identity is safe to link; unrelated historical workouts remain separate.
+            document = {'version': 2, 'templates': {x: {'name': templates[x]['name'], 'exercises': _work(templates[x])} for x in PLAN_IDS}}
+            conn.execute('INSERT INTO home_rounds(created_at,document) VALUES (?,?)', (now().isoformat(), json.dumps(document, ensure_ascii=False)))
+            current = conn.execute('SELECT * FROM home_rounds ORDER BY id DESC LIMIT 1').fetchone()
+        snapshot_ = json.loads(current['document'])['templates']
+        started = parse(current['created_at'])
         linked = {r[0] for r in conn.execute('SELECT session_id FROM home_plan_allocations UNION SELECT session_id FROM home_plan_ignored')}
         for session in sessions:
-            if session['id'] in linked or session.get('template_id') not in ids or not completed_sets(session):
+            if session['id'] in linked or session.get('template_id') not in PLAN_IDS or not completed_sets(session):
                 continue
-            if (parse(session.get('started_at')) or now()) < parse(current['created_at']):
+            if (parse(session.get('started_at')) or now()) < started:
                 continue
-            slot = ids.index(session['template_id'])
-            conn.execute('INSERT OR IGNORE INTO home_plan_allocations VALUES (?,?,?)', (session['id'], current['id'], slot))
+            conn.execute('INSERT OR IGNORE INTO home_plan_allocations VALUES (?,?,?)', (session['id'], current['id'], PLAN_IDS.index(session['template_id'])))
         links = [(r[0], r[1]) for r in conn.execute('SELECT session_id,slot FROM home_plan_allocations WHERE round_id=?', (current['id'],))]
         conn.commit()
-    used = set()
-    finished_sessions = {s['id'] for s in sessions if s.get('status') == 'completed' and completed_sets(s)}
-    for i, slot in enumerate(slots):
-        counts = {}
-        quotas = {m['exercise_id']: m['target'] for m in slot['exercises']}
+    used, progress = set(), {}
+    for i, tid in enumerate(PLAN_IDS):
+        work = snapshot_[tid]['exercises']
+        quotas, counts = {m['exercise_id']: m['target'] for m in work}, {}
         for session in sessions:
             if (session['id'], i) not in links:
                 continue
             for movement, item in completed_sets(session):
-                key = movement['exercise_id']
-                token = (session['id'], item['id'])
+                key, token = movement['exercise_id'], (session['id'], item['id'])
                 if token in used or counts.get(key, 0) >= quotas.get(key, 0):
                     continue
                 counts[key] = counts.get(key, 0) + 1
                 used.add(token)
-        slot['done'] = sum(min(m['target'], counts.get(m['exercise_id'], 0)) for m in slot['exercises'])
-        slot['target'] = sum(m['target'] for m in slot['exercises'])
-        slot['remaining'] = [{**m, 'target': max(0, m['target']-counts.get(m['exercise_id'], 0))} for m in slot['exercises']]
-        slot['remaining'] = [m for m in slot['remaining'] if m['target']]
-        confirmation = slot.get('completion_confirmation') or {}
-        references = confirmation.get('session_ids') or []
-        slot['completion_confirmed'] = bool(references and set(references) <= finished_sessions)
-        slot['completed'] = slot['done'] >= slot['target'] or slot['completion_confirmed']
-    result = {'id': current['id'], 'slots': slots, 'done': sum(s['done'] for s in slots), 'target': sum(s['target'] for s in slots),
-              'next': next((s for s in slots if not s['completed']), None), 'links': links}
-    schedule = [{'letter': letter, 'day': day, 'optional': False, 'slots': slots[i*2:i*2+2]}
-                for i, (letter, day) in enumerate([('A',1),('B',2),('C',4),('D',5)])]
-    e_ids = ['personal-company-e', 'personal-home-e']
-    if all(key in templates for key in e_ids):
-        optional_slots = []
-        for key in e_ids:
-            t = templates[key]
-            counts = {}
-            for session in sessions:
-                if session.get('template_id') != key or session.get('status') == 'discarded' or (parse(session.get('started_at')) or now()) < parse(current['created_at']):
-                    continue
-                for movement, item in completed_sets(session):
-                    ident = movement['exercise_id']
-                    counts[ident] = counts.get(ident, 0) + 1
-            remaining = [{'exercise_id': m['exercise_id'], 'target': max(0,m['set_count']-(m.get('warmup_count') or 0)-counts.get(m['exercise_id'],0))} for m in t['exercises']]
-            target = sum(m['set_count']-(m.get('warmup_count') or 0) for m in t['exercises'])
-            done = target-sum(m['target'] for m in remaining)
-            optional_slots.append({'template_id':key,'name':t['name'],'short':'腹','optional':True,'target':target,'done':done,
-                                   'completed':done>=target,'remaining':[m for m in remaining if m['target']]})
-        schedule.insert(2, {'letter':'E','day':3,'optional':True,'slots':optional_slots})
-    result['schedule'] = schedule
-    result['current'] = next((day for day in schedule if result['next'] in day['slots']), None)
-    # E is available between B and C, without blocking Thursday or a started C.
-    e = next((day for day in schedule if day['optional']), None)
-    c_started = any(s.get('template_id') in [COMPANY[2],HOME[2]] and
-                    (s.get('status') == 'active' or completed_sets(s)) and
-                    (parse(s.get('started_at')) or now()) >= parse(current['created_at']) for s in sessions)
-    if e and all(s['completed'] for s in slots[:4]) and result['next'] in slots[4:6] and now().weekday() == 2 and not c_started and not all(s['completed'] for s in e['slots']):
-        result['current'] = e
-    return result
+        remaining = [{**m, 'target': m['target'] - counts.get(m['exercise_id'], 0)} for m in work]
+        progress[tid] = (sum(min(m['target'], counts.get(m['exercise_id'], 0)) for m in work),
+                         sum(m['target'] for m in work), [m for m in remaining if m['target'] > 0])
+    slots, schedule = [], []
+    for d, (letter, short) in enumerate(PLAN_DAYS):
+        company, home_, gym, house = PLAN_IDS[d*4:d*4+4]
+        target_c, target_h = progress[company][1], progress[home_][1]
+        whole = progress[gym][0] + progress[house][0]
+        done_c = min(target_c, progress[company][0] + whole)
+        done_h = min(target_h, progress[home_][0] + max(0, progress[company][0] + whole - target_c))
+        target = target_c + target_h
+        day_done = min(target, done_c + done_h)
+        def slot(tid, variant, done, total):
+            return {'template_id': tid, 'name': snapshot_[tid]['name'], 'short': '家' if variant in ['home', 'house'] else short,
+                    'letter': letter, 'variant': variant, 'exercises': snapshot_[tid]['exercises'],
+                    'done': done, 'target': total, 'remaining': progress[tid][2], 'completed': done >= total}
+        day_slots = [slot(company, 'company', done_c, target_c), slot(home_, 'home', done_h, target_h),
+                     slot(gym, 'gym', day_done, target), slot(house, 'house', day_done, target)]
+        slots.extend(day_slots)
+        schedule.append({'letter': letter, 'day': d + 1, 'short': short, 'optional': False, 'slots': day_slots[:2],
+                         'variants': {'gym': day_slots[2], 'house': day_slots[3]},
+                         'done': day_done, 'target': target, 'completed': day_done >= target})
+    next_day = next((day for day in schedule if not day['completed']), None)
+    return {'id': current['id'], 'version': 2, 'slots': slots, 'schedule': schedule, 'links': links,
+            'done': sum(day['done'] for day in schedule), 'target': sum(day['target'] for day in schedule),
+            'next': next((x for x in next_day['slots'] if not x['completed']), None) if next_day else None,
+            'current': next_day}
 
 
 def initial_goals(activity):
@@ -438,6 +439,9 @@ def summary():
     mapped = {r['date']: r for r in metrics}
     energies = {r['date']: r for r in activity}
     rows = []
+    today_plan_days = [PLAN_DAY_OF[s['template_id']] for s in strength_sessions if s.get('template_id') in PLAN_DAY_OF and completed_sets(s)
+                       and parse(s.get('started_at')) and parse(s['started_at']).astimezone(TZ).date() == current]
+    today_plan_day = today_plan_days[-1] if today_plan_days else None
     for i in range(7):
         day = week + timedelta(days=i)
         key = day.isoformat()
@@ -446,23 +450,27 @@ def summary():
         posture_sessions = [s for s in sessions if any(on_day(item) for _, item in completed_posture_sets(s))]
         done = sum(sum(on_day(item) for _, item in completed_sets(s)) for s in daily_sessions)
         target = sum(sum(not is_posture_movement(m) and not x.get('warmup') and (on_day(x) or not x.get('completed_at') and parse(s['started_at']).astimezone(TZ).date() == day) for m in s['exercises'] for x in m['sets']) for s in daily_sessions)
-        planned = i in [0, 1, 3, 4] and day >= current
-        optional = i == 2 and 'personal-company-e' in templates and 'personal-home-e' in templates
+        planned = i < 5 and day >= current
+        optional = i == 5 and OPTIONAL_ID in templates
         tag = '休'
         if daily_sessions:
             t = daily_sessions[-1].get('template_id') or ''
-            tag = '腹' if t in ['personal-company-e','personal-home-e'] else SHORT[COMPANY.index(t)] if t in COMPANY else '家' if t in HOME or 'weekend' in t else '练'
-            if t in COMPANY:
-                target += sum(m['set_count']-(m.get('warmup_count') or 0) for m in templates.get(HOME[COMPANY.index(t)], {}).get('exercises', []))
+            if t in PLAN_DAY_OF and plan:
+                plan_day = plan['schedule'][PLAN_DAY_OF[t]]
+                tag, target = plan_day['short'], plan_day['target']
+            else:
+                tag = '腹' if t in ['personal-company-e','personal-home-e'] else SHORT[COMPANY.index(t)] if t in COMPANY else '选' if t == OPTIONAL_ID else '家' if t in HOME or 'weekend' in t else '练'
+                if t in COMPANY:
+                    target += sum(m['set_count']-(m.get('warmup_count') or 0) for m in templates.get(HOME[COMPANY.index(t)], {}).get('exercises', []))
         elif optional:
-            tag = '腹'
-            target = sum(m['set_count']-(m.get('warmup_count') or 0) for key in ['personal-company-e','personal-home-e'] for m in templates[key]['exercises'])
-        elif planned and plan and plan['next']:
-            offset = [0, 1, 3, 4].index(i) - sum(x < current.weekday() for x in [0, 1, 3, 4])
-            next_index = plan['slots'].index(plan['next'])
-            pair = min(3, next_index//2 + max(0, offset))
-            tag = SHORT[pair]
-            target = sum(s['target'] for s in plan['slots'][pair*2:pair*2+2])
+            tag = '选'
+        elif planned and plan and plan['current']:
+            # Days ahead follow the round in order. When today's day is already
+            # finished, the round's current day belongs to tomorrow.
+            current_index = plan['schedule'].index(plan['current'])
+            offset = i - current.weekday() - (1 if today_plan_day is not None and today_plan_day != current_index else 0)
+            plan_day = plan['schedule'][(current_index + max(0, offset)) % len(plan['schedule'])]
+            tag, target = plan_day['short'], plan_day['target']
         energy = energies.get(key, {})
         intervals, reliable = training_windows(sessions, day, parse(energy.get('cutoff')) or now()) if day <= current else ([], True)
         signature = [[a.isoformat(), b.isoformat()] for a, b in intervals]
@@ -478,23 +486,21 @@ def summary():
     feeling = feedback.get(current.isoformat(), {})
     active = next((s for s in strength_sessions if s['status'] == 'active'), None)
     today_sessions = [s for s in strength_sessions if parse(s['started_at']).astimezone(TZ).date() == current]
-    optional_today = bool(current.weekday() == 2 and 'personal-company-e' in templates and 'personal-home-e' in templates)
-    current_day = plan and plan.get('current')
-    next_slot = next((s for s in current_day['slots'] if not s['completed']),None) if current_day and current_day['optional'] else plan and plan['next']
+    next_slot = plan and plan['next']
     tired = feeling.get('energy') == '困倦' or feeling.get('fatigue') == '重' or (today.get('sleep_hours') or 9) < 6 or recover.get('caution')
     trained = any(completed_sets(s) for s in today_sessions)
     if active:
         tip = '先热身看看状态，今天可以适当减量。' if tired else '继续今天的训练，按自己的节奏完成。'
-    elif next_slot and next_slot['short'] == '家' and trained:
+    elif next_slot and next_slot.get('variant') == 'home' and trained:
         tip = '先看热身状态，家庭训练可以适当减量。' if tired else '今天还剩家庭训练，晚上接着完成。'
     elif trained:
         tip = '今天训练已记录，晚上照常遛狗即可。'
     elif tired:
         tip = '今天状态偏疲惫，训练前先热身看看。'
-    elif optional_today:
-        tip = '今天可选练腹部和小腿，也可以休息，遛狗散步照常。'
-    elif current.weekday() in [0, 1, 3, 4]:
+    elif current.weekday() < 5:
         tip = '按原计划训练，遛狗散步照常。'
+    elif current.weekday() == 5:
+        tip = '今天可以选练肩和手臂的小肌群，也可以休息，遛狗散步照常。'
     else:
         tip = '今天按计划休息，照常遛狗散步。'
     primary_sleep = next((s for s in sleeps if s['date'] == current.isoformat() and not s.get('is_nap')), None)
@@ -603,7 +609,7 @@ def edit_walk(value: WalkEdit):
 
 class Link(BaseModel):
     session_id: str = Field(max_length=80)
-    slot: int = Field(ge=0, le=7)
+    slot: int = Field(ge=0, le=len(PLAN_IDS) - 1)
     remove: bool = False
 
 

@@ -74,7 +74,7 @@ struct PineDayGlyph: View {
 
 /// Expands the server's one-character plan tags for display.
 func planLabel(_ short: String) -> String {
-    ["家": "家庭", "腹": "腹部", "上": "上胸", "胸": "胸部", "背": "背部", "休": "休息", "练": "训练"][short] ?? short
+    ["家": "家庭", "腹": "腹部和腿", "上": "上胸", "胸": "胸部", "肩": "肩宽", "背": "背宽", "选": "选练", "休": "休息", "练": "训练"][short] ?? short
 }
 
 private struct PinePreviewReduceMotionKey: EnvironmentKey {

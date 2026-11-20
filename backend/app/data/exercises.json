@@ -934,5 +934,539 @@
     ],
     "equipment_evidence": "用户确认有龙门架、哑铃、训练凳和瑜伽垫",
     "weight_note": "记录两腿上哑铃的合计重量；双脚同时完成。"
+  },
+  {
+    "id": "cable-single-arm-lateral-raise",
+    "name": "绳索单臂侧平举",
+    "english_name": "cable single-arm lateral raise",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "肩部"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "trapezius"
+    ],
+    "aliases": [],
+    "description": "单臂绳索侧平举，主要训练三角肌中束。",
+    "instructions": [
+      "滑轮调到最低，挂单手把手，身体侧对龙门架，用离滑轮较远的手握把手。",
+      "肘部微屈，手臂从身体前方向侧上方抬起，接近肩高即可。",
+      "缓慢放回身体前方，躯干保持不晃。",
+      "一侧做完再换另一侧，两侧次数相同。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录配重片重量；左右各做一组算一组。"
+  },
+  {
+    "id": "incline-dumbbell-curl",
+    "name": "上斜哑铃弯举",
+    "english_name": "incline dumbbell curl",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "二头"
+    ],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "背靠上斜凳弯举，手臂在身体后方，二头在拉长位置受力。",
+    "instructions": [
+      "训练凳调到约 45–60 度，背贴凳面坐好，手臂自然下垂到身体后方。",
+      "掌心向前，上臂保持不动，弯举到肘部完全弯曲。",
+      "缓慢下放到手臂完全伸直。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每只哑铃重量。"
+  },
+  {
+    "id": "bayesian-cable-curl",
+    "name": "背后绳索弯举",
+    "english_name": "Bayesian cable curl",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "二头"
+    ],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "背对低位滑轮单臂弯举，手臂在身体后方，二头在拉长位置受力。",
+    "instructions": [
+      "滑轮调到最低，挂单手把手，背对龙门架向前走一步，手臂被拉到身体后方。",
+      "上臂保持在身后，弯举到肘部完全弯曲。",
+      "缓慢放回到手臂伸直。",
+      "一侧做完再换另一侧。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录配重片重量；左右各做一组算一组。"
+  },
+  {
+    "id": "hammer-curl",
+    "name": "锤式弯举",
+    "english_name": "hammer curl",
+    "equipment": "哑铃",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "二头",
+      "前臂"
+    ],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "掌心相对的弯举，侧重肱肌和前臂，让手臂从正面和侧面看更粗。",
+    "instructions": [
+      "掌心相对握哑铃，上臂贴近身体。",
+      "弯举到前臂接近垂直，手腕保持中立。",
+      "缓慢下放到手臂伸直，身体不前后摆。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每只哑铃重量。"
+  },
+  {
+    "id": "chest-supported-reverse-fly",
+    "name": "胸贴凳反向飞鸟",
+    "english_name": "chest-supported reverse fly",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "肩后束"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "upper-back",
+      "trapezius"
+    ],
+    "aliases": [],
+    "description": "胸口贴在上斜凳上做反向飞鸟，身体无法借力，专练三角肌后束。",
+    "instructions": [
+      "训练凳调到约 30–45 度，胸口贴住凳面趴好，双臂自然下垂。",
+      "肘部微屈，向两侧打开双臂，直到上臂接近与身体平行。",
+      "缓慢下放，胸口始终贴住凳面。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每只哑铃重量。"
+  },
+  {
+    "id": "band-pull-apart",
+    "name": "弹力带拉开",
+    "english_name": "band pull-apart",
+    "equipment": "弹力带",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "肩后束",
+      "上背"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "upper-back",
+      "trapezius"
+    ],
+    "aliases": [],
+    "description": "越往外拉阻力越大，练三角肌后束，也照顾体态。",
+    "instructions": [
+      "双手与肩同宽握住弹力带，手臂向前伸直到胸前。",
+      "向两侧拉开，直到弹力带碰到胸口，肩胛向后收。",
+      "缓慢回到起点，手臂保持伸直、不耸肩。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录次数；换更粗的弹力带时在备注写明。"
+  },
+  {
+    "id": "incline-dumbbell-fly",
+    "name": "上斜哑铃飞鸟",
+    "english_name": "incline dumbbell fly",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "deltoids"
+    ],
+    "aliases": [],
+    "description": "上斜角度的飞鸟，侧重上胸，底部拉伸充分。",
+    "instructions": [
+      "训练凳调到约 30 度仰卧，哑铃举在胸口上方，掌心相对。",
+      "肘部微屈，向两侧缓慢打开，直到胸部有明显拉伸。",
+      "像抱大树一样合拢回到起点，全程保持肘部角度。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每只哑铃重量。"
+  },
+  {
+    "id": "reverse-crunch",
+    "name": "反向卷腹",
+    "english_name": "reverse crunch",
+    "equipment": "瑜伽垫",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs"
+    ],
+    "secondary_muscles": [
+      "obliques"
+    ],
+    "aliases": [],
+    "description": "从骨盆一端卷起的卷腹，作为腹部动作的变化。",
+    "instructions": [
+      "仰卧，屈膝抬腿使大腿垂直地面，双手放在身体两侧。",
+      "收腹把骨盆卷离地面，膝盖向胸口靠近。",
+      "缓慢放下骨盆，不甩腿借力。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": ""
+  },
+  {
+    "id": "decline-weighted-crunch",
+    "name": "下斜负重卷腹",
+    "english_name": "decline weighted crunch",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腹部"
+    ],
+    "primary_muscles": [
+      "abs"
+    ],
+    "secondary_muscles": [
+      "obliques"
+    ],
+    "aliases": [],
+    "description": "抱哑铃在下斜凳上卷腹，可以逐步加重。",
+    "instructions": [
+      "训练凳调成下斜，脚勾住凳尾，哑铃抱在胸前。",
+      "呼气让肋骨靠近骨盆，上背卷离凳面。",
+      "控制下放到上背接近凳面，不拉脖子、不靠惯性。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录抱的哑铃重量。"
+  },
+  {
+    "id": "leg-press",
+    "name": "腿举",
+    "english_name": "leg press",
+    "equipment": "腿举机",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腿部",
+      "臀部"
+    ],
+    "primary_muscles": [
+      "quadriceps",
+      "gluteal"
+    ],
+    "secondary_muscles": [
+      "hamstring"
+    ],
+    "aliases": [],
+    "description": "稳定、好学的腿部复合动作，维持股四头和臀。",
+    "instructions": [
+      "坐好，背和臀贴紧靠垫，双脚与肩同宽踩在踏板中部。",
+      "解开保险后屈膝下放，直到膝盖接近胸口、下背仍贴住靠垫。",
+      "用全脚掌推回，膝盖不要锁死。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录器械显示或所加杠片的总重量。"
+  },
+  {
+    "id": "seated-dumbbell-shoulder-press",
+    "name": "坐姿哑铃推肩",
+    "english_name": "seated dumbbell shoulder press",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "肩部"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "triceps"
+    ],
+    "aliases": [],
+    "description": "器械推肩的家庭替代动作。",
+    "instructions": [
+      "训练凳调到接近垂直，背贴凳面坐好，哑铃举到肩旁。",
+      "向上推到手臂接近伸直，哑铃在头顶略靠拢。",
+      "缓慢下放回肩旁。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每只哑铃重量。"
+  },
+  {
+    "id": "single-arm-dumbbell-row",
+    "name": "单臂哑铃划船",
+    "english_name": "single-arm dumbbell row",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "背部"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "单臂划船，手肘贴身拉向髋部，练背阔和中背。",
+    "instructions": [
+      "同侧手和膝撑在平板凳上，背部保持平直，另一只手持哑铃自然下垂。",
+      "手肘贴近身体，向髋部方向拉起哑铃。",
+      "缓慢下放到手臂伸直、肩胛被拉开。",
+      "一侧做完再换另一侧。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每侧相同重量；左右各做一组算一组。"
+  },
+  {
+    "id": "band-assisted-pull-up",
+    "name": "弹力带辅助引体向上",
+    "english_name": "band-assisted pull-up",
+    "equipment": "引体杆、弹力带",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "背部"
+    ],
+    "primary_muscles": [
+      "upper-back"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "门框引体杆加弹力带辅助的引体向上，在家练背宽，也是学会引体向上的路径。",
+    "instructions": [
+      "把弹力带挂在引体杆上，一侧膝盖或脚踩进弹力带。",
+      "正握略宽于肩，向下带动手肘，把身体拉到下巴接近杆。",
+      "缓慢下放到手臂伸直。",
+      "能完成 3 组 8 次后，换更细的弹力带。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录次数；在备注写明弹力带颜色或粗细。"
+  },
+  {
+    "id": "dumbbell-concentration-curl",
+    "name": "单臂集中弯举",
+    "english_name": "dumbbell concentration curl",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "二头"
+    ],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "手肘抵住大腿内侧弯举，作用接近牧师凳弯举。",
+    "instructions": [
+      "坐在凳边，手肘内侧抵住同侧大腿内侧，手臂自然下垂。",
+      "弯举到肘部完全弯曲，上臂不离开大腿。",
+      "缓慢放下到手臂伸直。",
+      "一侧做完再换另一侧。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每侧相同重量；左右各做一组算一组。"
+  },
+  {
+    "id": "close-grip-push-up",
+    "name": "窄距俯卧撑",
+    "english_name": "close-grip push-up",
+    "equipment": "瑜伽垫",
+    "load_mode": "bodyweight",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "胸部",
+      "三头"
+    ],
+    "primary_muscles": [
+      "chest",
+      "triceps"
+    ],
+    "secondary_muscles": [
+      "deltoids"
+    ],
+    "aliases": [],
+    "description": "辅助双杠臂屈伸的家庭替代动作。",
+    "instructions": [
+      "双手略窄于肩撑地，身体从头到脚保持一条直线。",
+      "手肘贴近身体下放，胸口接近地面。",
+      "推回起点。",
+      "太轻时把脚垫高，太难时改为跪姿。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录次数。"
+  },
+  {
+    "id": "bulgarian-split-squat",
+    "name": "保加利亚分腿蹲",
+    "english_name": "Bulgarian split squat",
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "腿部",
+      "臀部"
+    ],
+    "primary_muscles": [
+      "quadriceps",
+      "gluteal"
+    ],
+    "secondary_muscles": [
+      "hamstring"
+    ],
+    "aliases": [],
+    "description": "后脚搭凳的单腿蹲，在家只用哑铃就能练得很充分。",
+    "instructions": [
+      "背对训练凳，一只脚的脚背搭在凳上，前脚向前一大步，双手持哑铃。",
+      "垂直下蹲到后膝接近地面，前脚全脚掌踩稳。",
+      "用前腿推回起点。",
+      "一侧做完再换另一侧。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "每只哑铃重量；左右各做一组算一组。"
+  },
+  {
+    "id": "cable-rope-hammer-curl",
+    "name": "绳索锤式弯举",
+    "english_name": "cable rope hammer curl",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "二头",
+      "前臂"
+    ],
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearm"
+    ],
+    "aliases": [],
+    "description": "用绳索把手做锤式弯举。",
+    "instructions": [
+      "滑轮调到最低，挂绳索把手，掌心相对握住两端。",
+      "上臂贴近身体，弯举到前臂接近垂直。",
+      "缓慢放回到手臂伸直。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录配重片重量。"
+  },
+  {
+    "id": "cable-reverse-fly",
+    "name": "绳索交叉反向飞鸟",
+    "english_name": "cable reverse fly",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "肩后束"
+    ],
+    "primary_muscles": [
+      "deltoids"
+    ],
+    "secondary_muscles": [
+      "upper-back",
+      "trapezius"
+    ],
+    "aliases": [],
+    "description": "两侧滑轮交叉拉开，阻力稳定，练三角肌后束。",
+    "instructions": [
+      "两侧滑轮调到肩高，左手握右侧绳索、右手握左侧绳索。",
+      "手臂微屈向两侧打开，直到手臂与身体成一直线。",
+      "缓慢回到交叉位置。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录单侧配重片重量。"
+  },
+  {
+    "id": "low-cable-fly",
+    "name": "低位绳索夹胸",
+    "english_name": "low-to-high cable fly",
+    "equipment": "龙门架",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "deltoids"
+    ],
+    "aliases": [],
+    "description": "从下往上合拢的绳索夹胸，侧重上胸，全程有张力。",
+    "instructions": [
+      "两侧滑轮调到最低，挂单手把手，站在中间。",
+      "手臂微屈，从身体两侧下方向上、向内合拢到上胸前方。",
+      "缓慢打开回到起点，感受胸部拉伸。"
+    ],
+    "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
+    "weight_note": "记录单侧配重片重量。"
   }
 ]

@@ -645,7 +645,7 @@ struct NativePlanView: View {
         List {
             Section {
                 Text("\(plan["done"].integer) / \(plan["target"].integer) 工作组").font(.title2.bold())
-                Text("本轮可以跨周，可选 E 不影响主训练进度。").font(.footnote).foregroundStyle(.secondary)
+                Text(plan["version"].integer == 2 ? "本轮按 A、B、E、C、D 五天顺序进行，可以跨周；每天可以选公司+家庭、只公司或只家庭。" : "本轮可以跨周，可选 E 不影响主训练进度。").font(.footnote).foregroundStyle(.secondary)
             }
             ForEach(Array(plan["schedule"].array.enumerated()), id: \.offset) { _, day in
                 Section("第\(day["day"].integer)天 · " + day["letter"].text + (day["optional"].flag ? " · 可选" : "")) {

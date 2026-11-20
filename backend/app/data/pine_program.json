@@ -1,0 +1,1252 @@
+[
+  {
+    "id": "pine-a-company",
+    "name": "A · 公司｜肩宽·三头",
+    "description": "在公司完成的一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 25,
+    "duration_max": 30,
+    "exercises": [
+      {
+        "exercise_id": "incline-dumbbell-press",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "machine-shoulder-press",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-a-home",
+    "name": "A · 家庭｜肩宽·三头",
+    "description": "在家完成的另一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 20,
+    "duration_max": 25,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-a-gym",
+    "name": "A · 公司全练｜肩宽·三头",
+    "description": "今天只在公司练，优先用器械和绳索。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "incline-dumbbell-press",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "machine-shoulder-press",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "set_count": 6,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "machine-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-a-house",
+    "name": "A · 家庭全练｜肩宽·三头",
+    "description": "今天只在家练，用哑铃、训练凳、弹力带和引体杆。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "incline-dumbbell-press",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "seated-dumbbell-shoulder-press",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 6,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-b-company",
+    "name": "B · 公司｜背宽·二头",
+    "description": "在公司完成的一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 25,
+    "duration_max": 30,
+    "exercises": [
+      {
+        "exercise_id": "wide-grip-pulldown",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "single-arm-pulldown",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 12,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "machine-preacher-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-b-home",
+    "name": "B · 家庭｜背宽·二头",
+    "description": "在家完成的另一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 20,
+    "duration_max": 25,
+    "exercises": [
+      {
+        "exercise_id": "incline-dumbbell-curl",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "chest-supported-reverse-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-b-gym",
+    "name": "B · 公司全练｜背宽·二头",
+    "description": "今天只在公司练，优先用器械和绳索。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "wide-grip-pulldown",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "single-arm-pulldown",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 12,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "machine-preacher-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "bayesian-cable-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-reverse-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-b-house",
+    "name": "B · 家庭全练｜背宽·二头",
+    "description": "今天只在家练，用哑铃、训练凳、弹力带和引体杆。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "band-assisted-pull-up",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 6,
+        "rep_max": 10,
+        "target_reps": 6
+      },
+      {
+        "exercise_id": "single-arm-dumbbell-row",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-concentration-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "incline-dumbbell-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "chest-supported-reverse-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-e-company",
+    "name": "E · 公司｜腹·腿",
+    "description": "在公司完成的一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 25,
+    "duration_max": 30,
+    "exercises": [
+      {
+        "exercise_id": "leg-press",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "kneeling-cable-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-e-home",
+    "name": "E · 家庭｜腹·腿",
+    "description": "在家完成的另一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 20,
+    "duration_max": 25,
+    "exercises": [
+      {
+        "exercise_id": "decline-weighted-crunch",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "reverse-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10
+      },
+      {
+        "exercise_id": "band-pull-apart",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 15,
+        "rep_max": 25,
+        "target_reps": 15
+      }
+    ]
+  },
+  {
+    "id": "pine-e-gym",
+    "name": "E · 公司全练｜腹·腿",
+    "description": "今天只在公司练，优先用器械和绳索。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "leg-press",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "kneeling-cable-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "machine-abdominal-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "reverse-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10
+      },
+      {
+        "exercise_id": "cable-reverse-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-e-house",
+    "name": "E · 家庭全练｜腹·腿",
+    "description": "今天只在家练，用哑铃、训练凳、弹力带和引体杆。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "bulgarian-split-squat",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "decline-weighted-crunch",
+        "set_count": 6,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "reverse-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10
+      },
+      {
+        "exercise_id": "band-pull-apart",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 15,
+        "rep_max": 25,
+        "target_reps": 15
+      }
+    ]
+  },
+  {
+    "id": "pine-c-company",
+    "name": "C · 公司｜肩宽·上胸",
+    "description": "在公司完成的一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 25,
+    "duration_max": 30,
+    "exercises": [
+      {
+        "exercise_id": "assisted-dip",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-c-home",
+    "name": "C · 家庭｜肩宽·上胸",
+    "description": "在家完成的另一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 20,
+    "duration_max": 25,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "incline-dumbbell-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-c-gym",
+    "name": "C · 公司全练｜肩宽·上胸",
+    "description": "今天只在公司练，优先用器械和绳索。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "assisted-dip",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "set_count": 6,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "low-cable-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "machine-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-c-house",
+    "name": "C · 家庭全练｜肩宽·上胸",
+    "description": "今天只在家练，用哑铃、训练凳、弹力带和引体杆。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "close-grip-push-up",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 90,
+        "rep_min": 8,
+        "rep_max": 15,
+        "target_reps": 8
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 6,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "incline-dumbbell-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-d-company",
+    "name": "D · 公司｜背宽·二头·腹",
+    "description": "在公司完成的一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 25,
+    "duration_max": 30,
+    "exercises": [
+      {
+        "exercise_id": "assisted-pull-up",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 6,
+        "rep_max": 10,
+        "target_reps": 6,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "seated-cable-row",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "bayesian-cable-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-d-home",
+    "name": "D · 家庭｜背宽·二头·腹",
+    "description": "在家完成的另一半。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 20,
+    "duration_max": 25,
+    "exercises": [
+      {
+        "exercise_id": "hammer-curl",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "decline-weighted-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-d-gym",
+    "name": "D · 公司全练｜背宽·二头·腹",
+    "description": "今天只在公司练，优先用器械和绳索。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "assisted-pull-up",
+        "set_count": 4,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 6,
+        "rep_max": 10,
+        "target_reps": 6,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "seated-cable-row",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "bayesian-cable-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-rope-hammer-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 45,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 5.0
+      },
+      {
+        "exercise_id": "kneeling-cable-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 5.0
+      }
+    ]
+  },
+  {
+    "id": "pine-d-house",
+    "name": "D · 家庭全练｜背宽·二头·腹",
+    "description": "今天只在家练，用哑铃、训练凳、弹力带和引体杆。",
+    "notes": "两部分合在一处完成，约 45–50 分钟；可以把不同部位的动作两两交替做（如弯举配臂屈伸），不要把练同一部位的两个动作配在一起。复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 45,
+    "duration_max": 50,
+    "exercises": [
+      {
+        "exercise_id": "band-assisted-pull-up",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 120,
+        "rep_min": 6,
+        "rep_max": 10,
+        "target_reps": 6
+      },
+      {
+        "exercise_id": "single-arm-dumbbell-row",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 8,
+        "rep_max": 12,
+        "target_reps": 8,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "incline-dumbbell-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "hammer-curl",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "decline-weighted-crunch",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  },
+  {
+    "id": "pine-sat-optional",
+    "name": "周六 · 选练｜肩宽·后束·三头",
+    "description": "周六可练可休，只练小肌群。",
+    "notes": "复合动作每组留 1–2 次余力，休息约 2 分钟；孤立动作最后一组练到只剩 0–1 次，休息 60–90 秒。所有组都做到次数上限后，下次加最小一档重量。第 1–2 周每组留 2–3 次，先熟悉动作。",
+    "duration_min": 20,
+    "duration_max": 25,
+    "exercises": [
+      {
+        "exercise_id": "dumbbell-lateral-raise",
+        "set_count": 5,
+        "warmup_count": 1,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "chest-supported-reverse-fly",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 60,
+        "rep_min": 12,
+        "rep_max": 20,
+        "target_reps": 12,
+        "progression": "double",
+        "increment": 2.5
+      },
+      {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "set_count": 3,
+        "warmup_count": 0,
+        "unit": "lb",
+        "rest_seconds": 75,
+        "rep_min": 10,
+        "rep_max": 15,
+        "target_reps": 10,
+        "progression": "double",
+        "increment": 2.5
+      }
+    ]
+  }
+]

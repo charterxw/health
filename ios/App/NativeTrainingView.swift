@@ -42,6 +42,12 @@ struct NativeTrainingView: View {
         return id.split(separator: "-").last.map { String($0).uppercased() } ?? ""
     }
     @State private var slotChoice = 0
+    /// Last chosen way to train: both places, company only, or home only.
+    @AppStorage("pine.training.mode") private var storedMode = TrainingMode.split.rawValue
+    @State private var modeChoice: TrainingMode?
+    @State private var dayChoice: Int?
+    private var plan: JSONValue { store.home["plan"] }
+    private var isRound: Bool { plan["version"].integer == 2 }
     var body: some View {
         PinePage {
             PineTabHeader(title: "训练") {
@@ -53,12 +59,26 @@ struct NativeTrainingView: View {
             }
             if let active = store.active { continueCard(active) }
             if let message = store.message { PineBanner(text: message) }
-            roundProgress
-            nextSession
+            if isRound {
+                roundStrip
+                todayCard
+            } else {
+                roundProgress
+                nextSession
+            }
             postureRow
+            if isRound { optionalRow }
             if store.catalog.isNull { PineEmpty(title: "正在读取训练安排", symbol: "dumbbell", detail: "联网后下拉刷新即可读取你的模板。") }
             let rotation = groups.filter { $0.letter.count == 1 }
-            if !rotation.isEmpty {
+            if isRound {
+                PineSectionHeader(title: "本轮计划")
+                VStack(spacing: 0) {
+                    ForEach(Array(plan["schedule"].array.enumerated()), id: \.offset) { index, day in
+                        if index > 0 { Divider().padding(.leading, 60) }
+                        NavigationLink { NativeRoutineGroupView(title: day["letter"].text + " · " + focusTitle(day), records: dayTemplates(day)) } label: { planDayRow(day, index: index) }.buttonStyle(.plain)
+                    }
+                }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            } else if !rotation.isEmpty {
                 PineSectionHeader(title: "本轮计划")
                 VStack(spacing: 0) {
                     ForEach(Array(rotation.enumerated()), id: \.element.id) { index, group in
@@ -69,7 +89,7 @@ struct NativeTrainingView: View {
             }
             PineSectionHeader(title: "其他")
             VStack(spacing: 0) {
-                ForEach(groups.filter { $0.letter.count > 1 && $0.letter != "体态" }) { group in
+                ForEach(groups.filter { $0.letter.count > 1 && $0.letter != "体态" && !isRound }) { group in
                     NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { plainRow(group.letter == "周末" ? "周末 · 保底训练" : group.title) }.buttonStyle(.plain)
                     Divider().padding(.leading, 16)
                 }
@@ -82,6 +102,179 @@ struct NativeTrainingView: View {
             ForEach(store.records.filter { $0.blocked != nil }, id: \.id) { NativeConflictView(record: $0) }
         }.navigationTitle("训练").refreshable { await store.refresh() }
             .sheet(isPresented: $showingPlan) { NavigationStack { NativePlanView() } }
+    }
+
+    // MARK: Round of five days
+    private var schedule: [JSONValue] { plan["schedule"].array }
+    private var currentIndex: Int { schedule.firstIndex { $0["letter"] == plan["current"]["letter"] } ?? 0 }
+    private var dayIndex: Int { dayChoice.flatMap { schedule.indices.contains($0) ? $0 : nil } ?? currentIndex }
+    private func focusTitle(_ day: JSONValue) -> String {
+        let name = day["slots"][0]["name"].text.components(separatedBy: "｜")
+        return (name.count > 1 ? name[1] : "").replacingOccurrences(of: "·", with: " · ")
+    }
+    private func template(_ id: String) -> JSONValue { store.templates.first { $0["template"].id == id }?["template"] ?? .null }
+    private func dayTemplates(_ day: JSONValue) -> [JSONValue] {
+        let ids = day["slots"].array.map { $0["template_id"].text } + ["gym", "house"].map { day["variants"][$0]["template_id"].text }
+        return ids.compactMap { id in store.templates.first { $0["template"].id == id } }
+    }
+    private func remainingSets(_ slot: JSONValue) -> Int { slot["remaining"].array.reduce(0) { $0 + $1["target"].integer } }
+    /// The way a day was started wins over the remembered choice.
+    private func startedMode(_ day: JSONValue) -> TrainingMode? {
+        for mode in [TrainingMode.gym, .house] {
+            let slot = day["variants"][mode.rawValue]
+            if remainingSets(slot) < slot["target"].integer { return mode }
+        }
+        return day["slots"].array.contains { remainingSets($0) < $0["target"].integer } ? .split : nil
+    }
+    private func mode(for day: JSONValue) -> TrainingMode { modeChoice ?? startedMode(day) ?? TrainingMode(rawValue: storedMode) ?? .split }
+
+    /// Five chips, one per day; the selected one drives the card below.
+    private var roundStrip: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("本轮").font(.subheadline.weight(.semibold))
+                Spacer()
+                Button { showingPlan = true } label: {
+                    HStack(spacing: 4) { Text("\(plan["done"].integer) / \(plan["target"].integer) 组").monospacedDigit(); Image(systemName: "chevron.right").font(.caption2.weight(.semibold)) }
+                        .font(.footnote).foregroundStyle(.secondary).frame(minHeight: 32).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel("本轮进度，已完成 \(plan["done"].integer) 组，共 \(plan["target"].integer) 组")
+            }
+            HStack(spacing: 6) {
+                ForEach(Array(schedule.enumerated()), id: \.offset) { index, day in
+                    let selected = index == dayIndex, done = day["completed"].flag
+                    let fraction = Double(day["done"].integer) / Double(max(1, day["target"].integer))
+                    let state: String = done ? "，已完成" : "，\(day["done"].integer)/\(day["target"].integer) 组"
+                    let spoken: String = day["letter"].text + " " + focusTitle(day) + state + (index == currentIndex ? "，下一次" : "")
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) { dayChoice = index == currentIndex ? nil : index; modeChoice = nil }
+                    } label: {
+                        VStack(spacing: 4) {
+                            ZStack {
+                                Circle().stroke(pineTrack, lineWidth: 3)
+                                Circle().trim(from: 0, to: fraction).stroke(pine, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90))
+                                if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine) }
+                                else { Text(day["letter"].text).font(.subheadline.weight(.bold)).foregroundStyle(index == currentIndex ? pine : Color.primary) }
+                            }.frame(width: 34, height: 34)
+                            Text(planLabel(day["short"].text).prefix(2)).font(.caption2).foregroundStyle(selected ? pine : Color.secondary)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .background(selected ? pineTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .contentShape(Rectangle())
+                    }.buttonStyle(PinePressStyle(scale: 0.96))
+                        .accessibilityLabel(spoken)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }.padding(12).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    /// The selected day: choose where to train, see the moves, start.
+    @ViewBuilder private var todayCard: some View {
+        if schedule.isEmpty { EmptyView() } else {
+            let day = schedule[dayIndex]
+            let current = mode(for: day)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(dayIndex == currentIndex ? "下一次 · \(day["letter"].text)" : "\(day["letter"].text) · 提前看").font(.footnote).foregroundStyle(.secondary)
+                        Text(focusTitle(day)).font(.title3.weight(.semibold))
+                    }
+                    Spacer(minLength: 8)
+                    Text("\(day["done"].integer)/\(day["target"].integer) 组").font(.footnote.weight(.semibold)).monospacedDigit()
+                        .foregroundStyle(day["completed"].flag ? pine : Color.secondary)
+                }
+                Picker("训练方式", selection: Binding(get: { current }, set: { modeChoice = $0; storedMode = $0.rawValue })) {
+                    ForEach(TrainingMode.allCases) { Text($0.label).tag($0) }
+                }.pickerStyle(.segmented).accessibilityIdentifier("training-mode")
+                if day["completed"].flag {
+                    Label("这一天已完成", systemImage: "checkmark.circle.fill").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                } else if current == .split {
+                    let halves = day["slots"].array
+                    let next = halves.firstIndex { !$0["completed"].flag } ?? 0
+                    ForEach(Array(halves.enumerated()), id: \.offset) { index, slot in
+                        if index > 0 { Divider() }
+                        sessionBlock(slot, title: index == 0 ? "公司" : "家庭", primary: index == next)
+                    }
+                } else {
+                    sessionBlock(day["variants"][current.rawValue], title: current == .gym ? "只在公司 · 优先器械" : "只在家", primary: true)
+                    Text("可以把不同部位的动作两两交替做，例如弯举配臂屈伸，节省时间。").font(.caption).foregroundStyle(.secondary)
+                }
+            }.pineCard()
+        }
+    }
+    private func sessionBlock(_ slot: JSONValue, title: String, primary: Bool) -> some View {
+        let t = template(slot["template_id"].text)
+        let left = remainingSets(slot), total = slot["target"].integer, done = slot["completed"].flag
+        let minutes = t["duration_min"].isNull ? "" : " · 约 \(t["duration_min"].integer)–\(t["duration_max"].integer) 分钟"
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(title + minutes).font(.subheadline.weight(.semibold))
+                Spacer()
+                if done { Image(systemName: "checkmark").font(.subheadline.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
+            }.padding(.bottom, 4)
+            ForEach(Array(t["exercises"].array.enumerated()), id: \.offset) { _, item in plannedLine(item) }
+            if !done {
+                Button { store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) } label: {
+                    Label(left < total ? "继续 · 还剩 \(left) 组" : "开始 · \(total) 组", systemImage: "play.fill")
+                        .font(.headline).foregroundStyle(primary ? .white : pine).frame(maxWidth: .infinity, minHeight: primary ? 52 : 44)
+                        .background(primary ? pine : pineTint, in: Capsule())
+                }.buttonStyle(PinePressStyle(scale: 0.98)).padding(.top, 10).disabled(store.catalog.isNull || store.active != nil)
+                    .accessibilityIdentifier("start-" + slot["template_id"].text)
+            }
+        }
+    }
+    /// One planned move: name, sets × reps, and last time's best work set.
+    private func plannedLine(_ item: JSONValue) -> some View {
+        let exercise = store.exercises.first { $0.id == item["exercise_id"].text } ?? .null
+        let work = max(0, item["set_count"].integer - item["warmup_count"].integer)
+        let hints = store.previousSets(exercise: item["exercise_id"].text, mode: exercise["load_mode"].text, before: NativeDate.stamp(), timezone: TimeZone.current.identifier, current: "").filter { !$0["warmup"].flag }
+        let last: String = {
+            guard let first = hints.first else { return "" }
+            var movement = exercise; movement["unit"] = first["unit"]
+            return "上次 " + loadText(movement, first).replacingOccurrences(of: " 次", with: "")
+        }()
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(exercise["name"].text.isEmpty ? item["exercise_id"].text : exercise["name"].text).font(.pineRow).lineLimit(1)
+                Text("\(work) 组 · \(item["rep_min"].integer)–\(item["rep_max"].integer) 次").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
+            Spacer(minLength: 8)
+            if !last.isEmpty { Text(last).font(.footnote).foregroundStyle(.secondary).monospacedDigit().lineLimit(1) }
+        }.padding(.vertical, 6)
+    }
+    private func planDayRow(_ day: JSONValue, index: Int) -> some View {
+        let current = index == currentIndex
+        return HStack(spacing: 12) {
+            Text(day["letter"].text).font(.subheadline.weight(.bold)).foregroundStyle(current ? .white : pine)
+                .frame(width: 32, height: 32).background(current ? pine : pineTint, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(focusTitle(day)).font(.pineRow).foregroundStyle(.primary)
+                Text(day["completed"].flag ? "本轮已完成" : current ? "下一次 · \(day["done"].integer)/\(day["target"].integer) 组" : "\(day["done"].integer)/\(day["target"].integer) 组")
+                    .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+            }
+            Spacer(minLength: 4)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
+    }
+    /// Saturday's optional small-muscle session.
+    @ViewBuilder private var optionalRow: some View {
+        if let record = store.templates.first(where: { $0["template"].id == "pine-sat-optional" }) {
+            let t = record["template"]
+            Button { store.homeAction(["template_id": .string(t.id)]) } label: {
+                HStack(spacing: 12) {
+                    Circle().stroke(pine, lineWidth: 2).frame(width: 14, height: 14).frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("周六选练").font(.pineRow).foregroundStyle(.primary)
+                        Text("肩宽 · 后束 · 三头 · 约 \(t["duration_min"].integer)–\(t["duration_max"].integer) 分钟").font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text("开始").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
+                }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
+            }.buttonStyle(PinePressStyle()).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .disabled(store.active != nil)
+                .contextMenu { NavigationLink("查看模板") { NativeTemplateDetail(record: record) } }
+        }
     }
 
     // MARK: Round and next session
@@ -305,6 +498,7 @@ struct NativeTemplateLibrary: View {
 }
 func templateCategory(_ t: JSONValue) -> String {
     if t.id.hasPrefix("posture-") { return "体态" }
+    if t.id.hasPrefix("pine-") { return t.id.hasSuffix("-home") || t.id.hasSuffix("-house") ? "居家" : t.id == "pine-sat-optional" ? "周末" : "公司" }
     if !t["rotation_order"].isNull || t.id.hasPrefix("personal-company-") { return "公司" }
     if t.id.hasPrefix("personal-home-") { return "居家" }
     if t.id.hasPrefix("personal-weekend-") { return "周末" }; return "其他"
@@ -429,5 +623,14 @@ struct NativeRoutineGroupView: View {
                 }
             }.pineCard()
         }.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Where today's training happens.
+enum TrainingMode: String, CaseIterable, Identifiable {
+    case split, gym, house
+    var id: String { rawValue }
+    var label: String {
+        switch self { case .split: return "公司+家庭"; case .gym: return "只公司"; case .house: return "只家庭" }
     }
 }

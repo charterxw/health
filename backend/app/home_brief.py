@@ -155,7 +155,7 @@ def context(period=None):
     row = next(r for r in data['days'] if r['date'] == today)
     if period == 'morning':
         active = bool(data['action'].get('session_id'))
-        schedule = '今天有正在进行的训练' if active else '今天已训练' if row['sets'] else '今天腹部与小腿训练为可选，可自由休息，不追赶组数' if row.get('strength_optional') else '今天有力量训练安排' if row['strength_planned'] else '今天按计划休息'
+        schedule = '今天有正在进行的训练' if active else '今天已训练' if row['sets'] else '今天是选练日，可以练肩和手臂的小肌群，也可以休息，不追赶组数' if row.get('strength_optional') else '今天有力量训练安排' if row['strength_planned'] else '今天按计划休息'
         fact('guidance', 'guidance', f'{schedule}。当前本地建议：{data["tip"]}。只讲今天的安排，不提下一次训练或模板简称；日常遛狗散步是已有习惯，不要求额外凑热量。')
     else:
         fact('guidance', 'guidance', '晚间结合今天记录的活动、力量训练和自述疲劳，选择一个恢复重点：例如训练后放松、减少临睡前刺激或保持通常就寝时间。白天恢复信号不是此刻的新测量；没有晚间体感时不声称晚上更疲劳或恢复下降。不为补齐数字追加训练，不预测今晚睡眠，不根据组数或热量推断肌肉修复、过度训练或疲劳原因。')

@@ -67,6 +67,9 @@ public struct NativeDaySession: Equatable, Sendable, Identifiable {
     /// Completed share of planned work sets (posture: practice sets), 0...1.
     public let ratio: Double
     public let posture: Bool
+    public init(id: String, title: String, start: Date?, end: Date?, ratio: Double, posture: Bool) {
+        self.id = id; self.title = title; self.start = start; self.end = end; self.ratio = ratio; self.posture = posture
+    }
 }
 
 public enum NativeDays {
@@ -96,29 +99,36 @@ public enum NativeDays {
     }
     /// Strength halves for the glyph: the first two strength sessions' completion.
     /// Weekends have one home session only, so it fills the whole middle ring.
+    /// A company-only or home-only session ("全练") is the whole day, so it also
+    /// fills both halves.
     public static func halves(_ sessions: [NativeDaySession], weekend: Bool = false) -> [Double] {
         let strength = sessions.filter { !$0.posture }
         if weekend { return strength.first.map { [$0.ratio, $0.ratio] } ?? [] }
+        if let whole = strength.first(where: { $0.title.contains("全练") }) {
+            let halves = strength.filter { $0.id != whole.id }.prefix(2).map(\.ratio)
+            return [max(whole.ratio, halves.first ?? 0), max(whole.ratio, halves.dropFirst().first ?? 0)]
+        }
         return Array(strength.prefix(2).map(\.ratio))
     }
     /// Saturday or Sunday for a "yyyy-MM-dd" day key.
-    public static func isWeekend(_ key: String) -> Bool {
+    public static func isWeekend(_ key: String) -> Bool { [1, 7].contains(weekday(key)) }
+    /// Gregorian weekday (1 = Sunday … 7 = Saturday) of a "yyyy-MM-dd" key, 0 when invalid.
+    public static func weekday(_ key: String) -> Int {
         let parts = key.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return false }
+        guard parts.count == 3 else { return 0 }
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: "UTC")!
-        guard let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return false }
-        let weekday = calendar.component(.weekday, from: date)
-        return weekday == 1 || weekday == 7
+        guard let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return 0 }
+        return calendar.component(.weekday, from: date)
     }
-    /// One-character focus for a day: weekends are home days; otherwise the
-    /// rotation group of the day's session (A/C chest, B/D back, E core), else
-    /// the server's planned tag.
+    /// One-character focus for a day: the rotation group of the day's session
+    /// (A/C shoulders, B/D back, E core), else the server's planned tag;
+    /// Saturday is optional and Sunday rest.
     public static func focus(dayKey: String, sessions: [NativeDaySession], serverTag: String) -> String {
-        if isWeekend(dayKey) { return "家" }
+        if isWeekend(dayKey) { return weekday(dayKey) == 7 ? "选" : sessions.contains { !$0.posture } ? "练" : "休" }
         if let title = sessions.first(where: { !$0.posture })?.title, let letter = title.trimmingCharacters(in: .whitespaces).first {
-            switch letter { case "A", "C": return "胸"; case "B", "D": return "背"; case "E": return "腹"; default: break }
+            switch letter { case "A", "C": return "肩"; case "B", "D": return "背"; case "E": return "腹"; default: break }
         }
-        switch serverTag { case "上": return "胸"; case "家": return "家"; case "休": return "休"; default: return serverTag.isEmpty ? "休" : serverTag }
+        switch serverTag { case "上": return "肩"; case "家": return "家"; case "休": return "休"; default: return serverTag.isEmpty ? "休" : serverTag }
     }
     /// Training volume (load × reps of completed external-load work sets) in
     /// pounds, for sets completed in [from, to).

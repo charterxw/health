@@ -123,6 +123,10 @@ TEMPLATES.extend(Template(**entry) for entry in json.loads(
     (Path(__file__).parent / "data" / "supplemental_programs.json").read_text(encoding="utf-8")))
 TEMPLATES.extend(Template(**entry) for entry in json.loads(
     (Path(__file__).parent / "data" / "posture_programs.json").read_text(encoding="utf-8")))
+# The 2026-11 plan: each training day has a company half, a home half, and
+# company-only / home-only versions of the whole day.
+TEMPLATES.extend(Template(**entry) for entry in json.loads(
+    (Path(__file__).parent / "data" / "pine_program.json").read_text(encoding="utf-8")))
 
 
 def encode(value):
