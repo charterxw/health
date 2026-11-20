@@ -215,28 +215,36 @@ struct NativeDashboardView: View {
             }.lineLimit(1).minimumScaleFactor(0.8)
         }.frame(maxWidth: .infinity, minHeight: 46, maxHeight: 58, alignment: .leading)
     }
-    /// This week's steps, one bar per day. The lower part runs up to the goal; a day
-    /// past the goal adds its extra above a small gap (capped at two thirds more).
+    /// This week's steps, one bar per day against a faint dashed goal line; the part
+    /// above the line is the extra (capped so one long day does not dominate).
     private func stepBars(goal: Double?) -> some View {
         let rows: [(date: String, steps: Double?)] = home["days"].array.map { row in
             let date = row["date"].text
             let value = date == home["date"].text ? home["today"]["steps"].number : home["metrics"].array.first { $0["date"].text == date }?["steps"].number
             return (date, date > home["date"].text ? nil : value)
         }
-        let target = max(goal ?? 0, 1), goalHeight: CGFloat = 18, extraCap: CGFloat = 12
-        return HStack(alignment: .bottom, spacing: 0) {
-            ForEach(rows, id: \.date) { row in
-                let steps = row.steps ?? 0
-                let below = CGFloat(min(1, steps / target)) * goalHeight
-                let extra = min(extraCap, CGFloat(max(0, steps / target - 1)) * goalHeight)
-                VStack(spacing: 2) {
-                    if extra > 0 { RoundedRectangle(cornerRadius: 2).fill(pine).frame(width: 6, height: max(2, extra)) }
-                    RoundedRectangle(cornerRadius: 2).fill(row.steps == nil ? pineTrack : steps >= target ? pine : pine.opacity(0.35))
-                        .frame(width: 6, height: row.steps == nil ? 2 : max(2, below))
-                    Circle().fill(row.date == day["date"].text ? pine : .clear).frame(width: 3, height: 3).padding(.top, 1)
-                }.frame(maxWidth: .infinity)
+        let target = max(goal ?? 0, 1), goalHeight: CGFloat = 24, top: CGFloat = 38
+        return VStack(spacing: 3) {
+            ZStack(alignment: .bottom) {
+                PineHorizontalLine().stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                    .frame(height: 1).padding(.bottom, goalHeight)
+                Rectangle().fill(pineTrack).frame(height: 1)
+                HStack(alignment: .bottom, spacing: 0) {
+                    ForEach(rows, id: \.date) { row in
+                        let steps = row.steps ?? 0
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(steps >= target ? pine : pine.opacity(0.35))
+                            .frame(width: 8, height: row.steps == nil ? 0 : max(2, min(top, CGFloat(steps / target) * goalHeight)))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }.frame(height: top, alignment: .bottom)
+            HStack(spacing: 0) {
+                ForEach(rows, id: \.date) { row in
+                    Circle().fill(row.date == day["date"].text ? pine : .clear).frame(width: 3, height: 3).frame(maxWidth: .infinity)
+                }
             }
-        }.frame(height: goalHeight + extraCap + 2 + 6, alignment: .bottom).accessibilityHidden(true)
+        }.accessibilityHidden(true)
     }
     private var stepsTile: some View {
         // The selected day's steps: today's live count, or the daily history.
@@ -257,7 +265,7 @@ struct NativeDashboardView: View {
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: steps)
                 if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(fraction >= 1 ? pine : Color.secondary).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8) }
                 if let km = distance.number, km > 0 { Text(displayNumber(.number(km), digits: 1) + " 公里").font(.caption).foregroundStyle(.secondary).monospacedDigit() }
-                Spacer(minLength: 6)
+                Spacer(minLength: 4)
                 stepBars(goal: goal)
             }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
@@ -898,4 +906,10 @@ private struct PineFillHeight: Layout {
 }
 private extension View {
     func fillHeight(_ height: CGFloat) -> some View { PineFillHeight(height: height) { self } }
+}
+
+struct PineHorizontalLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path(); path.move(to: CGPoint(x: rect.minX, y: rect.midY)); path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY)); return path
+    }
 }
