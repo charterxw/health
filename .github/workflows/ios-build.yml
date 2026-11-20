@@ -31,7 +31,11 @@ jobs:
           swift run --package-path ios --jobs 2 NativeCoreChecks
 
       - name: Build unsigned IPA
-        run: bash ios/scripts/build.sh --unsigned-ipa
+        run: |
+          export PINE_BUILD_NUMBER=$((100 + GITHUB_RUN_NUMBER))
+          export PINE_COMMIT="${GITHUB_SHA:0:7}"
+          echo "Pine build $PINE_BUILD_NUMBER ($PINE_COMMIT)"
+          bash ios/scripts/build.sh --unsigned-ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4

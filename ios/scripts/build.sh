@@ -22,7 +22,12 @@ case "$mode" in
     xcodebuild -jobs 2 -project "$root/Health.xcodeproj" -scheme Health -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived" CODE_SIGNING_ALLOWED=NO build
     ;;
   --unsigned-ipa)
-    xcodebuild -jobs 2 -project "$root/Health.xcodeproj" -scheme Health -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$derived" CODE_SIGNING_ALLOWED=NO build
+    # CI passes a rising build number so sideloading tools replace the installed
+    # copy, and the commit so Settings shows which build is running.
+    stamp=()
+    if [[ -n "${PINE_BUILD_NUMBER:-}" ]]; then stamp+=("CURRENT_PROJECT_VERSION=$PINE_BUILD_NUMBER"); fi
+    if [[ -n "${PINE_COMMIT:-}" ]]; then stamp+=("PINE_COMMIT=$PINE_COMMIT"); fi
+    xcodebuild -jobs 2 -project "$root/Health.xcodeproj" -scheme Health -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$derived" CODE_SIGNING_ALLOWED=NO ${stamp[@]+"${stamp[@]}"} build
     app="$derived/Build/Products/Release-iphoneos/Health.app"
     test -d "$app/PlugIns/WorkoutWidget.appex"
     stage="$(mktemp -d "$root/build/package.XXXXXX")"

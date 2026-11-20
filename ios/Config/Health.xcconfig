@@ -5,6 +5,8 @@ TARGETED_DEVICE_FAMILY = 1
 CODE_SIGN_STYLE = Automatic
 CURRENT_PROJECT_VERSION = 10
 MARKETING_VERSION = 1.3.0
+// CI overrides the build number per run and stamps the commit shown in Settings.
+PINE_COMMIT = local
 APP_BUNDLE_IDENTIFIER = com.frankandpatrick.health
 // Optional, local-only team / bundle ID overrides. Never commit credentials.
 #include? "Local.xcconfig"

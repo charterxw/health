@@ -41,7 +41,7 @@ struct NativeSettingsView: View {
             } header: { Text("通知") }
             if let error { Section { Text(error).foregroundStyle(.red) } }
             Section { Button("退出登录", role: .destructive) { signingOut = true }.disabled(busy) }
-            Section { PineRow(label: "版本", value: (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") + " · 原生 iOS"); NavigationLink("开源许可") { NativeLicenseView() }; Link("服务器备份与隐私", destination: URL(string: "https://health.frankandpatrick.com/server-backup-privacy.html")!) }
+            Section { PineRow(label: "版本", value: NativeBuildInfo.text); NavigationLink("开源许可") { NativeLicenseView() }; Link("服务器备份与隐私", destination: URL(string: "https://health.frankandpatrick.com/server-backup-privacy.html")!) }
         }.navigationTitle("设置").toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
             .task { await load() }
             .confirmationDialog("退出当前账号？", isPresented: $signingOut, titleVisibility: .visible) { Button("退出登录", role: .destructive) { busy = true; Task { do { try await store.logout() } catch { self.error = error.localizedDescription }; busy = false } } } message: { Text("已同步的数据保留在服务器。本机登录状态和缓存会清除。") }
@@ -68,5 +68,17 @@ struct NativeAlternativeView: View {
                 Button("清除保留的副本", role: .destructive) { deleting = true }
             } else { PineEmpty(title: "副本已清除", symbol: "checkmark.circle") }
         }.navigationTitle("保留的副本").confirmationDialog("清除这份本机副本？", isPresented: $deleting, titleVisibility: .visible) { Button("清除副本", role: .destructive) { store.clearAlternative(id) } }
+    }
+}
+
+/// "1.3.0 (118) · 4d00324": the build number rises with every CI run and the
+/// commit identifies exactly which code is installed.
+enum NativeBuildInfo {
+    static var text: String {
+        let info = Bundle.main.infoDictionary ?? [:]
+        let version = info["CFBundleShortVersionString"] as? String ?? ""
+        let build = info["CFBundleVersion"] as? String ?? ""
+        let commit = info["PineCommit"] as? String ?? ""
+        return version + (build.isEmpty ? "" : " (\(build))") + (commit.isEmpty || commit == "local" ? "" : " · " + commit)
     }
 }
