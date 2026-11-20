@@ -229,16 +229,11 @@ struct NativeDashboardView: View {
                 }
             }
             Divider().padding(.top, 6)
-            // Two by two: each total reads label on the left, value on the right.
-            Grid(horizontalSpacing: 20, verticalSpacing: 6) {
-                GridRow {
-                    weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
-                    weekTotal("力量", "\(past.filter { $0["sets"].integer > 0 }.count)", "/\(home["goals"]["weeklyStrength"].integer) 天")
-                }
-                GridRow {
-                    weekTotal("体态", "\(past.filter { $0["posture"].flag }.count)", "/\(home["goals"]["weeklyPosture"].integer) 天")
-                    strengthTotal
-                }
+            // Strength and posture days are visible in the glyphs above; the row keeps
+            // the two numbers the glyphs cannot show.
+            HStack(spacing: 20) {
+                weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
+                strengthTotal
             }.padding(.horizontal, 4).padding(.top, 8)
         }.padding(.horizontal, 12).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
