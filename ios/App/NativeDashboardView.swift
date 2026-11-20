@@ -161,16 +161,14 @@ struct NativeDashboardView: View {
         let target = day["target"].integer, sets = day["sets"].integer
         let places = sessions.filter { !$0.posture }.map { $0.title.contains("公司") ? "公司" : $0.title.contains("家庭") ? "家庭" : "训练" }
         let weekend = NativeDays.isWeekend(day["date"].text)
-        // Each row: a small label, the value as the main line, and a compact status
-        // on the right (share of the goal or sessions done), so no column sits empty.
+        // Rows are narrow beside the steps tile: a small label and a short value.
         let half = halves(day, sessions)
-        let strength: (value: String, status: String) = {
-            let done = half.filter { $0 >= 1 }.count, status = half.isEmpty ? "" : "\(done)/\(half.count)"
-            if places.count >= 2 { return ("两次已练 · \(sets) 组", status) }
-            if let place = places.first { return (place + "已练 · " + (weekend || target <= sets ? "\(sets) 组" : "\(sets)/\(target) 组"), status) }
-            if weekend { return ("休息为主 · 家庭可练", "") }
-            guard strengthPlanned(day) else { return ("今天休息", "") }
-            return ((future ? "计划 " : "待练 · ") + "\(target) 组" + (day["strength_optional"].flag ? " · 可选" : ""), status)
+        let strengthValue: String = {
+            if places.count >= 2 { return "两次 · \(sets) 组" }
+            if let place = places.first { return place + " · " + (weekend || target <= sets ? "\(sets) 组" : "\(sets)/\(target)") }
+            if weekend { return "休息为主" }
+            guard strengthPlanned(day) else { return "今天休息" }
+            return (future ? "计划 " : "待练 ") + "\(target) 组"
         }()
         let strengthDone = half.count >= 1 && half.allSatisfy { $0 >= 1 } && (weekend || half.count == 2)
         let posture = sessions.last { $0.posture }
@@ -181,37 +179,65 @@ struct NativeDashboardView: View {
                 return NativeDate.label(start, format: "HH:mm", timezone: timezone) + (minutes.map { " · \($0) 分钟" } ?? "")
             }
             if day["posture"].flag { return "已完成" }
-            return day["posture_planned"].flag ? (future ? "计划 · 5–8 分钟" : "待完成 · 5–8 分钟") : "今天不安排"
+            return day["posture_planned"].flag ? (future ? "计划练习" : "待完成") : "今天不安排"
         }()
-        let activityValue = displayNumber(day["activity"], digits: 0) + " / " + displayNumber(day["goals"]["dailyActivity"], digits: 0) + " 千卡"
-        let activityStatus = fraction.map { "\(Int(($0 * 100).rounded()))%" } ?? ""
-        return Button { showingDay = true } label: {
-            HStack(spacing: 16) {
-                PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 96)
-                VStack(spacing: 0) {
-                    goalLine("活动 · 外圈", activityValue, activityStatus, done: (fraction ?? 0) >= 1)
-                    Divider()
-                    goalLine("力量 · 中圈", strength.value, strength.status, done: strengthDone)
-                    Divider()
-                    goalLine("体态 · 圆点", postureText, postureMet ? "" : (day["posture_planned"].flag ? "0/1" : ""), done: postureMet)
-                }
-            }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
-        }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
+        let activityValue = displayNumber(day["activity"], digits: 0) + "/" + displayNumber(day["goals"]["dailyActivity"], digits: 0) + " 千卡"
+        // Steps sit beside the rings as a fourth daily goal; both tiles share one height.
+        return HStack(alignment: .top, spacing: 10) {
+            Button { showingDay = true } label: {
+                HStack(spacing: 12) {
+                    PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 84)
+                    VStack(spacing: 0) {
+                        goalLine("活动 · 外圈", activityValue, done: (fraction ?? 0) >= 1)
+                        Divider()
+                        goalLine("力量 · 中圈", strengthValue, done: strengthDone)
+                        Divider()
+                        goalLine("体态 · 圆点", postureText, done: postureMet)
+                    }
+                }.padding(.leading, 14).padding(.trailing, 12).padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, maxHeight: Self.goalsMaxHeight)
+                    .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
+            }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
+            stepsTile
+        }
     }
-    private func goalLine(_ label: String, _ value: String, _ status: String, done: Bool) -> some View {
-        HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.caption).foregroundStyle(.secondary)
-                Text(value).font(.pineRow.weight(.semibold)).monospacedDigit().foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.85)
-            }
-            Spacer(minLength: 4)
-            if done {
-                Label(status.isEmpty || status.hasSuffix("%") == false ? "完成" : status, systemImage: "checkmark")
-                    .labelStyle(.titleAndIcon).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(pine)
-            } else if !status.isEmpty {
-                Text(status).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
-            }
-        }.frame(minHeight: 46, maxHeight: 58)
+    /// Three rows at most 58 pt, two dividers and the vertical padding.
+    private static let goalsMaxHeight: CGFloat = 3 * 58 + 2 + 20
+    private func goalLine(_ label: String, _ value: String, done: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 3) {
+                Text(value).font(.pineRow.weight(.semibold)).monospacedDigit().foregroundStyle(done ? pine : Color.primary)
+                if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
+            }.lineLimit(1).minimumScaleFactor(0.8)
+        }.frame(maxWidth: .infinity, minHeight: 46, maxHeight: 58, alignment: .leading)
+    }
+    private var stepsTile: some View {
+        // The selected day's steps: today's live count, or the daily history.
+        let stepsValue: JSONValue = isToday ? home["today"]["steps"] : home["metrics"].array.first { $0["date"] == day["date"] }?["steps"] ?? .null
+        let steps = stepsValue.number, goal = home["step_goal"]["target"].number
+        let fraction = steps.flatMap { s in goal.flatMap { $0 > 0 ? min(1, s / $0) : nil } } ?? 0
+        let detail: String = {
+            guard let steps, let goal, goal > 0 else { return "" }
+            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "目标 " + displayNumber(.number(goal), digits: 0)
+        }()
+        return Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("步数").font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Text(displayNumber(stepsValue, digits: 0)).font(.title2.weight(.semibold)).monospacedDigit()
+                    .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.7)
+                    .contentTransition(reduceMotion ? .identity : .numericText(value: steps ?? 0))
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: steps)
+                if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(fraction >= 1 ? pine : Color.secondary).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8) }
+                Capsule().fill(pineTrack).frame(height: 6)
+                    .overlay(alignment: .leading) { GeometryReader { proxy in Capsule().fill(pine).frame(width: max(6, proxy.size.width * fraction)) } }
+                    .padding(.top, 4)
+            }.padding(14).frame(width: 112).frame(maxHeight: Self.goalsMaxHeight, alignment: .topLeading)
+                .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
+        }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine)
+            .accessibilityLabel("步数 " + displayNumber(stepsValue, digits: 0) + (detail.isEmpty ? "" : "，" + detail))
+            .accessibilityIdentifier("metric-steps")
     }
 
     // MARK: Week
@@ -319,25 +345,35 @@ struct NativeDashboardView: View {
     // MARK: Body
     /// Recovery, steps and body weight share one row.
     private var bodyList: some View {
-        let steps = home["today"]["steps"].number, goal = home["step_goal"]["target"].number
-        let stepsDetail: String = {
-            guard let steps, let goal, goal > 0 else { return "" }
-            return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "目标 " + displayNumber(.number(goal), digits: 0)
-        }()
-        let weight = weightSummary
+        let weight = weightSummary, sleep = sleepSummary
         return HStack(spacing: 0) {
             NavigationLink(value: NativeOverviewRoute.recovery) {
                 thirdTile("恢复", home["recovery"]["label"].text.isEmpty ? "" : home["recovery"]["label"].text, displayNumber(home["recovery"]["score"], digits: 0), "", home["recovery"]["score"].number)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("recovery-score")
             Divider().frame(height: 36)
-            Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
-                thirdTile("步数", stepsDetail, displayNumber(home["today"]["steps"], digits: 0), "", steps)
-            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-steps")
+            NavigationLink(value: NativeOverviewRoute.sleep) {
+                thirdTile(sleep.title, sleep.detail, sleep.value, sleep.unit, nil)
+            }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-sleep")
             Divider().frame(height: 36)
             Button { showingWeight = true } label: {
                 thirdTile("体重", weight.change, weight.value, weight.value == "—" ? "" : "公斤", nil)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-weight")
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+    /// Before 17:00 last night's sleep against the personal need; afterwards a
+    /// suggested bedtime: the usual wake time minus the need and the usual awake
+    /// time in bed.
+    private var sleepSummary: (title: String, detail: String, value: String, unit: String) {
+        let need = home["recovery"]["sleep_need"].number ?? 7.5
+        let needText = "需 " + displayNumber(.number(need), digits: 1)
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: timezone) ?? .current
+        if calendar.component(.hour, from: Date()) < NativeStore.eveningHour {
+            let minutes = home["sleep"]["minutes_asleep"].number ?? home["today"]["sleep_hours"].number.map { $0 * 60 }
+            guard let minutes, minutes > 0 else { return ("睡眠", needText, "—", "") }
+            return ("睡眠", needText, displayNumber(.number((minutes / 6).rounded() / 10), digits: 1), "小时")
+        }
+        guard let bedtime = NativeDays.bedtime(sleeps: home["sleeps"].array, needHours: need, timezone: timezone) else { return ("今晚", needText, "—", "") }
+        return ("今晚", "建议入睡", String(format: "%d:%02d", bedtime / 60, bedtime % 60), "前")
     }
     /// Latest weigh-in and the change against the reading about four weeks earlier.
     private var weightSummary: (value: String, change: String) {

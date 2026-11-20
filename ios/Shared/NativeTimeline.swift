@@ -177,6 +177,24 @@ public enum NativeDays {
         let median: Double? = changes.isEmpty ? nil : changes.count % 2 == 1 ? changes[changes.count / 2] : (changes[changes.count / 2 - 1] + changes[changes.count / 2]) / 2
         return NativeStrengthWeek(change: median, lifts: lifts, newCount: current.count - lifts.count)
     }
+    /// Suggested bedtime in minutes after midnight: the median wake time of the
+    /// last 14 main sleeps, minus the sleep need and the median awake time in bed,
+    /// rounded to five minutes. Nil with fewer than five nights.
+    public static func bedtime(sleeps: [JSONValue], needHours: Double, timezone: String) -> Int? {
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: timezone) ?? .current
+        let nights = sleeps.filter { !$0["is_nap"].flag && ($0["minutes_asleep"].number ?? 0) >= 180 }
+            .sorted { $0["date"].text > $1["date"].text }.prefix(14)
+        let wakes = nights.compactMap { NativeDate.parse($0["end_time"]) }.map { calendar.component(.hour, from: $0) * 60 + calendar.component(.minute, from: $0) }.sorted()
+        guard wakes.count >= 5 else { return nil }
+        let awake = nights.compactMap { n -> Double? in
+            guard let bed = n["minutes_in_bed"].number, let asleep = n["minutes_asleep"].number, bed >= asleep else { return nil }
+            return bed - asleep
+        }.sorted()
+        let awakeMedian = awake.isEmpty ? 15 : awake[awake.count / 2]
+        let start = Double(wakes[wakes.count / 2]) - needHours * 60 - awakeMedian
+        let rounded = Int((start / 5).rounded()) * 5
+        return ((rounded % 1440) + 1440) % 1440
+    }
     public static func postureDone(_ sessions: [NativeDaySession]) -> Bool {
         sessions.contains { $0.posture && $0.ratio > 0 }
     }
