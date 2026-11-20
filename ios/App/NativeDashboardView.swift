@@ -14,6 +14,7 @@ struct NativeDashboardView: View {
     @State private var showingSync = false
     @State private var showingWeight = false
     @State private var showingStrength = false
+    @State private var weekDetail: WeekDetail?
     /// Visible height between the status bar and the tab bar.
     @State private var viewport: CGFloat = 0
     private var home: JSONValue { store.home }
@@ -160,44 +161,52 @@ struct NativeDashboardView: View {
         let target = day["target"].integer, sets = day["sets"].integer
         let places = sessions.filter { !$0.posture }.map { $0.title.contains("公司") ? "公司" : $0.title.contains("家庭") ? "家庭" : "训练" }
         let weekend = NativeDays.isWeekend(day["date"].text)
-        let strengthText: String = {
-            if places.count >= 2 { return "两次已练 · \(sets) 组" }
-            if let place = places.first { return weekend || target <= sets ? place + "已练 · \(sets) 组" : place + "已练 · \(sets)/\(target) 组" }
-            if weekend { return "休息为主 · 家庭可练" }
-            guard strengthPlanned(day) else { return "今天休息" }
-            return (future ? "计划 " : "待练 · ") + "\(target) 组" + (day["strength_optional"].flag ? " · 可选" : "")
+        // Each row reads like a list cell: what on the left, the number on the right.
+        let strength: (value: String, note: String) = {
+            if places.count >= 2 { return ("\(sets) 组", "两次已练") }
+            if let place = places.first { return (weekend || target <= sets ? "\(sets) 组" : "\(sets)/\(target) 组", place + "已练") }
+            if weekend { return ("可选", "休息为主 · 家庭") }
+            guard strengthPlanned(day) else { return ("休息", "今天不安排") }
+            return ("\(target) 组", (future ? "计划" : "待练") + (day["strength_optional"].flag ? " · 可选" : ""))
         }()
         let strengthDone: Bool = { let h = halves(day, sessions); return h.count == 2 && h.allSatisfy { $0 >= 1 } }()
         let posture = sessions.last { $0.posture }
-        let postureText: String = {
+        let postureValue: (value: String, note: String) = {
             if let posture, let start = posture.start {
                 let minutes = posture.end.map { max(1, Int(($0.timeIntervalSince(start) / 60).rounded())) }
-                return NativeDate.label(start, format: "HH:mm", timezone: timezone) + (minutes.map { " · \($0) 分钟" } ?? "")
+                return (NativeDate.label(start, format: "HH:mm", timezone: timezone), minutes.map { "\($0) 分钟" } ?? "已完成")
             }
-            if day["posture"].flag { return "已完成" }
-            return day["posture_planned"].flag ? (future ? "计划练习" : "待完成") : "今天不安排"
+            if day["posture"].flag { return ("已完成", "") }
+            return day["posture_planned"].flag ? (future ? "计划" : "待完成", "5–8 分钟") : ("—", "今天不安排")
         }()
-        let activityText = displayNumber(day["activity"], digits: 0) + " / " + displayNumber(day["goals"]["dailyActivity"], digits: 0) + " 千卡"
+        let activity = (displayNumber(day["activity"], digits: 0) + " 千卡", "目标 " + displayNumber(day["goals"]["dailyActivity"], digits: 0))
         return Button { showingDay = true } label: {
             HStack(spacing: 16) {
                 PineDayGlyph(activity: fraction, halves: halves(day, sessions), posture: postureDone(day, sessions), future: future, size: 96)
                 VStack(spacing: 0) {
-                    goalLine("活动 · 外圈", activityText, done: (fraction ?? 0) >= 1)
+                    goalLine("活动", ring: "外圈", activity.0, activity.1, done: (fraction ?? 0) >= 1)
                     Divider()
-                    goalLine("力量 · 中圈", strengthText, done: strengthDone)
+                    goalLine("力量", ring: "中圈", strength.value, strength.note, done: strengthDone)
                     Divider()
-                    goalLine("体态 · 圆点", postureText, done: postureDone(day, sessions))
+                    goalLine("体态", ring: "圆点", postureValue.value, postureValue.note, done: postureDone(day, sessions))
                 }
             }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
         }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
     }
-    private func goalLine(_ title: String, _ detail: String, done: Bool) -> some View {
-        HStack(spacing: 8) {
+    private func goalLine(_ title: String, ring: String, _ value: String, _ note: String, done: Bool) -> some View {
+        HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.pineRow.weight(.semibold)).foregroundStyle(.primary)
-                Text(detail).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            if done { Image(systemName: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine).accessibilityLabel("已完成") }
+                Text(ring).font(.caption).foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 4)
+            VStack(alignment: .trailing, spacing: 3) {
+                HStack(spacing: 4) {
+                    if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
+                    Text(value).font(.pineRow.weight(.semibold)).monospacedDigit().foregroundStyle(done ? pine : Color.primary)
+                }
+                if !note.isEmpty { Text(note).font(.footnote).foregroundStyle(.secondary).monospacedDigit() }
+            }.lineLimit(1)
         }.frame(minHeight: 46, maxHeight: 58)
     }
 
@@ -230,33 +239,72 @@ struct NativeDashboardView: View {
             }
             Divider().padding(.top, 6)
             // Strength and posture days are visible in the glyphs above; the row keeps
-            // the two numbers the glyphs cannot show.
+            // the two numbers the glyphs cannot show, each expandable in place.
             HStack(spacing: 20) {
-                weekTotal("活动", energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0), "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0))
-                strengthTotal
+                weekToggle(.activity, title: "活动", value: energy.isEmpty ? "—" : displayNumber(.number(energy.reduce(0, +)), digits: 0),
+                           suffix: "/" + displayNumber(home["goals"]["weeklyActivity"], digits: 0), tint: false)
+                let strength = NativeStrengthWeeks.current(store: store, timezone: timezone)
+                weekToggle(.strength, title: "力量指数", value: strength.change.map(NativeStrengthWeeks.percent) ?? "—", suffix: "", tint: (strength.change ?? 0) > 0.005)
             }.padding(.horizontal, 4).padding(.top, 8)
+            if weekDetail == .activity { dailyActivity(days) }
+            if weekDetail == .strength { strengthPreview }
         }.padding(.horizontal, 12).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
-    /// Median change of this week's lifts against each lift's own best of the four weeks before.
-    private var strengthTotal: some View {
-        let week = NativeStrengthWeeks.current(store: store, timezone: timezone)
-        let text = week.change.map(NativeStrengthWeeks.percent) ?? "—"
-        return Button { showingStrength = true } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("力量指数").font(.footnote).foregroundStyle(.secondary)
+    enum WeekDetail { case activity, strength }
+    private func weekToggle(_ kind: WeekDetail, title: String, value: String, suffix: String, tint: Bool) -> some View {
+        let open = weekDetail == kind
+        return Button {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { weekDetail = open ? nil : kind }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(title).font(.footnote).foregroundStyle(.secondary)
                 Spacer(minLength: 4)
-                Text(text).font(.headline).monospacedDigit().foregroundStyle((week.change ?? 0) > 0.005 ? pine : Color.primary)
-            }.lineLimit(1).frame(maxWidth: .infinity).contentShape(Rectangle())
-        }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-strength-index")
-            .accessibilityLabel("本周力量指数 " + text + "，点按查看每个动作")
+                Text(value).font(.headline).monospacedDigit().foregroundStyle(tint ? pine : Color.primary)
+                if !suffix.isEmpty { Text(suffix).font(.caption).foregroundStyle(.secondary).monospacedDigit() }
+                Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(open ? 180 : 0)).padding(.leading, 2)
+            }.lineLimit(1).frame(maxWidth: .infinity, minHeight: 32).contentShape(Rectangle())
+        }.buttonStyle(PinePressStyle())
+            .accessibilityElement(children: .combine)
+            .accessibilityHint(open ? "点按收起" : (kind == .activity ? "点按展开每天的活动量" : "点按展开每个动作的变化"))
+            .accessibilityIdentifier(kind == .activity ? "home-activity-total" : "home-strength-index")
     }
-    private func weekTotal(_ title: String, _ value: String, _ target: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 3) {
-            Text(title).font(.footnote).foregroundStyle(.secondary)
-            Spacer(minLength: 4)
-            Text(value).font(.headline).monospacedDigit()
-            Text(target).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-        }.lineLimit(1).frame(maxWidth: .infinity).accessibilityElement(children: .combine)
+    /// Each day's activity under its own column, in step with the glyphs above.
+    private func dailyActivity(_ days: [JSONValue]) -> some View {
+        let goal = home["goals"]["dailyActivity"].number
+        return VStack(spacing: 4) {
+            HStack(spacing: 0) {
+                ForEach(days, id: \.["date"].text) { row in
+                    let value = row["activity"].number
+                    let met = value.map { v in goal.map { v >= $0 } ?? false } ?? false
+                    Text(row["date"].text > home["date"].text || value == nil ? "—" : displayNumber(.number(value ?? 0), digits: 0))
+                        .font(.caption.weight(met ? .semibold : .regular)).monospacedDigit()
+                        .foregroundStyle(met ? pine : Color.secondary).frame(maxWidth: .infinity)
+                }
+            }
+            Text("每天活动千卡 · 绿色为达到每日目标 " + displayNumber(.number(goal ?? 0), digits: 0)).font(.caption2).foregroundStyle(.tertiary)
+        }.padding(.top, 8).transition(.opacity)
+    }
+    /// The three largest changes, with the full list one tap away.
+    private var strengthPreview: some View {
+        let week = NativeStrengthWeeks.current(store: store, timezone: timezone)
+        return VStack(spacing: 6) {
+            if week.lifts.isEmpty {
+                Text("本周还没有和前 4 周可比较的动作。").font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            ForEach(Array(week.lifts.prefix(3))) { lift in
+                HStack {
+                    Text(lift.name).font(.footnote).lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text(NativeStrengthWeeks.percent(lift.change)).font(.footnote.weight(.semibold)).monospacedDigit()
+                        .foregroundStyle(lift.change > 0.005 ? pine : Color.secondary)
+                }
+            }
+            Button { showingStrength = true } label: {
+                HStack(spacing: 2) { Text(week.lifts.count > 3 ? "全部 \(week.lifts.count) 个动作与之前几周" : "动作详情与之前几周"); Image(systemName: "chevron.right").font(.caption2.weight(.semibold)) }
+                    .font(.footnote.weight(.semibold)).foregroundStyle(pine).frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+            }.buttonStyle(.plain)
+        }.padding(.horizontal, 4).padding(.top, 8).transition(.opacity)
     }
     private func weekAccessibility(_ row: JSONValue, _ sessions: [NativeDaySession]) -> String {
         let title = dayTitle(row["date"].text) + "，" + planLabel(NativeDays.focus(dayKey: row["date"].text, sessions: sessions, serverTag: row["short"].text))
