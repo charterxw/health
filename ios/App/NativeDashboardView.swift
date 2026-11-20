@@ -183,10 +183,11 @@ struct NativeDashboardView: View {
         }()
         let activityValue = displayNumber(day["activity"], digits: 0) + "/" + displayNumber(day["goals"]["dailyActivity"], digits: 0) + " 千卡"
         // Steps sit beside the rings as a fourth daily goal; both tiles share one height.
-        return HStack(alignment: .top, spacing: 10) {
+        // The steps tile is an overlay so it always matches the goal tile's height.
+        return HStack(spacing: 10) {
             Button { showingDay = true } label: {
                 HStack(spacing: 12) {
-                    PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 84)
+                    PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 80)
                     VStack(spacing: 0) {
                         goalLine("活动 · 外圈", activityValue, done: (fraction ?? 0) >= 1)
                         Divider()
@@ -198,19 +199,39 @@ struct NativeDashboardView: View {
                     .frame(maxWidth: .infinity, maxHeight: Self.goalsMaxHeight)
                     .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
             }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine).accessibilityHint("点按查看这天的详细记录")
-            stepsTile
+            Color.clear.frame(width: Self.stepsWidth)
         }
+        .overlay(alignment: .trailing) { stepsTile.frame(width: Self.stepsWidth).frame(maxHeight: .infinity) }
     }
+    private static let stepsWidth: CGFloat = 116
     /// Three rows at most 58 pt, two dividers and the vertical padding.
     private static let goalsMaxHeight: CGFloat = 3 * 58 + 2 + 20
     private func goalLine(_ label: String, _ value: String, done: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 3) {
-                Text(value).font(.pineRow.weight(.semibold)).monospacedDigit().foregroundStyle(done ? pine : Color.primary)
+                Text(value).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(done ? pine : Color.primary)
                 if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
             }.lineLimit(1).minimumScaleFactor(0.8)
         }.frame(maxWidth: .infinity, minHeight: 46, maxHeight: 58, alignment: .leading)
+    }
+    /// This week's steps, one bar per day; a full-height bar meets the goal.
+    private func stepBars(goal: Double?) -> some View {
+        let rows: [(date: String, steps: Double?)] = home["days"].array.map { row in
+            let date = row["date"].text
+            let value = date == home["date"].text ? home["today"]["steps"].number : home["metrics"].array.first { $0["date"].text == date }?["steps"].number
+            return (date, date > home["date"].text ? nil : value)
+        }
+        let top = max(goal ?? 0, rows.compactMap(\.steps).max() ?? 0, 1)
+        return HStack(alignment: .bottom, spacing: 3) {
+            ForEach(rows, id: \.date) { row in
+                let ratio = (row.steps ?? 0) / top, met = (row.steps ?? 0) >= (goal ?? .infinity)
+                Capsule().fill(row.steps == nil ? pineTrack : met ? pine : pine.opacity(0.35))
+                    .frame(height: max(3, 26 * ratio))
+                    .frame(maxWidth: .infinity, maxHeight: 26, alignment: .bottom)
+                    .overlay(alignment: .bottom) { if row.date == day["date"].text { Circle().fill(pine).frame(width: 3, height: 3).offset(y: 6) } }
+            }
+        }.frame(height: 26).padding(.bottom, 6).accessibilityHidden(true)
     }
     private var stepsTile: some View {
         // The selected day's steps: today's live count, or the daily history.
@@ -222,18 +243,16 @@ struct NativeDashboardView: View {
             return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "目标 " + displayNumber(.number(goal), digits: 0)
         }()
         return Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("步数").font(.caption).foregroundStyle(.secondary)
-                Spacer(minLength: 4)
-                Text(displayNumber(stepsValue, digits: 0)).font(.title2.weight(.semibold)).monospacedDigit()
+                Spacer(minLength: 6)
+                Text(displayNumber(stepsValue, digits: 0)).font(.title3.weight(.semibold)).monospacedDigit()
                     .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.7)
                     .contentTransition(reduceMotion ? .identity : .numericText(value: steps ?? 0))
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: steps)
                 if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(fraction >= 1 ? pine : Color.secondary).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8) }
-                Capsule().fill(pineTrack).frame(height: 6)
-                    .overlay(alignment: .leading) { GeometryReader { proxy in Capsule().fill(pine).frame(width: max(6, proxy.size.width * fraction)) } }
-                    .padding(.top, 4)
-            }.padding(14).frame(width: 112).frame(maxHeight: Self.goalsMaxHeight, alignment: .topLeading)
+                stepBars(goal: goal).padding(.top, 8)
+            }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).contentShape(Rectangle())
         }.buttonStyle(PinePressStyle()).accessibilityElement(children: .combine)
             .accessibilityLabel("步数 " + displayNumber(stepsValue, digits: 0) + (detail.isEmpty ? "" : "，" + detail))
