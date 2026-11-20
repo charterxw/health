@@ -360,6 +360,9 @@ def step_goal(conn, metrics):
     return dict(conn.execute('SELECT target,basis FROM home_step_goal WHERE id=1').fetchone())
 
 
+SLEEP_TARGET_HOURS = 8.0
+
+
 def _positive(rows, key):
     return [r[key] for r in rows if isinstance(r.get(key), (float, int)) and r[key] > 0]
 
@@ -370,7 +373,7 @@ def readiness(today, metrics):
     HRV is compared on a log scale and resting heart rate in beats, each as a
     z-score against the previous 28 days; half of each signal is last night and
     half the 7-day rolling mean, so one noisy night cannot swing the result.
-    Sleep compares last night and the 7-night average with a personal sleep need.
+    Sleep compares last night and the 7-night average with an 8-hour target.
     Within half a standard deviation of normal reads as 平稳.
     """
     previous = [x for x in metrics if x['date'] < today['date']]
@@ -387,8 +390,9 @@ def readiness(today, metrics):
     week_rhr = statistics.mean(_positive(week, 'resting_hr'))
     hrv_z = clamp(.5*(math.log(today['hrv'])-hrv_mean)/hrv_sd + .5*(week_hrv-hrv_mean)/hrv_sd, -3, 3)
     rhr_z = clamp(.5*(rhr_mean-today['resting_hr'])/rhr_sd + .5*(rhr_mean-week_rhr)/rhr_sd, -3, 3)
-    sleeps = _positive(history, 'sleep_hours')
-    need = clamp(statistics.median(sleeps) if len(sleeps) >= 7 else 7.5, 7, 8.5)
+    # A fixed target rather than the recent median: the median follows late nights
+    # and would make short sleep look normal.
+    need = SLEEP_TARGET_HOURS
     nights = _positive(week, 'sleep_hours')
     debt = sum(max(0, need-h) for h in nights) / len(nights)
     sleep_z = clamp(.7*clamp((today['sleep_hours']-need)/.75, -3, 1.5) - .3*debt/.75, -3, 1.5)

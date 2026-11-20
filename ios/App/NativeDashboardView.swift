@@ -398,8 +398,9 @@ struct NativeDashboardView: View {
     /// suggested bedtime: the usual wake time minus the need and the usual awake
     /// time in bed.
     private var sleepSummary: (title: String, detail: String, value: String, unit: String) {
-        let need = home["recovery"]["sleep_need"].number ?? 7.5
-        let needText = "需 " + displayNumber(.number(need), digits: 1)
+        // Fixed 8-hour target, the same one the server's recovery score uses.
+        let need = NativeDays.sleepTargetHours
+        let needText = "目标 " + displayNumber(.number(need), digits: 0)
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: timezone) ?? .current
         if calendar.component(.hour, from: Date()) < NativeStore.eveningHour {
             let minutes = home["sleep"]["minutes_asleep"].number ?? home["today"]["sleep_hours"].number.map { $0 * 60 }
@@ -725,7 +726,7 @@ struct NativeRecoveryContent: View {
                 PineRow(label: "HRV", value: recoveryPosition(score["components"]["hrv"]) + " · 正常 " + range(score["hrv_range"], fallback: score["hrv_baseline"]) + " 毫秒")
                 PineRow(label: "静息心率", value: recoveryPosition(score["components"]["resting_hr"]) + " · 正常 " + range(score["rhr_range"], fallback: score["rhr_baseline"]) + " 次/分")
                 if !score["sleep_need"].isNull {
-                    PineRow(label: "睡眠", value: recoveryPosition(score["components"]["sleep"]) + " · 需要约 " + displayNumber(score["sleep_need"]) + " 小时")
+                    PineRow(label: "睡眠", value: recoveryPosition(score["components"]["sleep"]) + " · 目标 " + displayNumber(score["sleep_need"], digits: 0) + " 小时")
                     PineRow(label: "近 7 晚平均欠睡", value: displayNumber(score["sleep_debt"]) + " 小时")
                 }
                 PineRow(label: "今天感受", value: [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · "))

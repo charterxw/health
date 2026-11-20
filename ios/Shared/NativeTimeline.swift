@@ -177,6 +177,7 @@ public enum NativeDays {
         let median: Double? = changes.isEmpty ? nil : changes.count % 2 == 1 ? changes[changes.count / 2] : (changes[changes.count / 2 - 1] + changes[changes.count / 2]) / 2
         return NativeStrengthWeek(change: median, lifts: lifts, newCount: current.count - lifts.count)
     }
+    public static let sleepTargetHours = 8.0
     /// Suggested bedtime in minutes after midnight: the median wake time of the
     /// last 14 main sleeps, minus the sleep need and the median awake time in bed,
     /// rounded to five minutes. Nil with fewer than five nights.
