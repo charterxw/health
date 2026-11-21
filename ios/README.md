@@ -1,4 +1,4 @@
-# Pine 1.3 — Native iOS
+# Pine 1.4 — Native iOS
 
 Pine now uses SwiftUI for login, overview, training, templates, exercises, records,
 reports, observations and settings. The app target contains no WKWebView, React,
@@ -43,7 +43,12 @@ no server deployment is necessary for this client.
   double progression, kg/lb conversion and custom exercise creation.
 - Focused workout recording with native number keyboards that select all text,
   warmups, bodyweight/assistance, repetitions or duration, set feedback, fill-next,
-  add/remove/replace, pause/resume, notes and rest countdowns.
+  add/remove/replace/reorder, pause/resume, notes and rest countdowns. Any set can
+  be corrected or unchecked from one set sheet; a just-checked set can be undone
+  for five seconds; the rest panel shows the finished set with one-tap effort;
+  each machine move keeps a standing setup note (server-backed).
+- Lock Screen and Dynamic Island buttons (App Intents): complete the set shown,
+  add 30 seconds, skip rest. They run in the app process and republish the activity.
 - Atomic on-device draft deltas written before acknowledging edits, with full
   checkpoints encoded on a background queue. Existing account caches migrate
   without discarding records. Serial versioned synchronization retries pending
@@ -52,6 +57,11 @@ no server deployment is necessary for this client.
 - Completed reports, per-set details and feedback, comparable same-load repetition
   deltas, actionable offline review, existing server AI review, physiology/source
   selection, correction, repeat, save-as-template and confirmed online deletion.
+  Today's reports add next steps (the other company/home half with a local
+  reminder, posture, the next day of the round); moves open their lift history
+  (best set, estimated 1RM or volume, with new records marked).
+- Feelings with sore areas, stress and a note; girths and protein synced to the
+  server (photos stay on the phone). Older servers keep the phone's copy.
 - Read-only imported workout archives and stored morning/evening/weekly observations.
 - Unified, date-grouped records with type, name/action and month filtering.
 - Collapsible company/home training groups; sleep stages and recovery indicators

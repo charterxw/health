@@ -22,6 +22,8 @@ git checkout pine-1.3.0-10
 shasum -a 256 -c artifacts/ios/1.3.0/SHA256SUMS
 ```
 
+`main` 在归档之后继续开发：iOS 为 1.4.0（11），后端新增动作备注、身体记录、感受字段和首页 extras
+接口，需重新部署到 Pi 后 App 的这些功能才完整可用；1.4 的编译与运行验收状态见 `ios/DESIGN.md`。
 继续开发时从 `main` 或该标签新建分支。标签用于恢复本次归档，后续版本另建标签。
 归档 IPA 未签名，沿用现有 SideStore 签名安装流程。它包含主 App 和实况活动扩展。
 覆盖现有 App 时保留原来的 Team / Bundle Identifier；更换签名身份或卸载会影响

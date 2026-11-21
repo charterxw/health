@@ -333,6 +333,10 @@ Verification: `PYTHONPATH=backend python -m unittest discover -s backend/tests -
 | POST | `/api/insights/generate/{slot}` | Trigger AI insight (morning/noon/evening) |
 | GET | `/api/insights/training` | Latest training analysis |
 | POST | `/api/insights/training/generate` | Trigger new training analysis |
+| PUT | `/api/strength/exercises/{id}/setup-note` | Save or clear an exercise's standing setup note |
+| GET | `/api/body` | Girths and daily protein recorded on the phone |
+| PUT / DELETE | `/api/body/measurements/{id}` | Save (idempotent by id) or delete one girth reading |
+| PUT | `/api/body/protein/{date}` | Set a day's protein total (0 removes it) |
 | GET | `/api/insights/sleep` | Read today's stored sleep analysis |
 | POST | `/api/insights/sleep/generate` | Trigger a new sleep analysis |
 

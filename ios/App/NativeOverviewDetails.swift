@@ -147,7 +147,18 @@ struct NativeFeedbackView: View {
         let body: JSONValue = ["energy": energy.isEmpty ? .null : .string(energy), "fatigue": fatigue.isEmpty ? .null : .string(fatigue),
                                "stress": stress.isEmpty ? .null : .string(stress), "note": .string(note),
                                "soreness": .array(Self.areas.filter { sore.contains($0) }.map { .string($0) })]
-        Task { do { try await store.mutateHome("/home/feedback", body: body); dismiss() } catch { self.error = error.localizedDescription }; busy = false }
+        Task {
+            do { try await store.mutateHome("/home/feedback", body: body); dismiss() }
+            catch let failure as HealthAPIError where failure.status == 422 {
+                // A server from before sore areas, stress and notes: keep what it understands.
+                do {
+                    try await store.mutateHome("/home/feedback", body: ["energy": body["energy"], "fatigue": body["fatigue"]])
+                    self.error = "精神和疲劳已保存；酸痛、压力和备注要等服务器更新后才能保存。"
+                } catch { self.error = error.localizedDescription }
+            }
+            catch { self.error = error.localizedDescription }
+            busy = false
+        }
     }
 }
 
