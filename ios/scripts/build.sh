@@ -27,6 +27,7 @@ case "$mode" in
     stamp=()
     if [[ -n "${PINE_BUILD_NUMBER:-}" ]]; then stamp+=("CURRENT_PROJECT_VERSION=$PINE_BUILD_NUMBER"); fi
     if [[ -n "${PINE_COMMIT:-}" ]]; then stamp+=("PINE_COMMIT=$PINE_COMMIT"); fi
+    if [[ "${PINE_APP_GROUP:-}" == "1" ]]; then stamp+=('SWIFT_ACTIVE_COMPILATION_CONDITIONS=$(inherited) PINE_WIDGET'); fi
     xcodebuild -jobs 2 -project "$root/Health.xcodeproj" -scheme Health -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$derived" CODE_SIGNING_ALLOWED=NO ${stamp[@]+"${stamp[@]}"} build
     app="$derived/Build/Products/Release-iphoneos/Health.app"
     test -d "$app/PlugIns/WorkoutWidget.appex"

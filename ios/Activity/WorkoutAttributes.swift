@@ -73,3 +73,12 @@ enum PineWidgetStore {
         return true
     }
 }
+
+/// Compile-time switches shared by the app and the widget extension.
+enum PineFeatures {
+    #if PINE_WIDGET
+    static let widget = true
+    #else
+    static let widget = false
+    #endif
+}

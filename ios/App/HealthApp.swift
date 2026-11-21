@@ -112,7 +112,7 @@ extension NativeRootView {
     }
     /// Hands today's goals and the next session to the home-screen widget.
     func publishWidget() {
-        guard store.phase == .ready, !store.isDesignPreview, !todayRow.isNull else { return }
+        guard PineFeatures.widget, store.phase == .ready, !store.isDesignPreview, !todayRow.isNull else { return }
         let home = store.home, date = home["date"].text
         let zone = home["timezone"].text.isEmpty ? TimeZone.current.identifier : home["timezone"].text
         let sessions = NativeDays.sessions(records: store.records, timezone: zone)[date] ?? []

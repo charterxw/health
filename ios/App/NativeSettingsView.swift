@@ -41,7 +41,7 @@ struct NativeSettingsView: View {
             } header: { Text("通知") }
             if let error { Section { Text(error).foregroundStyle(.red) } }
             Section { Button("退出登录", role: .destructive) { signingOut = true }.disabled(busy) }
-            Section { PineRow(label: "版本", value: NativeBuildInfo.text); PineRow(label: "小组件", value: PineWidgetStore.diagnosis); NavigationLink("开源许可") { NativeLicenseView() }; Link("服务器备份与隐私", destination: URL(string: "https://health.frankandpatrick.com/server-backup-privacy.html")!) }
+            Section { PineRow(label: "版本", value: NativeBuildInfo.text); if PineFeatures.widget { PineRow(label: "小组件", value: PineWidgetStore.diagnosis) }; NavigationLink("开源许可") { NativeLicenseView() }; Link("服务器备份与隐私", destination: URL(string: "https://health.frankandpatrick.com/server-backup-privacy.html")!) }
         }.navigationTitle("设置").toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
             .task { await load() }
             .confirmationDialog("退出当前账号？", isPresented: $signingOut, titleVisibility: .visible) { Button("退出登录", role: .destructive) { busy = true; Task { do { try await store.logout() } catch { self.error = error.localizedDescription }; busy = false } } } message: { Text("已同步的数据保留在服务器。本机登录状态和缓存会清除。") }

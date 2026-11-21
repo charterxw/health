@@ -2,11 +2,13 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
+// The home-screen widget needs an App Group, which free sideloading does not
+// provision; it is only in builds made with the app_group input (PINE_WIDGET).
 @main
 struct HealthWorkoutWidgets: WidgetBundle {
     var body: some Widget {
         WorkoutLiveActivity()
-        PineTodayWidget()
+        if PineFeatures.widget { PineTodayWidget() }
     }
 }
 
