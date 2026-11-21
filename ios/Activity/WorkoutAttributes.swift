@@ -23,16 +23,38 @@ struct PineWidgetSnapshot: Codable, Equatable {
 enum PineWidgetStore {
     static let base = "group.com.frankandpatrick.health"
     private static let key = "pine.widget.today"
-    /// Sideloading tools may rename the group; they record the real one in the
-    /// app's Info.plist (ALTAppGroups). The widget reads the containing app's.
+    /// The group to use: one the installed signature actually grants. Sideloading
+    /// tools may rename it (often adding the team), so read the provisioning
+    /// profile they embedded, or their ALTAppGroups note, before the default.
     static var groupID: String {
-        var bundles = [Bundle.main]
-        let appURL = Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent()
-        if Bundle.main.bundleURL.pathExtension == "appex", let app = Bundle(url: appURL) { bundles.append(app) }
-        for bundle in bundles {
-            if let groups = bundle.object(forInfoDictionaryKey: "ALTAppGroups") as? [String], let first = groups.first { return first }
+        let candidates = noted() + provisioned() + [base]
+        return candidates.first { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) != nil } ?? candidates.first ?? base
+    }
+    private static var bundles: [URL] {
+        let main = Bundle.main.bundleURL
+        return main.pathExtension == "appex" ? [main, main.deletingLastPathComponent().deletingLastPathComponent()] : [main]
+    }
+    static func noted() -> [String] {
+        bundles.compactMap { Bundle(url: $0)?.object(forInfoDictionaryKey: "ALTAppGroups") as? [String] }.flatMap { $0 }
+    }
+    /// App groups in the embedded provisioning profile (its XML plist sits inside
+    /// the signed CMS envelope).
+    static func provisioned() -> [String] {
+        for url in bundles.map({ $0.appendingPathComponent("embedded.mobileprovision") }) {
+            guard let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .isoLatin1),
+                  let start = text.range(of: "<?xml"), let end = text.range(of: "</plist>", range: start.lowerBound..<text.endIndex),
+                  let plist = try? PropertyListSerialization.propertyList(from: Data(text[start.lowerBound..<end.upperBound].utf8), format: nil) as? [String: Any],
+                  let entitlements = plist["Entitlements"] as? [String: Any],
+                  let groups = entitlements["com.apple.security.application-groups"] as? [String], !groups.isEmpty else { continue }
+            return groups
         }
-        return base
+        return []
+    }
+    /// For the settings page: what this install can share with the widget.
+    static var diagnosis: String {
+        let id = groupID, ok = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: id) != nil
+        let granted = provisioned()
+        return (ok ? "可用 · " : "不可用 · ") + id + (granted.isEmpty ? " · 签名未开通共享空间" : " · 签名开通了 " + granted.joined(separator: ", "))
     }
     static var defaults: UserDefaults? {
         let id = groupID

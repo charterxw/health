@@ -47,6 +47,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Pine-unsigned-${{ github.sha }}
-          path: ios/build/Pine-unsigned.ipa
+          path: |
+            ios/build/Pine-unsigned.ipa
+            ios/Config/Pine.entitlements
           if-no-files-found: error
           retention-days: 30
