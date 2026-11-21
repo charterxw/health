@@ -208,6 +208,12 @@ struct NativeReportView: View {
             if p.done == 0 { Text("本次没有完成的工作组，不推断训练表现。").font(.footnote).foregroundStyle(.secondary) }
         }
     }
+    private func reportStat(_ title: String, _ value: String, _ unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) { Text(value).font(.title3.weight(.semibold)).monospacedDigit(); Text(unit).font(.footnote).foregroundStyle(.secondary) }
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+    }
     /// Load × reps of completed external-load work sets, in pounds.
     private var sessionVolume: Double {
         session["exercises"].array.reduce(0) { total, m in
