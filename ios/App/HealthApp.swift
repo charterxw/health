@@ -92,6 +92,7 @@ struct NativeRootView: View {
             #endif
         }
         .sensoryFeedback(.selection, trigger: store.selectedTab)
+        .task { if !store.isDesignPreview { await NativeSigning.scheduleReminders() } }
         .task { if store.designPreviewScreen == "sleep", overviewPath.isEmpty { overviewPath = [.recovery, .sleep] } }
         // Goal celebrations: when a goal closes in the app it plays right away;
         // when it closed elsewhere (the band) it plays the next time the app is

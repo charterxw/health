@@ -38,6 +38,10 @@ struct NativeDashboardView: View {
             VStack(alignment: .leading, spacing: 0) {
                 PineTabHeader(title: home.isNull ? "今天" : dayTitle(home["date"].text, format: "M月d日 EEE"))
                 syncRow
+                // A free signature lasts seven days; warn in the last two.
+                if let left = NativeSigning.daysLeft(), left <= 2 {
+                    PineBanner(text: "签名" + (left <= 0 ? "已过期" : NativeSigning.text) + "。用 Mac 上的 Sideloadly 重新安装一次即可续签，记录会保留。").padding(.bottom, 6)
+                }
                 if home.isNull { PineEmpty(title: "等待健康数据", symbol: "heart.text.square", detail: "下拉或点上方的同步状态重试。") }
                 else {
                     topCard.padding(.top, 4).layoutPriority(1)
@@ -511,7 +515,7 @@ struct NativeDashboardView: View {
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-sleep")
             Divider().frame(height: 36)
             Button { showingWeight = true } label: {
-                thirdTile("体重", weight.change, weight.value, weight.value == "—" ? "" : "公斤", nil)
+                thirdTile("体重", NativeGain.rate(home["weights"].array, today: home["date"].text).map { "增速" + NativeGain.status($0.percentPerMonth) } ?? weight.change, weight.value, weight.value == "—" ? "" : "公斤", nil)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-weight")
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
@@ -947,17 +951,117 @@ struct NativeDayDetail: View {
 }
 
 /// Body-weight readings, newest first, with the change from each previous one.
+/// Lean-gain pace against a band for a newer lifter: 0.5–1 % of body weight a
+/// month. Slower rarely builds much muscle; faster mostly adds fat.
+enum NativeGain {
+    static let band = 0.5...1.0
+    static func rate(_ rows: [JSONValue], today: String) -> (percentPerMonth: Double, kgPerMonth: Double, average: Double)? {
+        NativeDays.weightRate(rows.compactMap { row in row["kg"].number.map { (date: row["date"].text, kg: $0) } }, today: today)
+    }
+    static func status(_ percent: Double) -> String { percent < band.lowerBound ? "偏慢" : percent > band.upperBound ? "偏快" : "合适" }
+    static func advice(_ percent: Double) -> String {
+        if percent < 0 { return "近 4 周体重在往下走，增肌很难。每天多吃约 300–400 千卡，比如多一碗米饭加一杯牛奶。" }
+        if percent < band.lowerBound { return "涨得偏慢。每天多吃约 200–300 千卡，比如多一份主食或一杯牛奶。" }
+        if percent > band.upperBound { return "涨得偏快，多出来的多半是脂肪。每天少吃约 200 千卡，同时留意腰围。" }
+        return "节奏合适，保持现在的吃法。腰围每月增加不超过约 1 厘米就说明主要在长肌肉。"
+    }
+}
+/// Protein eaten today, tapped in by portions; kept on this phone.
+enum NativeProtein {
+    static let key = "pine.protein"
+    static func all() -> [String: Double] { UserDefaults.standard.dictionary(forKey: key) as? [String: Double] ?? [:] }
+    static func add(_ grams: Double, on date: String) {
+        var rows = all(); rows[date] = max(0, (rows[date] ?? 0) + grams)
+        // Keep about two months.
+        if rows.count > 70 { for old in rows.keys.sorted().prefix(rows.count - 70) { rows[old] = nil } }
+        UserDefaults.standard.set(rows, forKey: key)
+    }
+    /// 1.6 g per kg of body weight, rounded to 5 g.
+    static func target(kg: Double) -> Double { (kg * 1.6 / 5).rounded() * 5 }
+}
+/// Shoulder circumference over waist, pairing each shoulder reading with the
+/// waist reading closest in time (within ten days).
+enum NativeShape {
+    static func ratios(_ entries: [NativeMeasurements.Entry]) -> [(date: String, ratio: Double)] {
+        let waists = entries.filter { $0.kind == NativeMeasurements.Kind.waist.rawValue }
+        func day(_ key: String) -> Double { (NativeDate.parse(key + "T12:00:00Z")?.timeIntervalSince1970 ?? 0) / 86400 }
+        return entries.filter { $0.kind == NativeMeasurements.Kind.shoulder.rawValue }.sorted { $0.date < $1.date }.compactMap { shoulder in
+            guard let waist = waists.min(by: { abs(day($0.date) - day(shoulder.date)) < abs(day($1.date) - day(shoulder.date)) }),
+                  abs(day(waist.date) - day(shoulder.date)) <= 10, waist.cm > 0 else { return nil }
+            return (shoulder.date, shoulder.cm / waist.cm)
+        }
+    }
+}
+
 struct NativeWeightList: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(NativeStore.self) private var store
     let rows: [JSONValue]
+    @State private var protein = NativeProtein.all()
+    @State private var entries = NativeMeasurements.entries()
+    private var today: String { store.home["date"].text.isEmpty ? NativeDate.day(Date(), timezone: TimeZone.current.identifier) : store.home["date"].text }
     var body: some View {
         let sorted = rows.filter { $0["kg"].number != nil }.sorted { $0["date"].text > $1["date"].text }
+        let rate = NativeGain.rate(rows, today: today)
+        let kg = rate?.average ?? sorted.first?["kg"].number
         List {
             Section {
-                NavigationLink { NativeMeasurementsView() } label: {
-                    Label("围度与对比照片", systemImage: "ruler")
+                if let rate {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(NativeGain.status(rate.percentPerMonth)).font(.title3.weight(.semibold))
+                            .foregroundStyle(NativeGain.status(rate.percentPerMonth) == "合适" ? pine : Color.primary)
+                        Spacer()
+                        Text((rate.kgPerMonth >= 0 ? "+" : "") + displayNumber(.number(rate.kgPerMonth), digits: 2) + " 公斤/月").font(.subheadline.weight(.semibold)).monospacedDigit()
+                    }
+                    gainBar(rate.percentPerMonth)
+                    Text("近 4 周每月 " + (rate.percentPerMonth >= 0 ? "+" : "") + displayNumber(.number(rate.percentPerMonth), digits: 2) + "% · 7 天平均 " + displayNumber(.number(rate.average), digits: 1) + " 公斤")
+                        .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                    Text(NativeGain.advice(rate.percentPerMonth)).font(.subheadline)
+                } else {
+                    Text("近 4 周至少称 6 次、跨度两周以上后显示。每周称 3 次以上，固定在早上起床后。").font(.subheadline).foregroundStyle(.secondary)
                 }
-            } footer: { Text("腰围每周一次，臂围和肩围每月一次。") }
+            } header: { Text("增肌速度") } footer: { Text("目标每月涨体重的 0.5–1%：力量训练前一两年的常用增肌节奏。按每天的称重拟合趋势，单次波动不影响。") }
+            Section {
+                let eaten = protein[today] ?? 0, goal = kg.map(NativeProtein.target) ?? 0
+                HStack(alignment: .firstTextBaseline) {
+                    Text(displayNumber(.number(eaten), digits: 0) + " 克").font(.title3.weight(.semibold)).monospacedDigit()
+                        .contentTransition(.numericText(value: eaten))
+                    if goal > 0 { Text("/ " + displayNumber(.number(goal), digits: 0)).font(.subheadline).foregroundStyle(.secondary) }
+                    Spacer()
+                    if goal > 0, eaten >= goal { Label("达标", systemImage: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine) }
+                }
+                if goal > 0 { ProgressView(value: min(1, eaten / goal)).tint(pine) }
+                HStack(spacing: 8) {
+                    ForEach([20.0, 30.0, 50.0], id: \.self) { grams in
+                        Button("+\(Int(grams))") { addProtein(grams) }.buttonStyle(.bordered).tint(pine)
+                    }
+                    Spacer()
+                    Button("撤销", systemImage: "arrow.uturn.backward") { addProtein(-10) }.labelStyle(.iconOnly).buttonStyle(.bordered).disabled(eaten <= 0)
+                }.font(.subheadline.weight(.semibold))
+                let week = (0..<7).compactMap { offset -> Double? in
+                    guard let date = NativeDate.parse(today + "T12:00:00Z")?.addingTimeInterval(-Double(offset) * 86400) else { return nil }
+                    return protein[NativeDate.day(date, timezone: "UTC")]
+                }
+                if goal > 0, !week.isEmpty { Text("近 7 天记录了 \(week.count) 天，其中 \(week.filter { $0 >= goal }.count) 天达标").font(.caption).foregroundStyle(.secondary) }
+            } header: { Text("今天的蛋白质") } footer: { Text("每公斤体重约 1.6 克，分到三四顿。参考：一个鸡蛋约 6 克，一杯牛奶约 8 克，一掌心肉或鱼约 25 克，一勺蛋白粉约 25 克。只保存在这台手机上。") }
+            Section {
+                let ratios = NativeShape.ratios(entries)
+                if let last = ratios.last {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(displayNumber(.number(last.ratio), digits: 2)).font(.title3.weight(.semibold)).monospacedDigit()
+                        Spacer()
+                        if let first = ratios.first, ratios.count > 1 {
+                            let change = ((last.ratio - first.ratio) * 100).rounded() / 100
+                            Text("自 " + dayTitle(first.date, format: "M月d日") + " " + (change >= 0 ? "+" : "") + displayNumber(.number(change), digits: 2))
+                                .font(.subheadline).foregroundStyle(change > 0 ? pine : Color.secondary).monospacedDigit()
+                        }
+                    }
+                    Text("肩围 ÷ 腰围。肩变宽、腰不变粗，这个数就往上走，是外形变化最直接的指标。常被当作理想参考的是 1.6 左右。").font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("记录肩围和腰围（相隔不超过 10 天）后显示。").font(.subheadline).foregroundStyle(.secondary)
+                }
+                NavigationLink { NativeMeasurementsView() } label: { Label("围度与对比照片", systemImage: "ruler") }
+            } header: { Text("肩腰比") } footer: { Text("腰围每周一次，臂围和肩围每月一次。") }
             if sorted.isEmpty { Text("还没有体重记录。").foregroundStyle(.secondary) }
             ForEach(Array(sorted.enumerated()), id: \.offset) { index, row in
                 HStack {
@@ -970,8 +1074,25 @@ struct NativeWeightList: View {
                     Text(displayNumber(row["kg"], digits: 1) + " 公斤").fontWeight(.semibold).monospacedDigit()
                 }
             }
-        }.navigationTitle("体重").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle("体重与体型").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+            .onAppear { entries = NativeMeasurements.entries(); protein = NativeProtein.all() }
+    }
+    private func addProtein(_ grams: Double) {
+        NativeProtein.add(grams, on: today)
+        withAnimation(.snappy) { protein = NativeProtein.all() }
+    }
+    /// The month's pace on a 0–1.5 % scale with the target band shaded.
+    private func gainBar(_ percent: Double) -> some View {
+        GeometryReader { proxy in
+            let w = proxy.size.width, scale = 1.5
+            let x = { (v: Double) in CGFloat(max(0, min(scale, v)) / scale) * w }
+            ZStack(alignment: .leading) {
+                Capsule().fill(pineTrack).frame(height: 8)
+                Capsule().fill(pine.opacity(0.3)).frame(width: x(NativeGain.band.upperBound) - x(NativeGain.band.lowerBound), height: 8).offset(x: x(NativeGain.band.lowerBound))
+                Circle().fill(pine).frame(width: 14, height: 14).overlay(Circle().stroke(pineSurface, lineWidth: 2)).offset(x: x(percent) - 7)
+            }.frame(height: 14)
+        }.frame(height: 14).accessibilityHidden(true)
     }
 }
 

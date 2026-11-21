@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct NativeSettingsView: View {
     @Environment(NativeStore.self) var store
@@ -41,7 +42,7 @@ struct NativeSettingsView: View {
             } header: { Text("通知") }
             if let error { Section { Text(error).foregroundStyle(.red) } }
             Section { Button("退出登录", role: .destructive) { signingOut = true }.disabled(busy) }
-            Section { PineRow(label: "版本", value: NativeBuildInfo.text); if PineFeatures.widget { PineRow(label: "小组件", value: PineWidgetStore.diagnosis) }; NavigationLink("开源许可") { NativeLicenseView() }; Link("服务器备份与隐私", destination: URL(string: "https://health.frankandpatrick.com/server-backup-privacy.html")!) }
+            Section { PineRow(label: "版本", value: NativeBuildInfo.text); PineRow(label: "签名", value: NativeSigning.text); if PineFeatures.widget { PineRow(label: "小组件", value: PineWidgetStore.diagnosis) }; NavigationLink("开源许可") { NativeLicenseView() }; Link("服务器备份与隐私", destination: URL(string: "https://health.frankandpatrick.com/server-backup-privacy.html")!) }
         }.navigationTitle("设置").toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
             .task { await load() }
             .confirmationDialog("退出当前账号？", isPresented: $signingOut, titleVisibility: .visible) { Button("退出登录", role: .destructive) { busy = true; Task { do { try await store.logout() } catch { self.error = error.localizedDescription }; busy = false } } } message: { Text("已同步的数据保留在服务器。本机登录状态和缓存会清除。") }
@@ -80,5 +81,48 @@ enum NativeBuildInfo {
         let build = info["CFBundleVersion"] as? String ?? ""
         let commit = info["PineCommit"] as? String ?? ""
         return version + (build.isEmpty ? "" : " (\(build))") + (commit.isEmpty || commit == "local" ? "" : " · " + commit)
+    }
+}
+
+/// When this install's signature runs out. A free Apple ID signs for seven days;
+/// after that iOS will not open the app until it is installed again.
+enum NativeSigning {
+    static let expiry: Date? = {
+        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+              let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .isoLatin1),
+              let start = text.range(of: "<?xml"), let end = text.range(of: "</plist>", range: start.lowerBound..<text.endIndex),
+              let plist = try? PropertyListSerialization.propertyList(from: Data(text[start.lowerBound..<end.upperBound].utf8), format: nil) as? [String: Any]
+        else { return nil }
+        return plist["ExpirationDate"] as? Date
+    }()
+    static func daysLeft(_ now: Date = Date()) -> Double? { expiry.map { $0.timeIntervalSince(now) / 86400 } }
+    /// "还剩 5 天 · 11月27日 14:05 到期".
+    static var text: String {
+        guard let expiry, let left = daysLeft() else { return "未知" }
+        let when = NativeDate.label(expiry, format: "M月d日 HH:mm", timezone: TimeZone.current.identifier)
+        if left <= 0 { return "已过期 · " + when }
+        return (left < 1 ? "不到 1 天" : "还剩 \(Int(left)) 天") + " · " + when + " 到期"
+    }
+    static let ids = ["pine.signing.2d", "pine.signing.1d"]
+    /// Two evening reminders, two days and one day before the signature runs out.
+    /// Rescheduled on every launch, so a re-signed install moves them.
+    static func scheduleReminders() async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        guard let expiry else { return }
+        let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined { _ = try? await center.requestAuthorization(options: [.alert, .sound]) }
+        let calendar = Calendar.current
+        for (id, back) in zip(ids, [2, 1]) {
+            guard let day = calendar.date(byAdding: .day, value: -back, to: expiry),
+                  var at = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: day) else { continue }
+            if at >= expiry { at = expiry.addingTimeInterval(-3 * 3600) }
+            guard at > Date() else { continue }
+            let content = UNMutableNotificationContent()
+            content.title = back == 1 ? "Pine 明天就要过期了" : "Pine 两天后过期"
+            content.body = "到期时间 " + NativeDate.label(expiry, format: "M月d日 HH:mm", timezone: TimeZone.current.identifier) + "。用 Mac 上的 Sideloadly 重新安装一次即可续签，记录会保留。"
+            let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: at)
+            try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)))
+        }
     }
 }

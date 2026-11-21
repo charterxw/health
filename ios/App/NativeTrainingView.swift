@@ -313,6 +313,11 @@ struct NativeTrainingView: View {
                 Text("\(work) 组 · \(item["rep_min"].integer)–\(item["rep_max"].integer) 次").font(.caption).foregroundStyle(.secondary).monospacedDigit()
                 if NativeTraining.isStepUp(next) {
                     Label(stepText(item, next), systemImage: "arrow.up.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(pine)
+                } else {
+                    let stalled = NativeDays.stallCount(exerciseID: item["exercise_id"].text, loadMode: exercise["load_mode"].text, history: store.history, before: Date())
+                    if stalled >= 3 {
+                        Label("连续 \(stalled) 次没进步 · 先减约 10% 再爬", systemImage: "pause.circle").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
                 }
             }
             Spacer(minLength: 8)

@@ -58,6 +58,27 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         try check(NativeDays.postureStreak(done: done, today: "2026-11-24").count == 0, "A missed planned day kept the streak")
         try check(NativeDays.postureStreak(done: done.union(["2026-11-18"]), today: "2026-11-22").count == 5, "An extra practice day did not count")
     }
+    static func weightRate() throws {
+        // +0.02 kg a day from 70 kg: 0.6 kg a month, about 0.85 %.
+        let rows = (0..<20).map { d in (date: String(format: "2026-11-%02d", d + 1), kg: 70 + 0.02 * Double(d)) }
+        let rate = NativeDays.weightRate(rows, today: "2026-11-20")
+        try check(rate.map { abs($0.kgPerMonth - 0.6) < 1e-6 && abs($0.percentPerMonth - 0.6 / $0.average * 100) < 1e-6 } == true, "Weight trend slope is wrong")
+        try check(NativeDays.weightRate(Array(rows.suffix(5)), today: "2026-11-20") == nil, "Weight trend guessed from too few weigh-ins")
+    }
+    static func stall() throws {
+        let now = Date()
+        func session(_ days: Double, weight: Double, reps: [Double]) -> JSONValue {
+            let at = NativeDate.stamp(now.addingTimeInterval(-days * 86400))
+            return ["id": .string(UUID().uuidString), "status": "completed", "started_at": at, "exercises": [["exercise_id": "press", "load_mode": "external", "unit": "lb",
+                "sets": .array(reps.map { ["weight": .number(weight), "reps": .number($0), "completed_at": at, "warmup": false] })]]]
+        }
+        let flat = [session(12, weight: 50, reps: [10, 9, 8]), session(9, weight: 50, reps: [10, 9, 8]), session(5, weight: 50, reps: [9, 9, 8]), session(2, weight: 50, reps: [10, 9, 8])]
+        try check(NativeDays.stallCount(exerciseID: "press", loadMode: "external", history: flat, before: now) == 3, "Three sessions without progress were not counted")
+        let growing = flat + [session(1, weight: 50, reps: [10, 10, 8])]
+        try check(NativeDays.stallCount(exerciseID: "press", loadMode: "external", history: growing, before: now) == 0, "More reps at the same weight was not progress")
+        let reset = flat + [session(1, weight: 45, reps: [12, 12, 12])]
+        try check(NativeDays.stallCount(exerciseID: "press", loadMode: "external", history: reset, before: now) == 0, "A deliberate reset kept the stall warning")
+    }
     static func bedtime() throws {
         // Wake 07:30 New York (12:30Z in November), need 7.5 h, 20 min awake in bed.
         let nights: [JSONValue] = (1...7).map { d in
@@ -167,7 +188,7 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         try payload.data().write(to:URL(fileURLWithPath:output));print("Emitted \(sessions.count) sessions from the latest Pi template catalog")
     }
     static func main() throws {
-        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Strength index against each lift's own best",strengthIndex),("Suggested bedtime from wake time and sleep need",bedtime),("Posture streak over planned days",postureStreak),("Whole-day sessions and weekday labels",dayGlyphs),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
+        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Strength index against each lift's own best",strengthIndex),("Suggested bedtime from wake time and sleep need",bedtime),("Posture streak over planned days",postureStreak),("Weight gain pace",weightRate),("Stalled lifts",stall),("Whole-day sessions and weekday labels",dayGlyphs),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
         for (name,run) in cases { try run();print("PASS: \(name)") }
         if CommandLine.arguments.count==4 && CommandLine.arguments[1]=="--contracts" { try emitContracts(CommandLine.arguments[2],CommandLine.arguments[3]) }
         if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--performance" { try measurePerformance(CommandLine.arguments[2]) }

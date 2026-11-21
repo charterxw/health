@@ -8,7 +8,9 @@ import WidgetKit
 struct HealthWorkoutWidgets: WidgetBundle {
     var body: some Widget {
         WorkoutLiveActivity()
-        if PineFeatures.widget { PineTodayWidget() }
+        #if PINE_WIDGET
+        PineTodayWidget()
+        #endif
     }
 }
 

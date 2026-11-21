@@ -170,8 +170,21 @@ struct NativeWorkoutView: View {
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 12).padding(.vertical, 6).background(pine, in: Capsule()).padding(.top, 8)
             }
+            if !NativeTraining.isStepUp(movement["prescription"]), stalled >= 3 {
+                // No new best for three sessions: suggest a reset or a swap.
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("连续 \(stalled) 次没进步", systemImage: "pause.circle").font(.subheadline.weight(.semibold))
+                    Text("可以把重量减约 10%，每组做到区间上限再加回来；或在右上角 ⋯ → 动作设置里换成同部位的替代动作。").font(.footnote).foregroundStyle(.secondary)
+                }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(pineTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous)).padding(.top, 8)
+            }
             if !movement["prescription"]["reason"].text.isEmpty { Text(movement["prescription"]["reason"].text).font(.footnote).foregroundStyle(pine).padding(.top, 6) }
         }
+    }
+    /// Sessions since this lift's last new best, before today's workout.
+    private var stalled: Int {
+        guard !NativeTraining.timed(movement), !NativeTraining.mobility(movement) else { return 0 }
+        return NativeDays.stallCount(exerciseID: movement["exercise_id"].text, loadMode: movement["load_mode"].text, history: store.history,
+                                     before: NativeDate.parse(session["started_at"]) ?? Date())
     }
     private var previousText: String {
         let hints = store.previousSets(exercise: movement["exercise_id"].text, mode: movement["load_mode"].text,

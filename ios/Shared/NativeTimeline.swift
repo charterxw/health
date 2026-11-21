@@ -187,6 +187,56 @@ public enum NativeDays {
         let median: Double? = changes.isEmpty ? nil : changes.count % 2 == 1 ? changes[changes.count / 2] : (changes[changes.count / 2 - 1] + changes[changes.count / 2]) / 2
         return NativeStrengthWeek(change: median, lifts: lifts, newCount: current.count - lifts.count)
     }
+    /// Lean-gain pace from daily weigh-ins: a least-squares line through the last
+    /// `days` days, as percent of body weight per 30 days. Nil with fewer than six
+    /// weigh-ins or less than two weeks between the first and last.
+    public static func weightRate(_ weights: [(date: String, kg: Double)], today: String, days: Int = 28) -> (percentPerMonth: Double, kgPerMonth: Double, average: Double)? {
+        func day(_ key: String) -> Double? { NativeDate.parse(key + "T12:00:00Z").map { $0.timeIntervalSince1970 / 86400 } }
+        guard let end = day(today) else { return nil }
+        let points = weights.compactMap { row -> (Double, Double)? in
+            guard let x = day(row.date), x <= end, x > end - Double(days), row.kg > 20 else { return nil }
+            return (x, row.kg)
+        }
+        guard points.count >= 6, let first = points.map(\.0).min(), let last = points.map(\.0).max(), last - first >= 14 else { return nil }
+        let mx = points.map(\.0).reduce(0, +) / Double(points.count), my = points.map(\.1).reduce(0, +) / Double(points.count)
+        let sxx = points.reduce(0) { $0 + ($1.0 - mx) * ($1.0 - mx) }
+        guard sxx > 0 else { return nil }
+        let slope = points.reduce(0) { $0 + ($1.0 - mx) * ($1.1 - my) } / sxx
+        let recent = points.filter { $0.0 > end - 7 }.map(\.1)
+        let average = recent.isEmpty ? my : recent.reduce(0, +) / Double(recent.count)
+        return (slope * 30 / average * 100, slope * 30, average)
+    }
+    /// Sessions in a row, most recent last, since this lift last made progress:
+    /// more load (less assistance), or the same load for more total reps. Zero
+    /// while the lifter is rebuilding below their best load after a reset.
+    public static func stallCount(exerciseID: String, loadMode: String, history: [JSONValue], before: Date, weeks: Int = 8) -> Int {
+        let from = before.addingTimeInterval(-Double(weeks) * 7 * 86400)
+        typealias Mark = (weight: Double, reps: Double)
+        var marks: [(String, Mark)] = []
+        for session in history where session["status"].text == "completed" {
+            guard let start = NativeDate.parse(session["started_at"]), start >= from, start < before else { continue }
+            for movement in session["exercises"].array where movement["exercise_id"].text == exerciseID && movement["load_mode"].text == loadMode {
+                let factor = movement["unit"].text == "kg" ? 2.2046226 : 1
+                let work = movement["sets"].array.filter { !$0["warmup"].flag && !$0["completed_at"].isNull && ($0["reps"].number ?? 0) > 0 }
+                guard !work.isEmpty else { continue }
+                if loadMode == "bodyweight" { marks.append((session["started_at"].text, (0, work.reduce(0) { $0 + ($1["reps"].number ?? 0) }))); continue }
+                let weights = work.compactMap { $0["weight"].number }.map { $0 * factor }
+                guard let top = loadMode == "assistance" ? weights.min() : weights.max() else { continue }
+                let reps = work.filter { abs(($0["weight"].number ?? -1) * factor - top) < 0.05 }.reduce(0) { $0 + ($1["reps"].number ?? 0) }
+                marks.append((session["started_at"].text, (top, reps)))
+            }
+        }
+        marks.sort { $0.0 < $1.0 }
+        guard var best = marks.first?.1 else { return 0 }
+        func heavier(_ a: Double, _ b: Double) -> Bool { loadMode == "assistance" ? a < b - 0.05 : a > b + 0.05 }
+        var count = 0
+        for (_, mark) in marks.dropFirst() {
+            if heavier(mark.weight, best.weight) || (abs(mark.weight - best.weight) < 0.05 && mark.reps > best.reps) { best = mark; count = 0 }
+            else { count += 1 }
+        }
+        if let last = marks.last?.1, heavier(best.weight, last.weight) { return 0 }
+        return count
+    }
     public static let sleepTargetHours = 8.0
     /// Suggested bedtime in minutes after midnight: the median wake time of the
     /// last 14 main sleeps, minus the sleep need and the median awake time in bed,
