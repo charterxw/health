@@ -12,9 +12,9 @@ and the distinction between source recovery and private data recovery.
   glyphs, activity total, strength index) → recovery / sleep / weight row. Three
   tabs; no sleep tab. Sleep and the other health metrics live under recovery details.
   Reading a detail pushes a page; only editing (goals, feelings, walks) uses a sheet.
-- The 1.3 device build passed. 1.4 has not been compiled or run yet in this
-  repository's history; do not report its build, runtime, motion, or physical-device
-  FPS as verified until it has been.
+- The 1.4 device Release build and all core checks passed in CI (iOS build run 36,
+  commit 9730c71). It has not been run in a simulator or on a phone; do not report
+  runtime, motion, or physical-device FPS as verified.
 - `frontend/` matches Pi release `dialog-diagnostics-20261118`. `backend/` adds, after
   that release, exercise setup notes, the body log (girths, protein), feelings fields
   (soreness, stress, note) and home `extras`; the app degrades without them until the
