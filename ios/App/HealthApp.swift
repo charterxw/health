@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 import UIKit
+import WidgetKit
 
 @main
 @MainActor
@@ -91,6 +92,7 @@ struct NativeRootView: View {
                 PineCelebrationView(event: event) { store.celebration = nil }.transition(.opacity)
             }
         }
+        .task(id: celebrationKey + "|" + store.home["plan"]["current"]["letter"].text) { publishWidget() }
         .task(id: celebrationKey) {
             do { try await Task.sleep(for: .seconds(0.9)) } catch { return }
             checkCelebrations()
@@ -107,6 +109,22 @@ extension NativeRootView {
     var celebrationKey: String {
         [store.home["date"].text, displayNumber(todayRow["activity"], digits: 0), String(todayRow["posture"].flag), String(store.records.count), String(store.historyRevision),
          String(store.workoutPresented), store.reportID ?? "", String(store.celebration == nil), String(store.active == nil)].joined(separator: "|")
+    }
+    /// Hands today's goals and the next session to the home-screen widget.
+    func publishWidget() {
+        guard store.phase == .ready, !store.isDesignPreview, !todayRow.isNull else { return }
+        let home = store.home, date = home["date"].text
+        let zone = home["timezone"].text.isEmpty ? TimeZone.current.identifier : home["timezone"].text
+        let sessions = NativeDays.sessions(records: store.records, timezone: zone)[date] ?? []
+        let goal = todayRow["goals"]["dailyActivity"].number ?? 0
+        let day = home["plan"]["current"]
+        let name = day["slots"][0]["name"].text.components(separatedBy: "｜")
+        let snapshot = PineWidgetSnapshot(date: date, activity: goal > 0 ? todayRow["activity"].number.map { $0 / goal } : nil,
+            halves: NativeDays.halves(sessions, weekend: NativeDays.isWeekend(date)),
+            posture: todayRow["posture"].flag || NativeDays.postureDone(sessions),
+            next: day.isNull ? "本轮完成" : day["letter"].text + " · " + (home["plan"]["next"]["variant"].text == "home" ? "家庭" : "公司"),
+            detail: name.count > 1 ? name[1].replacingOccurrences(of: "·", with: " · ") : "")
+        if PineWidgetStore.read() != snapshot, PineWidgetStore.write(snapshot) { WidgetCenter.shared.reloadAllTimelines() }
     }
     /// Today's goals that closed and have not been celebrated yet; all three at
     /// once is the big moment, otherwise one goal at a time.

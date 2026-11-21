@@ -3,6 +3,11 @@ name: iOS build
 # Manual only: start from the Actions tab ("Run workflow") when a build is wanted.
 on:
   workflow_dispatch:
+    inputs:
+      app_group:
+        description: "Embed the App Group for the home-screen widget (test the install first)"
+        type: boolean
+        default: false
 
 concurrency:
   group: ios-build-${{ github.ref }}
@@ -34,6 +39,7 @@ jobs:
         run: |
           export PINE_BUILD_NUMBER=$((100 + GITHUB_RUN_NUMBER))
           export PINE_COMMIT="${GITHUB_SHA:0:7}"
+          export PINE_APP_GROUP="${{ inputs.app_group && '1' || '' }}"
           echo "Pine build $PINE_BUILD_NUMBER ($PINE_COMMIT)"
           bash ios/scripts/build.sh --unsigned-ipa
 

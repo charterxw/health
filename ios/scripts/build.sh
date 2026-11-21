@@ -30,6 +30,12 @@ case "$mode" in
     xcodebuild -jobs 2 -project "$root/Health.xcodeproj" -scheme Health -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$derived" CODE_SIGNING_ALLOWED=NO ${stamp[@]+"${stamp[@]}"} build
     app="$derived/Build/Products/Release-iphoneos/Health.app"
     test -d "$app/PlugIns/WorkoutWidget.appex"
+    # Optional: ad-hoc sign with the shared App Group so the sideloading tool can
+    # provision it and the home-screen widget can read today's data.
+    if [[ "${PINE_APP_GROUP:-}" == "1" ]]; then
+      codesign --force --sign - --entitlements "$root/Config/Pine.entitlements" "$app/PlugIns/WorkoutWidget.appex"
+      codesign --force --sign - --entitlements "$root/Config/Pine.entitlements" "$app"
+    fi
     stage="$(mktemp -d "$root/build/package.XXXXXX")"
     trap 'rm -rf "$stage"' EXIT
     mkdir "$stage/Payload"

@@ -4,7 +4,10 @@ import WidgetKit
 
 @main
 struct HealthWorkoutWidgets: WidgetBundle {
-    var body: some Widget { WorkoutLiveActivity() }
+    var body: some Widget {
+        WorkoutLiveActivity()
+        PineTodayWidget()
+    }
 }
 
 struct WorkoutLiveActivity: Widget {
@@ -187,5 +190,109 @@ private struct ActivityClock: View {
         .multilineTextAlignment(.trailing)
         .foregroundStyle(info.isRest ? info.tint : .primary)
         .accessibilityHint(info.isRest ? "休息剩余时间" : "训练用时")
+    }
+}
+
+// MARK: Home-screen widget
+
+private let widgetPine = Color(red: 0x2F / 255, green: 0x6B / 255, blue: 0x4C / 255)
+private let widgetPineDark = Color(red: 0x7C / 255, green: 0xC4 / 255, blue: 0x9C / 255)
+
+struct PineTodayEntry: TimelineEntry {
+    let date: Date
+    let snapshot: PineWidgetSnapshot?
+}
+
+struct PineTodayProvider: TimelineProvider {
+    func placeholder(in context: Context) -> PineTodayEntry {
+        PineTodayEntry(date: .now, snapshot: PineWidgetSnapshot(date: "", activity: 0.6, halves: [1, 0.5], posture: false, next: "A · 公司", detail: "肩宽 · 三头"))
+    }
+    func getSnapshot(in context: Context, completion: @escaping (PineTodayEntry) -> Void) {
+        completion(context.isPreview ? placeholder(in: context) : PineTodayEntry(date: .now, snapshot: PineWidgetStore.read()))
+    }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<PineTodayEntry>) -> Void) {
+        // The app reloads the widget when its data changes; this is a fallback.
+        completion(Timeline(entries: [PineTodayEntry(date: .now, snapshot: PineWidgetStore.read())], policy: .after(.now.addingTimeInterval(1800))))
+    }
+}
+
+/// The app's three-ring glyph, redrawn for the widget process.
+private struct WidgetGlyph: View {
+    let snapshot: PineWidgetSnapshot
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        GeometryReader { proxy in
+            let unit = min(proxy.size.width, proxy.size.height) / 88
+            let ink = scheme == .dark ? widgetPineDark : widgetPine
+            let track = ink.opacity(0.18)
+            ZStack {
+                Circle().stroke(track, lineWidth: 8 * unit).frame(width: 72 * unit, height: 72 * unit)
+                Circle().trim(from: 0, to: min(1, snapshot.activity ?? 0)).stroke(ink, style: StrokeStyle(lineWidth: 8 * unit, lineCap: .round))
+                    .rotationEffect(.degrees(-90)).frame(width: 72 * unit, height: 72 * unit)
+                Circle().stroke(track, lineWidth: 7 * unit).frame(width: 42 * unit, height: 42 * unit)
+                ForEach(0..<min(2, snapshot.halves.count), id: \.self) { index in
+                    Circle().trim(from: 0.25, to: 0.25 + 0.5 * min(1, snapshot.halves[index]))
+                        .stroke(ink, style: StrokeStyle(lineWidth: 7 * unit, lineCap: .butt))
+                        .rotationEffect(.degrees(index == 0 ? 0 : 180)).frame(width: 42 * unit, height: 42 * unit)
+                }
+                Circle().fill(snapshot.posture ? ink : track).frame(width: 18 * unit, height: 18 * unit)
+            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+struct PineTodayWidgetView: View {
+    let entry: PineTodayEntry
+    @Environment(\.widgetFamily) private var family
+    var body: some View {
+        Group {
+            if let snapshot = entry.snapshot {
+                switch family {
+                case .accessoryCircular:
+                    WidgetGlyph(snapshot: snapshot).padding(2)
+                case .systemMedium:
+                    HStack(spacing: 16) {
+                        WidgetGlyph(snapshot: snapshot).frame(width: 110)
+                        VStack(alignment: .leading, spacing: 6) {
+                            goal("活动", done: (snapshot.activity ?? 0) >= 1, value: snapshot.activity.map { "\(Int(($0 * 100).rounded()))%" } ?? "—")
+                            goal("力量", done: snapshot.halves.count >= 2 && snapshot.halves.prefix(2).allSatisfy { $0 >= 1 }, value: snapshot.halves.isEmpty ? "休息" : "\(snapshot.halves.filter { $0 >= 1 }.count)/\(max(snapshot.halves.count, 1))")
+                            goal("体态", done: snapshot.posture, value: snapshot.posture ? "已做" : "待做")
+                            Spacer(minLength: 0)
+                            Text("下一次 · " + snapshot.next).font(.caption.weight(.semibold)).lineLimit(1)
+                        }
+                    }
+                default:
+                    VStack(alignment: .leading, spacing: 6) {
+                        WidgetGlyph(snapshot: snapshot).frame(height: 84)
+                        Text(snapshot.next).font(.caption.weight(.semibold)).lineLimit(1)
+                        Text(snapshot.detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "figure.strengthtraining.traditional").font(.title2)
+                    Text("打开 Pine 查看").font(.caption)
+                }.foregroundStyle(.secondary)
+            }
+        }
+        .containerBackground(.fill.tertiary, for: .widget)
+        .widgetURL(URL(string: "healthfp://today"))
+    }
+    private func goal(_ title: String, done: Bool, value: String) -> some View {
+        HStack {
+            Text(title).font(.subheadline.weight(.semibold))
+            Spacer()
+            Text(value).font(.subheadline).monospacedDigit().foregroundStyle(done ? widgetPine : .secondary)
+            if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(widgetPine) }
+        }
+    }
+}
+
+struct PineTodayWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "PineToday", provider: PineTodayProvider()) { entry in PineTodayWidgetView(entry: entry) }
+            .configurationDisplayName("Pine 今日")
+            .description("今天的三项目标和下一次训练。")
+            .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
     }
 }
