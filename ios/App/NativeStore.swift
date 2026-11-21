@@ -513,6 +513,12 @@ final class NativeStore {
         if let last = UserDefaults.standard.object(forKey: key) as? Date, Date().timeIntervalSince(last) < wait { return }
         UserDefaults.standard.set(Date(), forKey: key)
         await loadBrief(generate: true)
+        // Still idle: the server had nothing to write from yet (in the morning,
+        // last night's sleep had not synced). Try again in ten minutes instead
+        // of waiting out the two-hour pause.
+        if cache.brief["status"].text == "idle", cache.brief["sentences"].array.isEmpty {
+            UserDefaults.standard.set(Date().addingTimeInterval(-wait + 10 * 60), forKey: key)
+        }
     }
     func open(_ url: URL) { guard let id = HealthRoute.workoutID(from: url) else { return }; pendingWorkout = id; Task { await openPending() } }
     private func openPending() async {
