@@ -124,6 +124,29 @@ extension NativeRootView {
         let posture = row["posture"].flag || NativeDays.postureDone(sessions)
         let met: [PineCelebration.Kind: Bool] = [.activity: (activity ?? 0) >= 1, .strength: strength, .posture: posture]
         let defaults = UserDefaults.standard
+        // The week of 11/16–11/20 was finished under the previous plan, before
+        // medals existed; it earns the first medal once.
+        let firstWeek = "pine.medal.bootstrap.2026-11-16"
+        if !defaults.bool(forKey: firstWeek) {
+            var sets = 0
+            for record in store.records where record.session["status"].text == "completed" {
+                guard let start = NativeDate.parse(record.session["started_at"]) else { continue }
+                let day = NativeDate.day(start, timezone: zone)
+                guard day >= "2026-11-16", day <= "2026-11-20", !record.session["exercises"].array.allSatisfy(NativeTraining.mobility) else { continue }
+                sets += NativeTraining.progress(record.session).done
+            }
+            if sets > 0 {
+                defaults.set(true, forKey: firstWeek)
+                var medals = defaults.array(forKey: NativeMedals.key) as? [[String: Any]] ?? []
+                medals.insert(["round": 1, "date": "2026-11-20", "sets": sets], at: 0)
+                medals = medals.enumerated().map { index, medal in var m = medal; m["round"] = index + 1; return m }
+                defaults.set(medals, forKey: NativeMedals.key)
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    store.celebration = PineCelebration(kind: .round, activity: nil, halves: [], posture: false, round: 1, sets: sets)
+                }
+                return
+            }
+        }
         // A finished round earns a medal once; it outranks today's goals.
         let plan = home["plan"], schedule = plan["schedule"].array
         if plan["version"].integer == 2, plan["next"].isNull, !schedule.isEmpty, schedule.allSatisfy({ $0["completed"].flag }) {

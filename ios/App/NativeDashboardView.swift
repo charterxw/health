@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import PhotosUI
 
 struct MetricSelection: Identifiable { let id: String; let title: String; let unit: String }
 struct NativeDashboardView: View {
@@ -21,6 +22,8 @@ struct NativeDashboardView: View {
     @State private var seenBrief = ""
     /// Yesterday's glyph glows once when all three closed while the app was away.
     @State private var glowDate = ""
+    /// On Sunday evening the week's summary takes the observation's place.
+    @State private var showBrief = false
     @Namespace private var weekSpace
     /// Visible height between the status bar and the tab bar.
     @State private var viewport: CGFloat = 0
@@ -37,7 +40,7 @@ struct NativeDashboardView: View {
                 syncRow
                 if home.isNull { PineEmpty(title: "等待健康数据", symbol: "heart.text.square", detail: "下拉或点上方的同步状态重试。") }
                 else {
-                    observation.padding(.top, 4).layoutPriority(1)
+                    topCard.padding(.top, 4).layoutPriority(1)
                     // The page fills exactly one screen: whatever the observation's
                     // length, the leftover height goes to these gaps and the goal rows.
                     flexGap(min: 2, max: 8)
@@ -123,6 +126,59 @@ struct NativeDashboardView: View {
         }
     }
 
+    // MARK: Weekly summary
+    private var summaryTime: Bool {
+        guard NativeDays.weekday(home["date"].text) == 1 else { return false }
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: timezone) ?? .current
+        return calendar.component(.hour, from: Date()) >= NativeStore.eveningHour
+    }
+    @ViewBuilder private var topCard: some View {
+        if summaryTime && !showBrief { weeklySummary.transition(.opacity) } else { observation.transition(.opacity) }
+    }
+    /// Sunday evening: the week in four lines, the same height as the observation.
+    private var weeklySummary: some View {
+        let days = home["days"].array
+        let trained = days.filter { $0["sets"].integer > 0 }.count
+        let sets = days.reduce(0) { $0 + $1["sets"].integer }
+        let goal = home["goals"]["dailyActivity"].number ?? 0
+        let active = days.filter { goal > 0 && ($0["activity"].number ?? 0) >= goal }.count
+        let stepGoal = home["step_goal"]["target"].number ?? 0
+        let steps = stepGoal > 0 ? days.filter { daySteps($0) >= stepGoal }.count : 0
+        let strength = NativeStrengthWeeks.current(store: store, timezone: timezone)
+        let weights = home["weights"].array.filter { row in days.contains { $0["date"] == row["date"] } && row["kg"].number != nil }.sorted { $0["date"].text < $1["date"].text }
+        let weightLine: String = {
+            guard let last = weights.last?["kg"].number else { return "" }
+            let change = weights.count > 1 ? ((last - (weights.first?["kg"].number ?? last)) * 10).rounded() / 10 : nil
+            return "体重 " + displayNumber(.number(last)) + " 公斤" + (change.map { "（本周 " + ($0 >= 0 ? "+" : "") + displayNumber(.number($0)) + "）" } ?? "")
+        }()
+        let waist = NativeMeasurements.latest(.waist, in: NativeMeasurements.entries())
+        let waistLine = waist.map { "腰围 " + displayNumber(.number($0.value)) + " 厘米" } ?? "这周还没量腰围"
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("本周小结").font(.caption.weight(.semibold)).foregroundStyle(pine)
+                Spacer()
+                Button("看观察") { withAnimation(.easeOut(duration: 0.2)) { showBrief = true } }.font(.caption.weight(.semibold))
+            }
+            summaryLine("dumbbell.fill", "练了 \(trained) 天 · \(sets) 组" + (strength.change.map { " · 力量指数 " + NativeStrengthWeeks.percent($0) } ?? ""))
+            summaryLine("flame.fill", "活动达标 \(active)/7 天 · 步数达标 \(steps)/7 天")
+            summaryLine("scalemass.fill", [weightLine, waistLine].filter { !$0.isEmpty }.joined(separator: " · "))
+            if strength.records > 0 { summaryLine("medal.fill", "\(strength.records) 个动作超过了近 4 周最好成绩", gold: true) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, maxHeight: 150, alignment: .top)
+        .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+    private func daySteps(_ day: JSONValue) -> Double {
+        if day["date"] == home["date"] { return home["today"]["steps"].number ?? 0 }
+        let row = home["metrics"].array.first { $0["date"] == day["date"] }
+        return row?["steps"].number ?? 0
+    }
+    private func summaryLine(_ symbol: String, _ text: String, gold: Bool = false) -> some View {
+        Label { Text(text).font(.subheadline).lineLimit(1).minimumScaleFactor(0.85) } icon: {
+            Image(systemName: symbol).font(.footnote).foregroundStyle(gold ? pineGold : pine).frame(width: 20)
+        }
+    }
+
     // MARK: Observation
     private var observation: some View {
         let lines = store.brief["sentences"].array.map { $0.text.isEmpty ? $0["text"].text : $0.text }.filter { !$0.isEmpty }
@@ -137,6 +193,7 @@ struct NativeDashboardView: View {
             HStack(alignment: .center, spacing: 8) {
                 Text((evening ? "晚间观察" : "早间观察") + (lines.isEmpty ? "" : written)).font(.caption.weight(.semibold)).foregroundStyle(pine)
                 Spacer(minLength: 8)
+                if summaryTime { Button("本周小结") { withAnimation(.easeOut(duration: 0.2)) { showBrief = false } }.font(.caption.weight(.semibold)) }
                 // Manual trigger: rewrite the observation now, even if the data is unchanged.
                 Button { Task { await store.loadBrief(force: true) } } label: {
                     Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pending ? pineGold : pine)
@@ -868,6 +925,11 @@ struct NativeWeightList: View {
     var body: some View {
         let sorted = rows.filter { $0["kg"].number != nil }.sorted { $0["date"].text > $1["date"].text }
         List {
+            Section {
+                NavigationLink { NativeMeasurementsView() } label: {
+                    Label("围度与对比照片", systemImage: "ruler")
+                }
+            } footer: { Text("腰围每周一次，臂围和肩围每月一次。") }
             if sorted.isEmpty { Text("还没有体重记录。").foregroundStyle(.secondary) }
             ForEach(Array(sorted.enumerated()), id: \.offset) { index, row in
                 HStack {
@@ -1012,5 +1074,176 @@ struct PineGlow: View {
         }
         .allowsHitTesting(false).accessibilityHidden(true)
         .onAppear { withAnimation(.easeOut(duration: 1.1)) { on = true } }
+    }
+}
+
+/// Girths kept on this phone: waist weekly, arm and shoulders monthly.
+enum NativeMeasurements {
+    enum Kind: String, CaseIterable, Identifiable {
+        case waist, arm, shoulder
+        var id: String { rawValue }
+        var title: String { switch self { case .waist: return "腰围"; case .arm: return "上臂围"; case .shoulder: return "肩围" } }
+        var days: Int { self == .waist ? 7 : 30 }
+        var how: String {
+            switch self {
+            case .waist: return "早上空腹、自然呼气后，软尺贴着皮肤过肚脐绕一圈，不要勒紧。"
+            case .arm: return "右臂放松下垂，量上臂最粗的地方。"
+            case .shoulder: return "站直、双臂自然下垂，软尺绕过两侧肩膀最宽处一圈。"
+            }
+        }
+    }
+    struct Entry: Codable, Identifiable, Equatable { var id = UUID(); let kind: String; let date: String; let cm: Double }
+    struct Photo: Codable, Identifiable, Equatable { var id = UUID(); let date: String; let file: String }
+    static let key = "pine.measurements", photosKey = "pine.photos"
+    static func entries() -> [Entry] {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([Entry].self, from: data)) ?? []
+    }
+    static func save(_ entries: [Entry]) { UserDefaults.standard.set(try? JSONEncoder().encode(entries), forKey: key) }
+    static func photos() -> [Photo] {
+        guard let data = UserDefaults.standard.data(forKey: photosKey) else { return [] }
+        return (try? JSONDecoder().decode([Photo].self, from: data)) ?? []
+    }
+    static func savePhotos(_ photos: [Photo]) { UserDefaults.standard.set(try? JSONEncoder().encode(photos), forKey: photosKey) }
+    static var folder: URL {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("pine-photos", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+    /// Latest value and the change against the reading at least 25 days earlier.
+    static func latest(_ kind: Kind, in list: [Entry]) -> (value: Double, date: String, change: Double?)? {
+        let rows = list.filter { $0.kind == kind.rawValue }.sorted { $0.date > $1.date }
+        guard let last = rows.first else { return nil }
+        let older = rows.first { entry in
+            guard let a = NativeDate.parse(last.date + "T12:00:00Z"), let b = NativeDate.parse(entry.date + "T12:00:00Z") else { return false }
+            return a.timeIntervalSince(b) >= 25 * 86400
+        }
+        return (last.cm, last.date, older.map { ((last.cm - $0.cm) * 10).rounded() / 10 })
+    }
+}
+
+struct NativeMeasurementsView: View {
+    @Environment(NativeStore.self) var store
+    @State private var entries = NativeMeasurements.entries()
+    @State private var photos = NativeMeasurements.photos()
+    @State private var editing: NativeMeasurements.Kind?
+    @State private var picked: PhotosPickerItem?
+    @State private var viewing: NativeMeasurements.Photo?
+    @State private var comparing = false
+    private var today: String { store.home["date"].text.isEmpty ? NativeDate.day(Date(), timezone: TimeZone.current.identifier) : store.home["date"].text }
+    var body: some View {
+        List {
+            ForEach(NativeMeasurements.Kind.allCases) { kind in
+                Section {
+                    let latest = NativeMeasurements.latest(kind, in: entries)
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(latest.map { displayNumber(.number($0.value)) + " 厘米" } ?? "还没有记录").font(.title3.weight(.semibold)).monospacedDigit()
+                            if let latest {
+                                Text(dayTitle(latest.date, format: "M月d日") + (latest.change.map { " · 4周 " + ($0 >= 0 ? "+" : "") + displayNumber(.number($0)) } ?? ""))
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        let due = latest.map { (NativeDate.parse(today + "T12:00:00Z")?.timeIntervalSince(NativeDate.parse($0.date + "T12:00:00Z") ?? .distantPast) ?? 0) >= Double(kind.days - 1) * 86400 } ?? true
+                        Button(due ? "记录" : "更新") { editing = kind }.buttonStyle(.borderedProminent).tint(due ? pine : .secondary)
+                    }
+                    ForEach(entries.filter { $0.kind == kind.rawValue }.sorted { $0.date > $1.date }.prefix(6)) { entry in
+                        HStack { Text(dayTitle(entry.date, format: "M月d日 EEE")); Spacer(); Text(displayNumber(.number(entry.cm)) + " 厘米").monospacedDigit() }
+                            .font(.subheadline).foregroundStyle(.secondary)
+                            .swipeActions { Button("删除", role: .destructive) { entries.removeAll { $0.id == entry.id }; NativeMeasurements.save(entries) } }
+                    }
+                } header: { Text(kind.title + (kind == .waist ? " · 每周" : " · 每月")) } footer: { Text(kind.how) }
+            }
+            Section {
+                PhotosPicker(selection: $picked, matching: .images) { Label("添加今天的照片", systemImage: "camera") }
+                if photos.count >= 2 { Button { comparing = true } label: { Label("第一张和最新一张对比", systemImage: "rectangle.split.2x1") } }
+                if !photos.isEmpty {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                        ForEach(photos.sorted { $0.date > $1.date }) { photo in
+                            Button { viewing = photo } label: {
+                                ZStack(alignment: .bottomLeading) {
+                                    photoImage(photo).resizable().scaledToFill().frame(height: 120).clipped()
+                                    Text(dayTitle(photo.date, format: "M/d")).font(.caption2.weight(.semibold)).foregroundStyle(.white).padding(4)
+                                }.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            }.buttonStyle(.plain)
+                        }
+                    }.padding(.vertical, 4)
+                }
+            } header: { Text("对比照片 · 每月") } footer: { Text("同样的光线和站姿，正面、侧面、背面各一张。围度和照片只保存在这台手机上，不上传服务器；删除 App 会一起删除。") }
+        }
+        .navigationTitle("围度与照片").navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editing) { kind in NavigationStack { NativeMeasurementEntry(kind: kind, date: today) { value in
+            entries.append(.init(kind: kind.rawValue, date: today, cm: value)); NativeMeasurements.save(entries)
+        } }.presentationDetents([.medium]) }
+        .sheet(item: $viewing) { photo in
+            NavigationStack {
+                photoImage(photo).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.black)
+                    .navigationTitle(dayTitle(photo.date, format: "M月d日")).navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("完成") { viewing = nil } }
+                        ToolbarItem(placement: .destructiveAction) { Button("删除", role: .destructive) { remove(photo); viewing = nil } }
+                    }
+            }
+        }
+        .sheet(isPresented: $comparing) {
+            let sorted = photos.sorted { $0.date < $1.date }
+            NavigationStack {
+                HStack(spacing: 4) {
+                    ForEach([sorted.first, sorted.last].compactMap { $0 }) { photo in
+                        VStack(spacing: 6) {
+                            photoImage(photo).resizable().scaledToFit()
+                            Text(dayTitle(photo.date, format: "M月d日")).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }.padding().navigationTitle("对比").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { comparing = false } } }
+            }
+        }
+        .onChange(of: picked) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.85) {
+                    let file = UUID().uuidString + ".jpg"
+                    try? jpeg.write(to: NativeMeasurements.folder.appendingPathComponent(file), options: .completeFileProtection)
+                    photos.append(.init(date: today, file: file)); NativeMeasurements.savePhotos(photos)
+                }
+                picked = nil
+            }
+        }
+    }
+    private func photoImage(_ photo: NativeMeasurements.Photo) -> Image {
+        let path = NativeMeasurements.folder.appendingPathComponent(photo.file).path
+        return UIImage(contentsOfFile: path).map { Image(uiImage: $0) } ?? Image(systemName: "photo")
+    }
+    private func remove(_ photo: NativeMeasurements.Photo) {
+        try? FileManager.default.removeItem(at: NativeMeasurements.folder.appendingPathComponent(photo.file))
+        photos.removeAll { $0.id == photo.id }; NativeMeasurements.savePhotos(photos)
+    }
+}
+
+struct NativeMeasurementEntry: View {
+    @Environment(\.dismiss) private var dismiss
+    let kind: NativeMeasurements.Kind
+    let date: String
+    let save: (Double) -> Void
+    @State private var text = ""
+    var body: some View {
+        Form {
+            Section {
+                HStack {
+                    TextField("例如 80.5", text: $text).keyboardType(.decimalPad).font(.title2.weight(.semibold)).monospacedDigit()
+                    Text("厘米").foregroundStyle(.secondary)
+                }
+            } footer: { Text(kind.how) }
+        }
+        .navigationTitle(kind.title + " · " + dayTitle(date, format: "M月d日")).navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("保存") { if let value = Double(text.replacingOccurrences(of: ",", with: ".")) { save(value); dismiss() } }
+                    .disabled(Double(text.replacingOccurrences(of: ",", with: ".")).map { $0 < 10 || $0 > 300 } ?? true)
+            }
+        }
     }
 }
