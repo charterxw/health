@@ -1,6 +1,8 @@
 import Foundation
 
-// Deliberately excludes heart data, weights, reps, notes, credentials and API tokens.
+// Deliberately excludes heart data, notes, credentials and API tokens. Weights and
+// reps appear only as the next set's plan while resting, so the lifter can set
+// up without unlocking; edits while training never change the payload.
 public struct WorkoutSnapshot: Codable, Hashable, Sendable {
     public enum ActivityPhase: Equatable {
         case training, resting, paused, pausedRest, restFinished, stale
@@ -19,6 +21,8 @@ public struct WorkoutSnapshot: Codable, Hashable, Sendable {
     public let plannedSets: Int
     public let currentSet: Int
     public let movementSetCount: Int
+    /// While resting: the next set, e.g. "侧平举 · 20 磅 × 12". Nil otherwise.
+    public var nextSet: String? = nil
 
     enum ValidationError: Error { case invalidSnapshot }
 
@@ -34,7 +38,8 @@ public struct WorkoutSnapshot: Codable, Hashable, Sendable {
               (0...40).contains(movementCount),
               (0...2000).contains(plannedSets), (0...plannedSets).contains(completedSets),
               (0...50).contains(movementSetCount), (0...movementSetCount).contains(currentSet),
-              movementCount == 0 ? movementIndex == 0 : (1...movementCount).contains(movementIndex)
+              movementCount == 0 ? movementIndex == 0 : (1...movementCount).contains(movementIndex),
+              (nextSet?.count ?? 0) <= 60
         else { throw ValidationError.invalidSnapshot }
         if let pausedAt {
             guard pausedAt >= startedAt, pausedAt <= now.addingTimeInterval(300) else { throw ValidationError.invalidSnapshot }

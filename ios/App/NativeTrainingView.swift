@@ -261,7 +261,11 @@ struct NativeTrainingView: View {
                             Spacer()
                             Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.tertiary).rotationEffect(.degrees(open ? 180 : 0))
                         }
-                        if !open { Text(names.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary).lineLimit(3).multilineTextAlignment(.leading) }
+                        if !open {
+                            Text(names.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary).lineLimit(3).multilineTextAlignment(.leading)
+                            let due = t["exercises"].array.filter { NativeTraining.isStepUp(step($0)) }.count
+                            if due > 0 { Label("\(due) 个动作该加重了", systemImage: "arrow.up.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(pine) }
+                        }
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityHint(open ? "收起动作详情" : "展开每个动作的组数和上次成绩")
                 if open {
@@ -279,6 +283,18 @@ struct NativeTrainingView: View {
             }
         }
     }
+    /// Today's double-progression step for a planned move.
+    private func step(_ item: JSONValue) -> JSONValue {
+        let exercise = store.exercises.first { $0.id == item["exercise_id"].text } ?? .null
+        return NativeTraining.nextStep(plan: item, exercise: exercise, history: store.history, timezone: TimeZone.current.identifier)
+    }
+    /// "该加重了 · 12.5 磅", with a note for dumbbells the lifter may not own yet.
+    private func stepText(_ item: JSONValue, _ prescription: JSONValue) -> String {
+        let exercise = store.exercises.first { $0.id == item["exercise_id"].text } ?? .null
+        let unit = prescription["weight"].isNull ? "" : " " + (item["unit"].text == "kg" ? "公斤" : "磅")
+        let verb = prescription["action"].text == "less_assistance" ? "该减辅助了" : "该加重了"
+        return verb + " · " + displayNumber(prescription["weight"]) + unit + (exercise["equipment"].text.contains("哑铃") ? "（没有这个重量就先多做 1–2 次）" : "")
+    }
     /// One planned move: name, sets × reps, and last time's best work set.
     private func plannedLine(_ item: JSONValue) -> some View {
         let exercise = store.exercises.first { $0.id == item["exercise_id"].text } ?? .null
@@ -289,10 +305,14 @@ struct NativeTrainingView: View {
             var movement = exercise; movement["unit"] = first["unit"]
             return "上次 " + loadText(movement, first).replacingOccurrences(of: " 次", with: "")
         }()
+        let next = step(item)
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(exercise["name"].text.isEmpty ? item["exercise_id"].text : exercise["name"].text).font(.pineRow).lineLimit(1)
                 Text("\(work) 组 · \(item["rep_min"].integer)–\(item["rep_max"].integer) 次").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                if NativeTraining.isStepUp(next) {
+                    Label(stepText(item, next), systemImage: "arrow.up.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(pine)
+                }
             }
             Spacer(minLength: 8)
             if !last.isEmpty { Text(last).font(.footnote).foregroundStyle(.secondary).monospacedDigit().lineLimit(1) }

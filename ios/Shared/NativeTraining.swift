@@ -131,6 +131,17 @@ public enum NativeTraining {
             "template_notes": template["notes"].or(""), "duration_min": template["duration_min"],
             "duration_max": template["duration_max"], "exercises": .array(movements)]
     }
+    /// What double progression asks of a template move today, before starting:
+    /// the same prescription the workout will apply.
+    public static func nextStep(plan: JSONValue, exercise: JSONValue, history: [JSONValue], now: Date = Date(), timezone: String) -> JSONValue {
+        guard plan["progression"].text == "double", !timed(exercise), !mobility(exercise) else { return .null }
+        var config = plan
+        config["load_mode"] = exercise["load_mode"].or("external"); config["tracking"] = exercise["tracking"]; config["training_type"] = exercise["training_type"]
+        config["work_sets"] = .number(Double(max(1, plan["set_count"].integer - plan["warmup_count"].integer)))
+        return prescription(config, history: history, before: now, timezone: timezone)
+    }
+    /// True when the prescription raises the load (or lowers the assistance).
+    public static func isStepUp(_ prescription: JSONValue) -> Bool { ["increase", "less_assistance"].contains(prescription["action"].text) }
     public static func adopt(_ movement: JSONValue, prescription: JSONValue) -> JSONValue {
         guard !prescription.isNull else { return movement }
         var m = movement; m["prescription"] = prescription
@@ -221,6 +232,26 @@ public enum NativeTraining {
         if open[last] { return last }
         return (last + 1 ..< ms.count).first { open[$0] } ?? open.firstIndex(of: true) ?? last
     }
+    /// The next unfinished set from movement `index` on, as "名称 · 20 磅 × 12".
+    static func upcoming(_ movements: [JSONValue], from index: Int) -> String? {
+        for m in movements.dropFirst(max(0, index)) {
+            guard let row = m["sets"].array.first(where: { $0["completed_at"].isNull }) else { continue }
+            let unit = m["unit"].text == "kg" ? "公斤" : "磅"
+            func number(_ value: JSONValue) -> String {
+                guard let v = value.number else { return "" }
+                return v == v.rounded() ? String(Int(v)) : String(format: "%.1f", v)
+            }
+            let load: String
+            if timed(m) { load = number(row["duration_seconds"]) + " 秒" }
+            else if m["load_mode"].text == "bodyweight" { load = number(row["reps"]) + " 次" }
+            else {
+                let weight = number(row["weight"]), reps = number(row["reps"])
+                load = (m["load_mode"].text == "assistance" ? "辅助 " : "") + (weight.isEmpty ? "" : weight + " " + unit + " × ") + reps + " 次"
+            }
+            return String((m["name"].text + " · " + load).prefix(60))
+        }
+        return nil
+    }
     public static func snapshot(_ s: JSONValue, movement index: Int) -> WorkoutSnapshot? {
         guard s["status"].text == "active", let start = NativeDate.parse(s["started_at"]), Date().timeIntervalSince(start) < 7 * 86400 else { return nil }
         let ms = s["exercises"].array; let i = min(max(0, index), max(0, ms.count - 1)); let m = ms.indices.contains(i) ? ms[i] : .null
@@ -229,7 +260,8 @@ public enum NativeTraining {
             pausedAt: NativeDate.parse(s["paused_at"]), pausedSeconds: s["paused_seconds"].number ?? 0,
             restUntil: NativeDate.parse(s["rest_until"]), movementName: m["name"].text, movementIndex: ms.isEmpty ? 0 : i + 1,
             movementCount: ms.count, completedSets: ms.reduce(0) { $0 + done($1).count },
-            plannedSets: ms.reduce(0) { $0 + $1["sets"].array.count }, currentSet: next, movementSetCount: rows.count)
+            plannedSets: ms.reduce(0) { $0 + $1["sets"].array.count }, currentSet: next, movementSetCount: rows.count,
+            nextSet: s["rest_until"].isNull ? nil : upcoming(ms, from: i))
     }
 }
 

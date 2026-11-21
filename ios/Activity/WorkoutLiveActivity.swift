@@ -31,6 +31,9 @@ struct WorkoutLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
+                        if info.isRest, let next = info.workout.nextSet {
+                            Text("下一组 · " + next).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                        }
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
                             Text(info.workout.movementName).font(.headline).lineLimit(1)
                             Spacer(minLength: 0)
@@ -124,7 +127,12 @@ private struct WorkoutCard: View {
             }
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(info.workout.movementName).font(.headline).lineLimit(1)
+                    if info.isRest, let next = info.workout.nextSet {
+                        Text("下一组").font(.caption2.weight(.semibold)).foregroundStyle(info.tint)
+                        Text(next).font(.headline).lineLimit(1).minimumScaleFactor(0.8)
+                    } else {
+                        Text(info.workout.movementName).font(.headline).lineLimit(1)
+                    }
                     Text(info.workout.movementSetCount > 0
                          ? "第 \(info.workout.currentSet)/\(info.workout.movementSetCount) 组 · 共完成 \(info.setCount)"
                          : "共完成 \(info.setCount)")

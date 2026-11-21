@@ -149,6 +149,12 @@ struct NativeWorkoutView: View {
             }
             Text(movement["name"].text).font(.title.weight(.semibold)).padding(.top, 10)
             if !previousText.isEmpty { Text(previousText).font(.subheadline).foregroundStyle(.secondary).padding(.top, 4) }
+            if NativeTraining.isStepUp(movement["prescription"]) {
+                // Progress made visible: last time every set reached the top of the range.
+                Label((movement["prescription"]["action"].text == "less_assistance" ? "该减辅助了 · " : "该加重了 · ") + displayNumber(movement["prescription"]["weight"]) + " " + unitLabel(movement), systemImage: "arrow.up.circle.fill")
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 6).background(pine, in: Capsule()).padding(.top, 8)
+            }
             if !movement["prescription"]["reason"].text.isEmpty { Text(movement["prescription"]["reason"].text).font(.footnote).foregroundStyle(pine).padding(.top, 6) }
         }
     }
