@@ -1011,10 +1011,10 @@ struct NativeWeightList: View {
                         Text(NativeGain.status(rate.percentPerMonth)).font(.title3.weight(.semibold))
                             .foregroundStyle(NativeGain.status(rate.percentPerMonth) == "合适" ? pine : Color.primary)
                         Spacer()
-                        Text((rate.kgPerMonth >= 0 ? "+" : "") + displayNumber(.number(rate.kgPerMonth), digits: 2) + " 公斤/月").font(.subheadline.weight(.semibold)).monospacedDigit()
+                        Text(signed(rate.kgPerMonth) + " 公斤/月").font(.subheadline.weight(.semibold)).monospacedDigit()
                     }
                     gainBar(rate.percentPerMonth)
-                    Text("近 4 周每月 " + (rate.percentPerMonth >= 0 ? "+" : "") + displayNumber(.number(rate.percentPerMonth), digits: 2) + "% · 7 天平均 " + displayNumber(.number(rate.average), digits: 1) + " 公斤")
+                    Text(paceText(percent: rate.percentPerMonth, average: rate.average))
                         .font(.caption).foregroundStyle(.secondary).monospacedDigit()
                     Text(NativeGain.advice(rate.percentPerMonth)).font(.subheadline)
                 } else {
@@ -1052,7 +1052,7 @@ struct NativeWeightList: View {
                         Spacer()
                         if let first = ratios.first, ratios.count > 1 {
                             let change = ((last.ratio - first.ratio) * 100).rounded() / 100
-                            Text("自 " + dayTitle(first.date, format: "M月d日") + " " + (change >= 0 ? "+" : "") + displayNumber(.number(change), digits: 2))
+                            Text("自 \(dayTitle(first.date, format: "M月d日")) \(signed(change))")
                                 .font(.subheadline).foregroundStyle(change > 0 ? pine : Color.secondary).monospacedDigit()
                         }
                     }
@@ -1077,6 +1077,11 @@ struct NativeWeightList: View {
         }.navigationTitle("体重与体型").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
             .onAppear { entries = NativeMeasurements.entries(); protein = NativeProtein.all() }
+    }
+    private func signed(_ value: Double) -> String { (value >= 0 ? "+" : "") + displayNumber(.number(value), digits: 2) }
+    private func paceText(percent: Double, average: Double) -> String {
+        let avg: String = displayNumber(.number(average), digits: 1)
+        return "近 4 周每月 \(signed(percent))% · 7 天平均 \(avg) 公斤"
     }
     private func addProtein(_ grams: Double) {
         NativeProtein.add(grams, on: today)

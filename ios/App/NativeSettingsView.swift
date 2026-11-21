@@ -101,7 +101,8 @@ enum NativeSigning {
         guard let expiry, let left = daysLeft() else { return "未知" }
         let when = NativeDate.label(expiry, format: "M月d日 HH:mm", timezone: TimeZone.current.identifier)
         if left <= 0 { return "已过期 · " + when }
-        return (left < 1 ? "不到 1 天" : "还剩 \(Int(left)) 天") + " · " + when + " 到期"
+        let remaining: String = left < 1 ? "不到 1 天" : "还剩 \(Int(left)) 天"
+        return "\(remaining) · \(when) 到期"
     }
     static let ids = ["pine.signing.2d", "pine.signing.1d"]
     /// Two evening reminders, two days and one day before the signature runs out.
