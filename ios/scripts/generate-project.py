@@ -40,7 +40,7 @@ app_files = ["App/HealthApp.swift", "App/HealthAPI.swift", "App/NativeStore.swif
              "App/NativeComponents.swift", "App/NativeMuscleMap.swift", "App/NativeDashboardView.swift", "App/NativeOverviewDetails.swift",
              "App/NativeBodyViews.swift", "App/NativeStrengthProgress.swift", "App/NativeTrainingView.swift",
              "App/NativeLibraryView.swift", "App/NativeSleepView.swift", "App/NativeDesignFixtures.swift", "App/NativeWorkoutView.swift", "App/NativeHistoryView.swift", "App/NativeSettingsView.swift",
-             "Shared/WorkoutSnapshot.swift", "Shared/HealthRoute.swift", "Shared/NativeJSON.swift", "Shared/NativeCache.swift", "Shared/NativeTimeline.swift", "Shared/NativeTraining.swift", "Activity/WorkoutAttributes.swift", "Activity/WorkoutIntents.swift"]
+             "Shared/WorkoutSnapshot.swift", "Shared/HealthRoute.swift", "Shared/NativeJSON.swift", "Shared/NativeCache.swift", "Shared/NativeTimeline.swift", "Shared/NativeTraining.swift", "Shared/NativeHome.swift", "Activity/WorkoutAttributes.swift", "Activity/WorkoutIntents.swift"]
 widget_files = ["Activity/WorkoutLiveActivity.swift", "Activity/WorkoutAttributes.swift", "Activity/WorkoutIntents.swift",
                 "Shared/WorkoutSnapshot.swift", "Shared/HealthRoute.swift"]
 test_files = ["Tests/HealthUITests.swift"]

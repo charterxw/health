@@ -64,6 +64,19 @@ extension NativeCoreChecks {
         }
         try check(!result.failed, "Concurrent formatting corrupted a timestamp or timezone")
     }
+    /// The synthetic server sample decodes with the app's typed home model, and a
+    /// renamed field is reported by its path.
+    static func homeContract() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let document = try JSONValue.read(Data(contentsOf: root.appendingPathComponent("docs/contracts/home-summary.json")))
+        let home = try NativeHome(document)
+        try check(home.days.count == 7 && !home.date.isEmpty && home.goals.weeklyStrength > 0, "The home sample did not decode its week and goals")
+        try check(NativeHome.problem(document) == nil, "The home sample reports a contract problem")
+        var renamed = document; renamed["step_goal"] = ["goal": 7000]
+        try check(NativeHome.problem(renamed)?.contains("step_goal.target") == true, "A renamed home field is not reported by its path")
+        var retyped = document; retyped["days"][0]["sets"] = "3"
+        try check(NativeHome.problem(retyped)?.contains("days[0].sets") == true, "A retyped home field is not reported by its path")
+    }
     static func livePayloadIdentity() throws {
         var session = try make(); let before = NativeTraining.snapshot(session, movement: 0)
         session["exercises"][0]["sets"][0]["weight"] = 50

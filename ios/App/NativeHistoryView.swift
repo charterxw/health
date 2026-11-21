@@ -373,7 +373,7 @@ struct NativeReportView: View {
                 }
                 if next.posture {
                     if next.other != nil { Divider() }
-                    nextRow(title: "每日体态", detail: "今天还没做 · 5–8 分钟") { start(["template_id": "posture-daily"]) }
+                    nextRow(title: "每日体态", detail: "今天还没做 · 5–8 分钟") { start(["template_id": .string(store.postureTemplateID)]) }
                 }
                 if let upcoming = next.upcoming {
                     if next.other != nil || next.posture { Divider() }

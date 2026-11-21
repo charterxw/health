@@ -143,6 +143,12 @@
 			"path" = "Shared/NativeTraining.swift";
 			"sourceTree" = "<group>";
 		};
+		E4EBDAD3189E80DF145F8FE3 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Shared/NativeHome.swift";
+			"sourceTree" = "<group>";
+		};
 		C8280D1FD8B2CE03DA06DC61 = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -269,6 +275,7 @@
 				A0F23B2A0E5B35AE43D2139E,
 				5634854BD453699F58158DBD,
 				CBD5055E49CB3FFDD23A1BF8,
+				E4EBDAD3189E80DF145F8FE3,
 				C8280D1FD8B2CE03DA06DC61,
 				5CA4CE653685F476B3EECF47,
 				69CD8EDAA1A5BE6DCC18D242,
@@ -556,6 +563,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = CBD5055E49CB3FFDD23A1BF8;
 		};
+		E73EEF33D694CF6692B5F75A = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = E4EBDAD3189E80DF145F8FE3;
+		};
 		B568CEA10369E3AC95BF48F7 = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = C8280D1FD8B2CE03DA06DC61;
@@ -591,6 +602,7 @@
 				D6050886EABD7F6765CE315D,
 				9167A054D35F8088C4BAF008,
 				A6BCEBE121F4999839DE62D8,
+				E73EEF33D694CF6692B5F75A,
 				B568CEA10369E3AC95BF48F7,
 				52D8C9BD4C2358D8D1ADCE7A,
 			);

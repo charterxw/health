@@ -324,18 +324,28 @@ struct NativeTrainingView: View {
             if !last.isEmpty { Text(last).font(.footnote).foregroundStyle(.secondary).monospacedDigit().lineLimit(1) }
         }.padding(.vertical, 6)
     }
-    /// Daily posture, plus the optional Saturday session on weekends, in one card.
+    /// Daily posture, plus the optional weekend session, in one card. The server says
+    /// which templates these are (home "extras"); older servers fall back to the
+    /// templates this plan has always used.
     private var dailyCard: some View {
         let today = store.home["days"].array.first { $0["date"] == store.home["date"] } ?? .null
         let postureDone = today["posture"].flag
         let weekend = NativeDays.isWeekend(store.home["date"].text)
-        let optional = store.templates.first { $0["template"].id == "pine-sat-optional" }?["template"]
+        let extras = store.home["extras"]
+        let fallback: JSONValue = ["template_id": "posture-daily", "title": "每日体态", "detail": "5–8 分钟"]
+        let posture = extras["posture"].isNull ? fallback : extras["posture"]
+        let optional: JSONValue? = {
+            if !extras["optional"].isNull { return extras["optional"] }
+            guard extras.isNull, let t = store.templates.first(where: { $0["template"].id == "pine-sat-optional" })?["template"] else { return nil }
+            return ["template_id": t["id"], "title": "周末选练", "focus": "肩宽 · 后束 · 三头", "duration_min": t["duration_min"], "duration_max": t["duration_max"], "weekend_only": true]
+        }()
         return VStack(spacing: 0) {
-            dailyRow(title: "每日体态", detail: postureDone ? "今天已做" : "5–8 分钟", done: postureDone) { store.homeAction(["template_id": "posture-daily"]) }
-            if weekend, let optional {
+            dailyRow(title: posture["title"].text, detail: postureDone ? "今天已做" : posture["detail"].text, done: postureDone) { store.homeAction(["template_id": posture["template_id"]]) }
+            if let optional, weekend || !optional["weekend_only"].flag {
+                let minutes = optional["duration_min"].isNull ? "" : " · 约 \(optional["duration_min"].integer)–\(optional["duration_max"].integer) 分钟"
                 Divider().padding(.leading, 52)
-                dailyRow(title: "周末选练", detail: "肩宽 · 后束 · 三头 · 约 \(optional["duration_min"].integer)–\(optional["duration_max"].integer) 分钟", done: false) {
-                    store.homeAction(["template_id": .string(optional.id)])
+                dailyRow(title: optional["title"].text, detail: optional["focus"].text + minutes, done: false) {
+                    store.homeAction(["template_id": optional["template_id"]])
                 }
             }
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -441,7 +451,7 @@ struct NativeTrainingView: View {
         let done = today["posture"].flag
         let posture = groups.first { $0.letter == "体态" }
         return Button {
-            if !done { store.homeAction(["template_id": "posture-daily"]) }
+            if !done { store.homeAction(["template_id": .string(store.postureTemplateID)]) }
         } label: {
             HStack(spacing: 12) {
                 Circle().fill(done ? pine : pineTrack).frame(width: 14, height: 14).frame(width: 24)

@@ -85,6 +85,8 @@ final class NativeStore {
         #endif
     }
     private(set) var home: JSONValue = .null
+    /// Where the home payload departs from the typed contract (NativeHome), if it does.
+    private(set) var homeProblem: String?
     private(set) var catalog: JSONValue = .null
     private(set) var imported: JSONValue = []
     private(set) var observations: JSONValue = []
@@ -106,10 +108,16 @@ final class NativeStore {
     @ObservationIgnored private var checkpointDelay: Task<Void, Never>?
     @ObservationIgnored private var checkpointTask: Task<Void, Never>?
     var exercises: [JSONValue] { catalog["exercises"].array }
+    /// The daily posture template, as the server names it (older servers: the original id).
+    var postureTemplateID: String { home["extras"]["posture"]["template_id"].text.isEmpty ? "posture-daily" : home["extras"]["posture"]["template_id"].text }
     var templates: [JSONValue] { catalog["templates"].array }
 
     private func projectChanges(from previous: NativeCacheState) {
-        if home != cache.home { home = cache.home }
+        if home != cache.home {
+            home = cache.home
+            // A field the app depends on was renamed or retyped on the server: say so.
+            homeProblem = home.isNull ? nil : NativeHome.problem(home)
+        }
         if catalog != cache.catalog { catalog = cache.catalog }
         if imported != cache.imported { imported = cache.imported }
         if observations != cache.observations { observations = cache.observations }

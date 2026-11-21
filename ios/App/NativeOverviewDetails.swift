@@ -23,6 +23,9 @@ struct NativeSyncDetail: View {
     var body: some View {
         Form {
             if let message = store.message { Section { Text(message).font(.subheadline) } }
+            if let problem = store.homeProblem {
+                Section { Text("服务器的数据格式和这个 App 版本不一致（" + problem + "）。部分数字可能显示为“—”，更新 App 或服务器后会恢复。").font(.subheadline) }
+            }
             Section("实际记录时间") {
                 PineRow(label: "步数", value: dateLabel(store.home["freshness"]["records"]["steps"]["observed_at"]))
                 PineRow(label: "活动热量", value: dateLabel(store.home["freshness"]["records"]["activity"]["observed_at"]))
@@ -336,7 +339,7 @@ struct NativeDayDetail: View {
                 Text("体态练习").font(.headline)
                 Text(day["posture_recorded"].flag ? "已记录" : "暂无完成记录").foregroundStyle(.secondary)
                 ForEach(day["posture_sessions"].array,id:\.id) { s in Button(s["title"].text) { dismiss();store.homeAction(["session_id":s["id"]]) } }
-                if day["date"]==store.home["date"],!day["posture_recorded"].flag { Button("查看今天的体态练习") { dismiss();store.homeAction(["template_id":"posture-daily"]) } }
+                if day["date"]==store.home["date"],!day["posture_recorded"].flag { Button("查看今天的体态练习") { dismiss();store.homeAction(["template_id": .string(store.postureTemplateID)]) } }
             }.pineCard()
         }.navigationTitle("每日记录").navigationBarTitleDisplayMode(.inline)
     }

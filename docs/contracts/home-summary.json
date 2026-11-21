@@ -1,0 +1,2483 @@
+{
+ "action": {
+  "remaining": [
+   {
+    "exercise_id": "incline-dumbbell-press",
+    "target": 3
+   },
+   {
+    "exercise_id": "machine-shoulder-press",
+    "target": 3
+   },
+   {
+    "exercise_id": "cable-single-arm-lateral-raise",
+    "target": 3
+   }
+  ],
+  "template_id": "pine-a-company"
+ },
+ "date": "2026-11-21",
+ "days": [
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-16",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": true,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "休",
+   "strength_energy": null,
+   "strength_optional": false,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  },
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-17",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": true,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "休",
+   "strength_energy": null,
+   "strength_optional": false,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  },
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-18",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": false,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "休",
+   "strength_energy": null,
+   "strength_optional": false,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  },
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-19",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": true,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "休",
+   "strength_energy": null,
+   "strength_optional": false,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  },
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-20",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": false,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "休",
+   "strength_energy": null,
+   "strength_optional": false,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  },
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-21",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": false,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "选",
+   "strength_energy": null,
+   "strength_optional": true,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  },
+  {
+   "activity": null,
+   "cutoff": null,
+   "date": "2026-11-22",
+   "goals": {
+    "basis": "可调整的初始目标",
+    "dailyActivity": 300,
+    "weeklyActivity": 2100,
+    "weeklyPosture": 4,
+    "weeklyStrength": 4
+   },
+   "posture": false,
+   "posture_planned": true,
+   "posture_recorded": false,
+   "posture_sessions": [],
+   "sessions": [],
+   "sets": 0,
+   "short": "休",
+   "strength_energy": null,
+   "strength_optional": false,
+   "strength_planned": false,
+   "target": 0,
+   "total_energy": null
+  }
+ ],
+ "extras": {
+  "optional": {
+   "duration_max": 25,
+   "duration_min": 20,
+   "focus": "肩宽 · 后束 · 三头",
+   "template_id": "pine-sat-optional",
+   "title": "周末选练",
+   "weekend_only": true
+  },
+  "posture": {
+   "detail": "5–8 分钟",
+   "template_id": "posture-daily",
+   "title": "每日体态"
+  }
+ },
+ "feedback": {},
+ "freshness": {},
+ "goals": {
+  "basis": "可调整的初始目标",
+  "dailyActivity": 300,
+  "weeklyActivity": 2100,
+  "weeklyPosture": 4,
+  "weeklyStrength": 4
+ },
+ "metrics": [],
+ "next_effective": "2026-11-23",
+ "next_goals": null,
+ "plan": {
+  "current": {
+   "completed": false,
+   "day": 1,
+   "done": 0,
+   "letter": "A",
+   "optional": false,
+   "short": "肩",
+   "slots": [
+    {
+     "completed": false,
+     "done": 0,
+     "exercises": [
+      {
+       "exercise_id": "incline-dumbbell-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "machine-shoulder-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "cable-single-arm-lateral-raise",
+       "target": 3
+      }
+     ],
+     "letter": "A",
+     "name": "A · 公司｜肩宽·胸·三头",
+     "remaining": [
+      {
+       "exercise_id": "incline-dumbbell-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "machine-shoulder-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "cable-single-arm-lateral-raise",
+       "target": 3
+      }
+     ],
+     "short": "肩",
+     "target": 9,
+     "template_id": "pine-a-company",
+     "variant": "company"
+    },
+    {
+     "completed": false,
+     "done": 0,
+     "exercises": [
+      {
+       "exercise_id": "flat-dumbbell-bench-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "dumbbell-lateral-raise",
+       "target": 3
+      },
+      {
+       "exercise_id": "dumbbell-overhead-triceps-extension",
+       "target": 3
+      }
+     ],
+     "letter": "A",
+     "name": "A · 家庭｜肩宽·胸·三头",
+     "remaining": [
+      {
+       "exercise_id": "flat-dumbbell-bench-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "dumbbell-lateral-raise",
+       "target": 3
+      },
+      {
+       "exercise_id": "dumbbell-overhead-triceps-extension",
+       "target": 3
+      }
+     ],
+     "short": "家",
+     "target": 9,
+     "template_id": "pine-a-home",
+     "variant": "home"
+    }
+   ],
+   "target": 18,
+   "variants": {
+    "gym": {
+     "completed": false,
+     "done": 0,
+     "exercises": [
+      {
+       "exercise_id": "incline-dumbbell-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "machine-chest-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "machine-shoulder-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "cable-single-arm-lateral-raise",
+       "target": 6
+      },
+      {
+       "exercise_id": "cable-overhead-triceps-extension",
+       "target": 3
+      }
+     ],
+     "letter": "A",
+     "name": "A · 公司全练｜肩宽·胸·三头",
+     "remaining": [
+      {
+       "exercise_id": "incline-dumbbell-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "machine-chest-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "machine-shoulder-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "cable-single-arm-lateral-raise",
+       "target": 6
+      },
+      {
+       "exercise_id": "cable-overhead-triceps-extension",
+       "target": 3
+      }
+     ],
+     "short": "肩",
+     "target": 18,
+     "template_id": "pine-a-gym",
+     "variant": "gym"
+    },
+    "house": {
+     "completed": false,
+     "done": 0,
+     "exercises": [
+      {
+       "exercise_id": "incline-dumbbell-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "flat-dumbbell-bench-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "seated-dumbbell-shoulder-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "dumbbell-lateral-raise",
+       "target": 6
+      },
+      {
+       "exercise_id": "dumbbell-overhead-triceps-extension",
+       "target": 3
+      }
+     ],
+     "letter": "A",
+     "name": "A · 家庭全练｜肩宽·胸·三头",
+     "remaining": [
+      {
+       "exercise_id": "incline-dumbbell-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "flat-dumbbell-bench-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "seated-dumbbell-shoulder-press",
+       "target": 3
+      },
+      {
+       "exercise_id": "dumbbell-lateral-raise",
+       "target": 6
+      },
+      {
+       "exercise_id": "dumbbell-overhead-triceps-extension",
+       "target": 3
+      }
+     ],
+     "short": "家",
+     "target": 18,
+     "template_id": "pine-a-house",
+     "variant": "house"
+    }
+   }
+  },
+  "done": 0,
+  "id": 1,
+  "links": [],
+  "next": {
+   "completed": false,
+   "done": 0,
+   "exercises": [
+    {
+     "exercise_id": "incline-dumbbell-press",
+     "target": 3
+    },
+    {
+     "exercise_id": "machine-shoulder-press",
+     "target": 3
+    },
+    {
+     "exercise_id": "cable-single-arm-lateral-raise",
+     "target": 3
+    }
+   ],
+   "letter": "A",
+   "name": "A · 公司｜肩宽·胸·三头",
+   "remaining": [
+    {
+     "exercise_id": "incline-dumbbell-press",
+     "target": 3
+    },
+    {
+     "exercise_id": "machine-shoulder-press",
+     "target": 3
+    },
+    {
+     "exercise_id": "cable-single-arm-lateral-raise",
+     "target": 3
+    }
+   ],
+   "short": "肩",
+   "target": 9,
+   "template_id": "pine-a-company",
+   "variant": "company"
+  },
+  "schedule": [
+   {
+    "completed": false,
+    "day": 1,
+    "done": 0,
+    "letter": "A",
+    "optional": false,
+    "short": "肩",
+    "slots": [
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "incline-dumbbell-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-shoulder-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       }
+      ],
+      "letter": "A",
+      "name": "A · 公司｜肩宽·胸·三头",
+      "remaining": [
+       {
+        "exercise_id": "incline-dumbbell-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-shoulder-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       }
+      ],
+      "short": "肩",
+      "target": 9,
+      "template_id": "pine-a-company",
+      "variant": "company"
+     },
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "A",
+      "name": "A · 家庭｜肩宽·胸·三头",
+      "remaining": [
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 9,
+      "template_id": "pine-a-home",
+      "variant": "home"
+     }
+    ],
+    "target": 18,
+    "variants": {
+     "gym": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "incline-dumbbell-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-chest-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-shoulder-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "A",
+      "name": "A · 公司全练｜肩宽·胸·三头",
+      "remaining": [
+       {
+        "exercise_id": "incline-dumbbell-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-chest-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-shoulder-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "肩",
+      "target": 18,
+      "template_id": "pine-a-gym",
+      "variant": "gym"
+     },
+     "house": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "incline-dumbbell-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-dumbbell-shoulder-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "A",
+      "name": "A · 家庭全练｜肩宽·胸·三头",
+      "remaining": [
+       {
+        "exercise_id": "incline-dumbbell-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-dumbbell-shoulder-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 18,
+      "template_id": "pine-a-house",
+      "variant": "house"
+     }
+    }
+   },
+   {
+    "completed": false,
+    "day": 2,
+    "done": 0,
+    "letter": "B",
+    "optional": false,
+    "short": "背",
+    "slots": [
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "wide-grip-pulldown",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-preacher-curl",
+        "target": 3
+       }
+      ],
+      "letter": "B",
+      "name": "B · 公司｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "wide-grip-pulldown",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-preacher-curl",
+        "target": 3
+       }
+      ],
+      "short": "背",
+      "target": 9,
+      "template_id": "pine-b-company",
+      "variant": "company"
+     },
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "incline-dumbbell-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "chest-supported-reverse-fly",
+        "target": 3
+       }
+      ],
+      "letter": "B",
+      "name": "B · 家庭｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "incline-dumbbell-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "chest-supported-reverse-fly",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 9,
+      "template_id": "pine-b-home",
+      "variant": "home"
+     }
+    ],
+    "target": 18,
+    "variants": {
+     "gym": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "wide-grip-pulldown",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-preacher-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "bayesian-cable-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-reverse-fly",
+        "target": 3
+       }
+      ],
+      "letter": "B",
+      "name": "B · 公司全练｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "wide-grip-pulldown",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-preacher-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "bayesian-cable-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-reverse-fly",
+        "target": 3
+       }
+      ],
+      "short": "背",
+      "target": 18,
+      "template_id": "pine-b-gym",
+      "variant": "gym"
+     },
+     "house": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "band-assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "single-arm-dumbbell-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-concentration-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "chest-supported-reverse-fly",
+        "target": 3
+       }
+      ],
+      "letter": "B",
+      "name": "B · 家庭全练｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "band-assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "single-arm-dumbbell-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-concentration-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "chest-supported-reverse-fly",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 18,
+      "template_id": "pine-b-house",
+      "variant": "house"
+     }
+    }
+   },
+   {
+    "completed": false,
+    "day": 3,
+    "done": 0,
+    "letter": "E",
+    "optional": false,
+    "short": "腹",
+    "slots": [
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "leg-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "target": 3
+       },
+       {
+        "exercise_id": "kneeling-cable-crunch",
+        "target": 3
+       }
+      ],
+      "letter": "E",
+      "name": "E · 公司｜腹·腿",
+      "remaining": [
+       {
+        "exercise_id": "leg-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "target": 3
+       },
+       {
+        "exercise_id": "kneeling-cable-crunch",
+        "target": 3
+       }
+      ],
+      "short": "腹",
+      "target": 9,
+      "template_id": "pine-e-company",
+      "variant": "company"
+     },
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "decline-weighted-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "reverse-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "band-pull-apart",
+        "target": 3
+       }
+      ],
+      "letter": "E",
+      "name": "E · 家庭｜腹·腿",
+      "remaining": [
+       {
+        "exercise_id": "decline-weighted-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "reverse-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "band-pull-apart",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 9,
+      "template_id": "pine-e-home",
+      "variant": "home"
+     }
+    ],
+    "target": 18,
+    "variants": {
+     "gym": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "leg-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "target": 3
+       },
+       {
+        "exercise_id": "kneeling-cable-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-abdominal-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "reverse-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-reverse-fly",
+        "target": 3
+       }
+      ],
+      "letter": "E",
+      "name": "E · 公司全练｜腹·腿",
+      "remaining": [
+       {
+        "exercise_id": "leg-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "target": 3
+       },
+       {
+        "exercise_id": "kneeling-cable-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-abdominal-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "reverse-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-reverse-fly",
+        "target": 3
+       }
+      ],
+      "short": "腹",
+      "target": 18,
+      "template_id": "pine-e-gym",
+      "variant": "gym"
+     },
+     "house": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "bulgarian-split-squat",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "target": 3
+       },
+       {
+        "exercise_id": "decline-weighted-crunch",
+        "target": 6
+       },
+       {
+        "exercise_id": "reverse-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "band-pull-apart",
+        "target": 3
+       }
+      ],
+      "letter": "E",
+      "name": "E · 家庭全练｜腹·腿",
+      "remaining": [
+       {
+        "exercise_id": "bulgarian-split-squat",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-romanian-deadlift",
+        "target": 3
+       },
+       {
+        "exercise_id": "decline-weighted-crunch",
+        "target": 6
+       },
+       {
+        "exercise_id": "reverse-crunch",
+        "target": 3
+       },
+       {
+        "exercise_id": "band-pull-apart",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 18,
+      "template_id": "pine-e-house",
+      "variant": "house"
+     }
+    }
+   },
+   {
+    "completed": false,
+    "day": 4,
+    "done": 0,
+    "letter": "C",
+    "optional": false,
+    "short": "肩",
+    "slots": [
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "assisted-dip",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "C",
+      "name": "C · 公司｜肩宽·上胸",
+      "remaining": [
+       {
+        "exercise_id": "assisted-dip",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "肩",
+      "target": 9,
+      "template_id": "pine-c-company",
+      "variant": "company"
+     },
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-fly",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "C",
+      "name": "C · 家庭｜肩宽·上胸",
+      "remaining": [
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-fly",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 9,
+      "template_id": "pine-c-home",
+      "variant": "home"
+     }
+    ],
+    "target": 18,
+    "variants": {
+     "gym": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "assisted-dip",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "target": 3
+       },
+       {
+        "exercise_id": "low-cable-fly",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "C",
+      "name": "C · 公司全练｜肩宽·上胸",
+      "remaining": [
+       {
+        "exercise_id": "assisted-dip",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "cable-overhead-triceps-extension",
+        "target": 3
+       },
+       {
+        "exercise_id": "low-cable-fly",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "肩",
+      "target": 18,
+      "template_id": "pine-c-gym",
+      "variant": "gym"
+     },
+     "house": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "close-grip-push-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-fly",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "target": 3
+       }
+      ],
+      "letter": "C",
+      "name": "C · 家庭全练｜肩宽·上胸",
+      "remaining": [
+       {
+        "exercise_id": "close-grip-push-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 6
+       },
+       {
+        "exercise_id": "dumbbell-overhead-triceps-extension",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-fly",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lying-triceps-extension",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 18,
+      "template_id": "pine-c-house",
+      "variant": "house"
+     }
+    }
+   },
+   {
+    "completed": false,
+    "day": 5,
+    "done": 0,
+    "letter": "D",
+    "optional": false,
+    "short": "背",
+    "slots": [
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "bayesian-cable-curl",
+        "target": 3
+       }
+      ],
+      "letter": "D",
+      "name": "D · 公司｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "bayesian-cable-curl",
+        "target": 3
+       }
+      ],
+      "short": "背",
+      "target": 9,
+      "template_id": "pine-d-company",
+      "variant": "company"
+     },
+     {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "hammer-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       }
+      ],
+      "letter": "D",
+      "name": "D · 家庭｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "hammer-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 9,
+      "template_id": "pine-d-home",
+      "variant": "home"
+     }
+    ],
+    "target": 18,
+    "variants": {
+     "gym": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-chest-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "bayesian-cable-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-rope-hammer-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       }
+      ],
+      "letter": "D",
+      "name": "D · 公司全练｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "seated-cable-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "machine-chest-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "bayesian-cable-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-rope-hammer-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "cable-single-arm-lateral-raise",
+        "target": 3
+       }
+      ],
+      "short": "背",
+      "target": 18,
+      "template_id": "pine-d-gym",
+      "variant": "gym"
+     },
+     "house": {
+      "completed": false,
+      "done": 0,
+      "exercises": [
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "band-assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "single-arm-dumbbell-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "hammer-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       }
+      ],
+      "letter": "D",
+      "name": "D · 家庭全练｜背宽·二头",
+      "remaining": [
+       {
+        "exercise_id": "flat-dumbbell-bench-press",
+        "target": 3
+       },
+       {
+        "exercise_id": "band-assisted-pull-up",
+        "target": 3
+       },
+       {
+        "exercise_id": "single-arm-dumbbell-row",
+        "target": 3
+       },
+       {
+        "exercise_id": "incline-dumbbell-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "hammer-curl",
+        "target": 3
+       },
+       {
+        "exercise_id": "dumbbell-lateral-raise",
+        "target": 3
+       }
+      ],
+      "short": "家",
+      "target": 18,
+      "template_id": "pine-d-house",
+      "variant": "house"
+     }
+    }
+   }
+  ],
+  "slots": [
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "incline-dumbbell-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-shoulder-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     }
+    ],
+    "letter": "A",
+    "name": "A · 公司｜肩宽·胸·三头",
+    "remaining": [
+     {
+      "exercise_id": "incline-dumbbell-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-shoulder-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     }
+    ],
+    "short": "肩",
+    "target": 9,
+    "template_id": "pine-a-company",
+    "variant": "company"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "A",
+    "name": "A · 家庭｜肩宽·胸·三头",
+    "remaining": [
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 9,
+    "template_id": "pine-a-home",
+    "variant": "home"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "incline-dumbbell-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-chest-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-shoulder-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "cable-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "A",
+    "name": "A · 公司全练｜肩宽·胸·三头",
+    "remaining": [
+     {
+      "exercise_id": "incline-dumbbell-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-chest-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-shoulder-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "cable-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "肩",
+    "target": 18,
+    "template_id": "pine-a-gym",
+    "variant": "gym"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "incline-dumbbell-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-dumbbell-shoulder-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "dumbbell-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "A",
+    "name": "A · 家庭全练｜肩宽·胸·三头",
+    "remaining": [
+     {
+      "exercise_id": "incline-dumbbell-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-dumbbell-shoulder-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "dumbbell-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 18,
+    "template_id": "pine-a-house",
+    "variant": "house"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "wide-grip-pulldown",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-preacher-curl",
+      "target": 3
+     }
+    ],
+    "letter": "B",
+    "name": "B · 公司｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "wide-grip-pulldown",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-preacher-curl",
+      "target": 3
+     }
+    ],
+    "short": "背",
+    "target": 9,
+    "template_id": "pine-b-company",
+    "variant": "company"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "incline-dumbbell-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "chest-supported-reverse-fly",
+      "target": 3
+     }
+    ],
+    "letter": "B",
+    "name": "B · 家庭｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "incline-dumbbell-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "chest-supported-reverse-fly",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 9,
+    "template_id": "pine-b-home",
+    "variant": "home"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "wide-grip-pulldown",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-preacher-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "bayesian-cable-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-reverse-fly",
+      "target": 3
+     }
+    ],
+    "letter": "B",
+    "name": "B · 公司全练｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "wide-grip-pulldown",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-preacher-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "bayesian-cable-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-reverse-fly",
+      "target": 3
+     }
+    ],
+    "short": "背",
+    "target": 18,
+    "template_id": "pine-b-gym",
+    "variant": "gym"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "band-assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "single-arm-dumbbell-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-concentration-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "chest-supported-reverse-fly",
+      "target": 3
+     }
+    ],
+    "letter": "B",
+    "name": "B · 家庭全练｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "band-assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "single-arm-dumbbell-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-concentration-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "chest-supported-reverse-fly",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 18,
+    "template_id": "pine-b-house",
+    "variant": "house"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "leg-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-romanian-deadlift",
+      "target": 3
+     },
+     {
+      "exercise_id": "kneeling-cable-crunch",
+      "target": 3
+     }
+    ],
+    "letter": "E",
+    "name": "E · 公司｜腹·腿",
+    "remaining": [
+     {
+      "exercise_id": "leg-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-romanian-deadlift",
+      "target": 3
+     },
+     {
+      "exercise_id": "kneeling-cable-crunch",
+      "target": 3
+     }
+    ],
+    "short": "腹",
+    "target": 9,
+    "template_id": "pine-e-company",
+    "variant": "company"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "decline-weighted-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "reverse-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "band-pull-apart",
+      "target": 3
+     }
+    ],
+    "letter": "E",
+    "name": "E · 家庭｜腹·腿",
+    "remaining": [
+     {
+      "exercise_id": "decline-weighted-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "reverse-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "band-pull-apart",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 9,
+    "template_id": "pine-e-home",
+    "variant": "home"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "leg-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-romanian-deadlift",
+      "target": 3
+     },
+     {
+      "exercise_id": "kneeling-cable-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-abdominal-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "reverse-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-reverse-fly",
+      "target": 3
+     }
+    ],
+    "letter": "E",
+    "name": "E · 公司全练｜腹·腿",
+    "remaining": [
+     {
+      "exercise_id": "leg-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-romanian-deadlift",
+      "target": 3
+     },
+     {
+      "exercise_id": "kneeling-cable-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-abdominal-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "reverse-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-reverse-fly",
+      "target": 3
+     }
+    ],
+    "short": "腹",
+    "target": 18,
+    "template_id": "pine-e-gym",
+    "variant": "gym"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "bulgarian-split-squat",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-romanian-deadlift",
+      "target": 3
+     },
+     {
+      "exercise_id": "decline-weighted-crunch",
+      "target": 6
+     },
+     {
+      "exercise_id": "reverse-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "band-pull-apart",
+      "target": 3
+     }
+    ],
+    "letter": "E",
+    "name": "E · 家庭全练｜腹·腿",
+    "remaining": [
+     {
+      "exercise_id": "bulgarian-split-squat",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-romanian-deadlift",
+      "target": 3
+     },
+     {
+      "exercise_id": "decline-weighted-crunch",
+      "target": 6
+     },
+     {
+      "exercise_id": "reverse-crunch",
+      "target": 3
+     },
+     {
+      "exercise_id": "band-pull-apart",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 18,
+    "template_id": "pine-e-house",
+    "variant": "house"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "assisted-dip",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "C",
+    "name": "C · 公司｜肩宽·上胸",
+    "remaining": [
+     {
+      "exercise_id": "assisted-dip",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-overhead-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "肩",
+    "target": 9,
+    "template_id": "pine-c-company",
+    "variant": "company"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-fly",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lying-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "C",
+    "name": "C · 家庭｜肩宽·上胸",
+    "remaining": [
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-fly",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lying-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 9,
+    "template_id": "pine-c-home",
+    "variant": "home"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "assisted-dip",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "cable-overhead-triceps-extension",
+      "target": 3
+     },
+     {
+      "exercise_id": "low-cable-fly",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "C",
+    "name": "C · 公司全练｜肩宽·上胸",
+    "remaining": [
+     {
+      "exercise_id": "assisted-dip",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "cable-overhead-triceps-extension",
+      "target": 3
+     },
+     {
+      "exercise_id": "low-cable-fly",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "肩",
+    "target": 18,
+    "template_id": "pine-c-gym",
+    "variant": "gym"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "close-grip-push-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "dumbbell-overhead-triceps-extension",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-fly",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lying-triceps-extension",
+      "target": 3
+     }
+    ],
+    "letter": "C",
+    "name": "C · 家庭全练｜肩宽·上胸",
+    "remaining": [
+     {
+      "exercise_id": "close-grip-push-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 6
+     },
+     {
+      "exercise_id": "dumbbell-overhead-triceps-extension",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-fly",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lying-triceps-extension",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 18,
+    "template_id": "pine-c-house",
+    "variant": "house"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "bayesian-cable-curl",
+      "target": 3
+     }
+    ],
+    "letter": "D",
+    "name": "D · 公司｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "bayesian-cable-curl",
+      "target": 3
+     }
+    ],
+    "short": "背",
+    "target": 9,
+    "template_id": "pine-d-company",
+    "variant": "company"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "hammer-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     }
+    ],
+    "letter": "D",
+    "name": "D · 家庭｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "hammer-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 9,
+    "template_id": "pine-d-home",
+    "variant": "home"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-chest-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "bayesian-cable-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-rope-hammer-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     }
+    ],
+    "letter": "D",
+    "name": "D · 公司全练｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "seated-cable-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "machine-chest-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "bayesian-cable-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-rope-hammer-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "cable-single-arm-lateral-raise",
+      "target": 3
+     }
+    ],
+    "short": "背",
+    "target": 18,
+    "template_id": "pine-d-gym",
+    "variant": "gym"
+   },
+   {
+    "completed": false,
+    "done": 0,
+    "exercises": [
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "band-assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "single-arm-dumbbell-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "hammer-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     }
+    ],
+    "letter": "D",
+    "name": "D · 家庭全练｜背宽·二头",
+    "remaining": [
+     {
+      "exercise_id": "flat-dumbbell-bench-press",
+      "target": 3
+     },
+     {
+      "exercise_id": "band-assisted-pull-up",
+      "target": 3
+     },
+     {
+      "exercise_id": "single-arm-dumbbell-row",
+      "target": 3
+     },
+     {
+      "exercise_id": "incline-dumbbell-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "hammer-curl",
+      "target": 3
+     },
+     {
+      "exercise_id": "dumbbell-lateral-raise",
+      "target": 3
+     }
+    ],
+    "short": "家",
+    "target": 18,
+    "template_id": "pine-d-house",
+    "variant": "house"
+   }
+  ],
+  "target": 90,
+  "version": 2
+ },
+ "recovery": {
+  "label": "待更新",
+  "score": null,
+  "version": "personal-v2"
+ },
+ "sleep": null,
+ "sleeps": [],
+ "sources": {
+  "activity": {
+   "fetched_at": null
+  },
+  "metrics": {
+   "fetched_at": null
+  },
+  "sleep": {
+   "fetched_at": null
+  },
+  "walks": {
+   "fetched_at": null
+  },
+  "weight": {
+   "fetched_at": null
+  }
+ },
+ "step_goal": {
+  "basis": "可调整的初始目标；积累至少7个完整日后，可参考自己的日常水平调整。",
+  "target": 7000
+ },
+ "timezone": "America/New_York",
+ "tip": "今天可以选练肩和手臂的小肌群，也可以休息，遛狗散步照常。",
+ "today": {
+  "date": "2026-11-21"
+ },
+ "walks": [],
+ "weights": []
+}

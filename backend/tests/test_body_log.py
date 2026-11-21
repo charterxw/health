@@ -81,6 +81,13 @@ class BodyLogTests(unittest.TestCase):
         self.assertEqual(self.client.put('/api/home/feedback', json={'soreness': ['脚']}).status_code, 422)
         self.assertEqual(self.client.put('/api/home/feedback', json={'note': 'x' * 201}).status_code, 422)
 
+    def test_home_names_the_sessions_outside_the_round(self):
+        extras = self.client.get('/api/home').json()['extras']
+        self.assertEqual(extras['posture']['template_id'], 'posture-daily')
+        self.assertEqual(extras['optional']['template_id'], 'pine-sat-optional')
+        self.assertTrue(extras['optional']['weekend_only'])
+        self.assertTrue(extras['optional']['focus'])
+
 
 if __name__ == '__main__':
     unittest.main()

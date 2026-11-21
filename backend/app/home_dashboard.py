@@ -31,6 +31,25 @@ VARIANTS = ['company', 'home', 'gym', 'house']
 PLAN_IDS = [f'pine-{letter.lower()}-{variant}' for letter, _ in PLAN_DAYS for variant in VARIANTS]
 PLAN_DAY_OF = {tid: i // len(VARIANTS) for i, tid in enumerate(PLAN_IDS)}
 OPTIONAL_ID = 'pine-sat-optional'
+POSTURE_ID = 'posture-daily'
+
+
+def plan_extras(templates):
+    """The sessions outside the round that the training tab offers, described by the
+    server so a plan change does not need a new app build."""
+    def focus(name):
+        parts = (name or '').split('｜')
+        return (parts[1] if len(parts) > 1 else parts[0]).replace('·', ' · ')
+    extras = {'posture': None, 'optional': None}
+    posture = templates.get(POSTURE_ID)
+    if posture:
+        extras['posture'] = {'template_id': POSTURE_ID, 'title': '每日体态', 'detail': '5–8 分钟'}
+    optional = templates.get(OPTIONAL_ID)
+    if optional:
+        extras['optional'] = {'template_id': OPTIONAL_ID, 'title': '周末选练', 'focus': focus(optional.get('name')),
+                              'duration_min': optional.get('duration_min'), 'duration_max': optional.get('duration_max'),
+                              'weekend_only': True}
+    return extras
 _lock = asyncio.Lock()
 
 
@@ -535,7 +554,7 @@ def summary():
         w.update(edits.get(w['id'], {}))
     return {'date': current.isoformat(), 'timezone': str(TZ), 'today': today, 'days': rows,
             'metrics': metrics, 'sleep': primary_sleep, 'sleeps': sleeps, 'weights': weights, 'walks': walks,
-            'recovery': recover, 'feedback': feeling, 'plan': plan, 'tip': tip, 'step_goal': steps_goal,
+            'recovery': recover, 'feedback': feeling, 'plan': plan, 'extras': plan_extras(templates), 'tip': tip, 'step_goal': steps_goal,
             'freshness': snapshot('freshness')[0] or {},
             'action': {'session_id': active['id']} if active else {'template_id': next_slot['template_id'], 'remaining': next_slot['remaining']} if next_slot else {},
             'goals': goal_at(current.isoformat()), 'next_goals': next((g for start, g in versions if start > current.isoformat()), None),
