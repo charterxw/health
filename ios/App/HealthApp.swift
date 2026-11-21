@@ -124,6 +124,21 @@ extension NativeRootView {
         let posture = row["posture"].flag || NativeDays.postureDone(sessions)
         let met: [PineCelebration.Kind: Bool] = [.activity: (activity ?? 0) >= 1, .strength: strength, .posture: posture]
         let defaults = UserDefaults.standard
+        // A finished round earns a medal once; it outranks today's goals.
+        let plan = home["plan"], schedule = plan["schedule"].array
+        if plan["version"].integer == 2, plan["next"].isNull, !schedule.isEmpty, schedule.allSatisfy({ $0["completed"].flag }) {
+            let roundKey = "pine.medal.round.\(plan["id"].integer)"
+            if !defaults.bool(forKey: roundKey) {
+                defaults.set(true, forKey: roundKey)
+                var medals = defaults.array(forKey: NativeMedals.key) as? [[String: Any]] ?? []
+                medals.append(["round": medals.count + 1, "date": date, "sets": plan["done"].integer])
+                defaults.set(medals, forKey: NativeMedals.key)
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    store.celebration = PineCelebration(kind: .round, activity: nil, halves: [], posture: false, round: medals.count, sets: plan["done"].integer)
+                }
+                return
+            }
+        }
         func key(_ kind: PineCelebration.Kind) -> String { "pine.celebrated." + date + "." + kind.rawValue }
         let fresh = [PineCelebration.Kind.activity, .strength, .posture].filter { met[$0] == true && !defaults.bool(forKey: key($0)) }
         guard let first = fresh.first else { return }
@@ -141,6 +156,13 @@ extension NativeRootView {
     }
 }
 struct ReportSelection: Identifiable { let id: String }
+/// Medals for finished rounds, kept on this phone.
+enum NativeMedals {
+    static let key = "pine.medals"
+    static var all: [(round: Int, date: String, sets: Int)] {
+        (UserDefaults.standard.array(forKey: key) as? [[String: Any]] ?? []).map { ($0["round"] as? Int ?? 0, $0["date"] as? String ?? "", $0["sets"] as? Int ?? 0) }
+    }
+}
 /// Tab roots draw their own PineTabHeader; pushed pages keep the system bar.
 struct NativeToolbar: ViewModifier {
     func body(content: Content) -> some View { content.toolbar(.hidden, for: .navigationBar) }

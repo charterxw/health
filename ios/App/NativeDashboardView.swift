@@ -16,6 +16,11 @@ struct NativeDashboardView: View {
     @State private var showingStrength = false
     @State private var weekDetail: WeekDetail?
     @State private var barsShown = false
+    /// Sentences of a newly written observation shown so far (all when settled).
+    @State private var revealed = Int.max
+    @State private var seenBrief = ""
+    /// Yesterday's glyph glows once when all three closed while the app was away.
+    @State private var glowDate = ""
     @Namespace private var weekSpace
     /// Visible height between the status bar and the tab bar.
     @State private var viewport: CGFloat = 0
@@ -71,6 +76,7 @@ struct NativeDashboardView: View {
         .sheet(isPresented: $showingDay) { NavigationStack { NativeDayDetail(day: day) } }
         .sheet(isPresented: $showingSync) { NavigationStack { NativeSyncDetail() } }
         .sheet(isPresented: $showingStrength) { NavigationStack { NativeStrengthProgressView() } }
+        .task(id: home["date"].text) { if !home.isNull, !store.isDesignPreview { checkYesterday(sessions) } }
         .sheet(isPresented: $showingWeight) { NavigationStack { NativeWeightList(rows: home["weights"].array) } }
         .task(id: store.brief["status"].text) {
             guard !store.isDesignPreview, store.brief["status"].text == "pending" else { return }
@@ -101,9 +107,13 @@ struct NativeDashboardView: View {
         HStack(spacing: 8) {
             Button { showingSync = true } label: {
                 HStack(spacing: 6) {
-                    if busy { ProgressView().controlSize(.mini) }
-                    else { Image(systemName: store.message == nil ? "arrow.clockwise" : "exclamationmark.circle").imageScale(.small) }
-                    Text(syncText)
+                    if busy {
+                        TimelineView(.animation(minimumInterval: nil, paused: reduceMotion)) { context in
+                            Image(systemName: "arrow.clockwise").imageScale(.small)
+                                .rotationEffect(.degrees(reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1) * 360))
+                        }
+                    } else { Image(systemName: store.message == nil ? "arrow.clockwise" : "exclamationmark.circle").imageScale(.small) }
+                    Text(syncText).contentTransition(reduceMotion ? .identity : .numericText()).animation(reduceMotion ? nil : .snappy, value: syncText)
                 }.font(.footnote).foregroundStyle(.secondary).frame(minHeight: 36)
             }.buttonStyle(PinePressStyle()).accessibilityLabel("数据与同步，" + syncText)
             Spacer(minLength: 8)
@@ -129,13 +139,14 @@ struct NativeDashboardView: View {
                 Spacer(minLength: 8)
                 // Manual trigger: rewrite the observation now, even if the data is unchanged.
                 Button { Task { await store.loadBrief(force: true) } } label: {
-                    Group { if pending { ProgressView().controlSize(.mini) } else { Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pine) } }
+                    Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pending ? pineGold : pine)
+                        .symbolEffect(.variableColor.iterative.reversing, options: .repeating, isActive: pending && !reduceMotion)
                         .frame(width: 28, height: 20).contentShape(Rectangle().inset(by: -12))
                 }.buttonStyle(PinePressStyle(scale: 0.94)).disabled(pending || store.isDesignPreview)
                     .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
             }
             NavigationLink { NativeBriefDetail() } label: {
-                Text(pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.subheadline).lineSpacing(2)
+                observationText(lines: lines, fallback: pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.subheadline).lineSpacing(2)
                     .foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
                     .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -146,6 +157,27 @@ struct NativeDashboardView: View {
         // does not move the sections below.
         .frame(maxWidth: .infinity, maxHeight: 150, alignment: .top)
         .background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .task(id: store.brief["generated_at"].text + String(lines.count)) {
+            // A freshly written observation appears sentence by sentence; the one
+            // already on screen when the page opens does not replay.
+            let key = store.brief["generated_at"].text
+            defer { seenBrief = key }
+            guard !reduceMotion, !seenBrief.isEmpty, key != seenBrief, !lines.isEmpty else { revealed = .max; return }
+            revealed = 0
+            for count in 1...lines.count {
+                do { try await Task.sleep(for: .milliseconds(380)) } catch { revealed = .max; return }
+                withAnimation(.easeOut(duration: 0.35)) { revealed = count }
+            }
+            revealed = .max
+        }
+    }
+    /// Sentences not yet revealed stay in place but transparent, so the card
+    /// does not change height while they fade in.
+    private func observationText(lines: [String], fallback: String) -> Text {
+        guard revealed != .max, !lines.isEmpty else { return Text(fallback) }
+        return lines.enumerated().reduce(Text("")) { text, item in
+            text + Text((item.offset > 0 ? " " : "") + item.element).foregroundStyle(item.offset < revealed ? Color.primary : Color.clear)
+        }
     }
 
     // MARK: Goals of the selected day
@@ -299,6 +331,7 @@ struct NativeDashboardView: View {
                         VStack(spacing: 4) {
                             Text(["一","二","三","四","五","六","日"][min(index, 6)]).font(.caption.weight(selected ? .bold : .regular)).foregroundStyle(selected ? pine : Color.secondary)
                             PineDayGlyph(activity: activityFraction(row), halves: halves(row, list), posture: postureDone(row, list), future: future, size: 36, animated: true, delay: 0.15 + 0.05 * Double(index))
+                                .overlay { if glowDate == date { PineGlow() } }
                             Text(NativeDays.focus(dayKey: date, sessions: list, serverTag: row["short"].text)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         }.frame(maxWidth: .infinity, minHeight: 72).padding(.vertical, 2)
                             .background {
@@ -325,6 +358,20 @@ struct NativeDashboardView: View {
         }.padding(.horizontal, 12).padding(.vertical, 8).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
     enum WeekDetail { case activity, strength }
+    /// Yesterday closed all three while the app was not looked at: its glyph
+    /// glows once instead of a full celebration a day late.
+    private func checkYesterday(_ sessions: [String: [NativeDaySession]]) {
+        let days = home["days"].array
+        guard let index = days.firstIndex(where: { $0["date"] == home["date"] }), index > 0 else { return }
+        let row = days[index - 1], date = row["date"].text, list = sessions[date] ?? []
+        let defaults = UserDefaults.standard, key = "pine.celebrated." + date + ".all"
+        guard !defaults.bool(forKey: key) else { return }
+        let half = halves(row, list)
+        let strength = NativeDays.isWeekend(date) ? (half.first ?? 0) >= 1 : half.count >= 2 && half.prefix(2).allSatisfy { $0 >= 1 }
+        guard (activityFraction(row) ?? 0) >= 1, strength, postureDone(row, list) else { return }
+        defaults.set(true, forKey: key)
+        Task { try? await Task.sleep(for: .seconds(1.2)); glowDate = date; try? await Task.sleep(for: .seconds(2.5)); glowDate = "" }
+    }
     private func weekToggle(_ kind: WeekDetail, title: String, value: String, suffix: String, tint: Bool) -> some View {
         let open = weekDetail == kind
         return Button {
@@ -678,6 +725,20 @@ struct NativePlanView: View {
                     }
                 }
             }
+            let medals = NativeMedals.all
+            if !medals.isEmpty {
+                Section("奖章") {
+                    ForEach(medals.reversed(), id: \.round) { medal in
+                        HStack(spacing: 12) {
+                            PineMedal(round: medal.round).frame(width: 40, height: 40)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("第 \(medal.round) 轮").font(.subheadline.weight(.semibold))
+                                Text(dayTitle(medal.date, format: "M月d日") + " 完成 · \(medal.sets) 组").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
             if !plan.isNull {
                 Section("关联补练") {
                     Picker("训练记录", selection: $session) { Text("选择已完成训练").tag(""); ForEach(store.records.filter { $0.session["status"].text == "completed" }, id: \.id) { row in Text(row.session["title"].text + " · " + dateLabel(row.session["started_at"])).tag(row.id) } }
@@ -937,5 +998,19 @@ private extension View {
 struct PineHorizontalLine: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path(); path.move(to: CGPoint(x: rect.minX, y: rect.midY)); path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY)); return path
+    }
+}
+
+/// A single gold pulse with a few sparks around a small glyph.
+struct PineGlow: View {
+    @State private var on = false
+    @PineReducedMotion private var reduceMotion
+    var body: some View {
+        ZStack {
+            if !reduceMotion { PineSparkBurst(radius: 26, count: 12, duration: 0.9).frame(width: 70, height: 70) }
+            Circle().stroke(pineGold, lineWidth: 2).scaleEffect(on ? 1.5 : 0.9).opacity(on ? 0 : 1)
+        }
+        .allowsHitTesting(false).accessibilityHidden(true)
+        .onAppear { withAnimation(.easeOut(duration: 1.1)) { on = true } }
     }
 }

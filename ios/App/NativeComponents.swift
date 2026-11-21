@@ -442,21 +442,26 @@ extension PineSectionHeader where Accessory == EmptyView {
 
 /// One moment worth celebrating today; each kind plays at most once a day.
 struct PineCelebration: Identifiable, Equatable {
-    enum Kind: String { case activity, strength, posture, all }
+    enum Kind: String { case activity, strength, posture, all, round }
     let id = UUID()
     let kind: Kind
     let activity: Double?
     let halves: [Double]
     let posture: Bool
-    var big: Bool { kind == .all }
+    /// For a finished round: its number and total work sets.
+    var round = 0
+    var sets = 0
+    var big: Bool { kind == .all || kind == .round }
     var title: String {
         switch kind {
         case .activity: return "活动目标达成"
         case .strength: return "今天的力量练完了"
         case .posture: return "体态练习完成"
         case .all: return "今天三项全满"
+        case .round: return "第 \(round) 轮完成"
         }
     }
+    var detail: String { kind == .round ? "五天 · \(sets) 组" : "活动 · 力量 · 体态" }
 }
 
 /// A goal closing: the glyph spins once while sparks burst, with a haptic
@@ -476,11 +481,15 @@ struct PineCelebrationView: View {
                     VStack(spacing: 14) {
                         ZStack {
                             if !reduceMotion { PineSparkBurst(radius: 150, count: 40, duration: 1.2) }
-                            PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 170)
-                                .rotationEffect(.degrees(spin)).scaleEffect(appear ? 1 : 0.6)
+                            Group {
+                                if event.kind == .round { PineMedal(round: event.round).frame(width: 180, height: 180) }
+                                else { PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 170) }
+                            }
+                            .rotation3DEffect(.degrees(event.kind == .round ? spin : 0), axis: (x: 0, y: 1, z: 0))
+                            .rotationEffect(.degrees(event.kind == .round ? 0 : spin)).scaleEffect(appear ? 1 : 0.6)
                         }.frame(width: 320, height: 320)
                         Text(event.title).font(.title.weight(.bold))
-                        Text("活动 · 力量 · 体态").font(.subheadline.weight(.semibold)).foregroundStyle(pineGold)
+                        Text(event.detail).font(.subheadline.weight(.semibold)).foregroundStyle(pineGold)
                     }
                 }.opacity(appear ? 1 : 0)
             } else {
@@ -506,7 +515,7 @@ struct PineCelebrationView: View {
             PineHaptics.celebrate(big: event.big)
             withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.5, dampingFraction: 0.72)) { appear = true }
             if !reduceMotion { withAnimation(.spring(response: 1.1, dampingFraction: 0.82)) { spin = 360 } }
-            try? await Task.sleep(for: .seconds(event.big ? 2.8 : 2.2))
+            try? await Task.sleep(for: .seconds(event.kind == .round ? 3.6 : event.big ? 2.8 : 2.2))
             finish()
         }
     }
@@ -515,5 +524,37 @@ struct PineCelebrationView: View {
         finished = true
         withAnimation(.easeOut(duration: 0.25)) { appear = false }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) { onDone() }
+    }
+}
+
+/// The round's medal: a gold rim around the pine face, with a light sweep.
+struct PineMedal: View {
+    let round: Int
+    @State private var sweep = false
+    @PineReducedMotion private var reduceMotion
+    var body: some View {
+        GeometryReader { proxy in
+            let d = min(proxy.size.width, proxy.size.height), rim = d * 0.07
+            ZStack {
+                Circle().fill(LinearGradient(colors: [pineGold.opacity(0.75), pineGold, pineGold.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                Circle().inset(by: rim).fill(pine)
+                Circle().inset(by: rim).stroke(.white.opacity(0.25), lineWidth: max(0.5, d * 0.008))
+                VStack(spacing: 0) {
+                    Text("\(round)").font(.system(size: d * 0.36, weight: .bold, design: .rounded)).monospacedDigit()
+                    if d > 60 { Text("轮").font(.system(size: d * 0.1, weight: .semibold)) }
+                }.foregroundStyle(.white)
+                // A soft highlight passes across the medal once.
+                if !reduceMotion && d > 60 {
+                    LinearGradient(colors: [.clear, .white.opacity(0.45), .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: d * 0.33).rotationEffect(.degrees(20)).offset(x: sweep ? d * 0.85 : -d * 0.85)
+                        .mask(Circle())
+                }
+            }
+            .frame(width: d, height: d)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .compositingGroup().shadow(color: pineGold.opacity(0.35), radius: 12, y: 4)
+        .onAppear { withAnimation(.easeInOut(duration: 1.4).delay(0.6)) { sweep = true } }
+        .accessibilityElement().accessibilityLabel("第 \(round) 轮奖章")
     }
 }
