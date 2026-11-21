@@ -17,6 +17,10 @@ final class NativeStore {
     private(set) var storageFailed = false
     var showingSettings = false
     var workoutPresented = false
+    /// The goal celebration on screen, if any.
+    var celebration: PineCelebration?
+    /// The workout just finished; its report opens with a celebration once.
+    var freshReport: String?
     var selectedTab = 0
     var reportID: String?
     var username = ""
@@ -405,7 +409,7 @@ final class NativeStore {
         update(id) { $0 = NativeTraining.finish($0, status: discard ? "discarded" : "completed") }
         guard cache.records[id]?.session["status"].text != "active" else { return }
         UserDefaults.standard.removeObject(forKey: Self.movementKey + id)
-        if !discard { pendingReport = id; selectedTab = 2 }; workoutPresented = false
+        if !discard { pendingReport = id; freshReport = id; selectedTab = 2 }; workoutPresented = false
         retrySync()
     }
     func workoutDidDismiss() { if let id = pendingReport { pendingReport = nil; reportID = id } }

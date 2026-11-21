@@ -128,6 +128,10 @@ struct NativeReportView: View {
     @State private var templateSheet = false
     @State private var clearAlternative = false
     @State private var attempt = 0
+    /// Opened right after finishing: totals count up and badges pop in once.
+    @State private var celebrating = false
+    @State private var revealed = true
+    @PineReducedMotion private var reduceMotion
     private var record: NativeRecord? { store.recordDocuments[id] }
     private var session: JSONValue { record?.session ?? .null }
     private var saved: Bool { record.map { !$0.dirty && $0.blocked == nil && $0.version > 0 } ?? false }
@@ -173,6 +177,18 @@ struct NativeReportView: View {
             .confirmationDialog("删除这场训练？", isPresented: $deleting, titleVisibility: .visible) { Button("删除训练", role: .destructive) { busy = true; Task { do { try await store.delete(id); dismiss() } catch { self.error = error.localizedDescription }; busy = false } } } message: { Text("将删除服务器上的训练记录、心率报告和关联分析。") }
             .confirmationDialog("清除保留的冲突副本？", isPresented: $clearAlternative, titleVisibility: .visible) { Button("清除副本", role: .destructive) { store.clearAlternative(id) } }
             .task(id: "\(record?.version ?? 0)-\(saved)-\(attempt)") { await loadReports() }
+            .onAppear {
+                guard store.freshReport == id else { return }
+                store.freshReport = nil
+                celebrating = true
+                guard !reduceMotion else { PineHaptics.celebrate(big: false); return }
+                revealed = false
+                Task {
+                    try? await Task.sleep(for: .seconds(0.35))
+                    withAnimation(.spring(response: 0.9, dampingFraction: 0.85)) { revealed = true }
+                    PineHaptics.celebrate(big: false)
+                }
+            }
     }
     /// Title split at the "｜" the templates use: focus as title, group, place and
     /// time below, the day's glyph beside it, then three totals.
@@ -191,19 +207,22 @@ struct NativeReportView: View {
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
+                    if celebrating { Label("训练完成", systemImage: "sparkles").font(.subheadline.weight(.semibold)).foregroundStyle(pineGold) }
                     Text(focus).font(.title2.weight(.bold))
                     Text([group, when].filter { !$0.isEmpty }.joined(separator: " · ")).font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
                 if session["status"].text == "completed", !list.isEmpty {
-                    PineDayGlyph(activity: nil, halves: NativeDays.halves(list, weekend: weekend), posture: NativeDays.postureDone(list), size: 44)
-                        .accessibilityLabel("这天的完成情况")
+                    ZStack {
+                        if celebrating && revealed && !reduceMotion { PineSparkBurst(radius: 44, count: 18, duration: 0.9).frame(width: 110, height: 110) }
+                        PineDayGlyph(activity: nil, halves: NativeDays.halves(list, weekend: weekend), posture: NativeDays.postureDone(list), size: 44, animated: celebrating, delay: 0.3)
+                    }.frame(width: 44, height: 44).accessibilityLabel("这天的完成情况")
                 }
             }
             HStack(alignment: .top) {
-                reportStat("时长", "\(Int((seconds / 60).rounded()))", "分钟")
-                reportStat("工作组", "\(p.done)", "/ \(p.planned)")
-                reportStat("容量", displayNumber(.number(sessionVolume), digits: 0), "磅")
+                reportStat("时长", revealed ? "\(Int((seconds / 60).rounded()))" : "0", "分钟")
+                reportStat("工作组", revealed ? "\(p.done)" : "0", "/ \(p.planned)")
+                reportStat("容量", revealed ? displayNumber(.number(sessionVolume), digits: 0) : "0", "磅")
             }.padding(.vertical, 12).padding(.horizontal, 14).background(pineSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             if p.done == 0 { Text("本次没有完成的工作组，不推断训练表现。").font(.footnote).foregroundStyle(.secondary) }
         }
@@ -211,7 +230,10 @@ struct NativeReportView: View {
     private func reportStat(_ title: String, _ value: String, _ unit: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(title).font(.caption).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) { Text(value).font(.title3.weight(.semibold)).monospacedDigit(); Text(unit).font(.footnote).foregroundStyle(.secondary) }
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value).font(.title3.weight(.semibold)).monospacedDigit().contentTransition(.numericText())
+                Text(unit).font(.footnote).foregroundStyle(.secondary)
+            }
         }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
     }
     /// Load × reps of completed external-load work sets, in pounds.
@@ -241,7 +263,17 @@ struct NativeReportView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(m["name"].text).font(.pineRow.weight(.semibold))
                 Spacer(minLength: 8)
-                if let badge { Text(badge.text).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(badge.good ? pine : Color.secondary) }
+                if let badge {
+                    HStack(spacing: 3) {
+                        if badge.record { Image(systemName: "medal.fill").font(.caption) }
+                        Text(badge.text).font(.footnote.weight(.semibold)).monospacedDigit()
+                    }
+                    .foregroundStyle(badge.record ? pineGold : badge.good ? pine : Color.secondary)
+                    .padding(.horizontal, badge.record ? 8 : 0).padding(.vertical, badge.record ? 3 : 0)
+                    .background(badge.record ? pineGold.opacity(0.14) : .clear, in: Capsule())
+                    .scaleEffect(revealed ? 1 : 0.3).opacity(revealed ? 1 : 0)
+                    .animation(celebrating ? .spring(response: 0.45, dampingFraction: 0.55).delay(0.5 + 0.15 * Double(index)) : nil, value: revealed)
+                }
             }
             if rows.isEmpty {
                 Text("没有完成的组").font(.footnote).foregroundStyle(.secondary)
@@ -267,7 +299,27 @@ struct NativeReportView: View {
     }
     /// Against the previous time of this move: reps at the same loads, else the
     /// best set's estimated strength.
-    private func changeBadge(_ m: JSONValue, index: Int) -> (text: String, good: Bool)? {
+    private func changeBadge(_ m: JSONValue, index: Int) -> (text: String, good: Bool, record: Bool)? {
+        guard let base = baseBadge(m, index: index) else { return nil }
+        if base.good, isRecord(m) { return ("新纪录 · " + base.text, true, true) }
+        return (base.text, base.good, false)
+    }
+    /// The best set beats every earlier session of this move (estimated strength).
+    private func isRecord(_ m: JSONValue) -> Bool {
+        let started = NativeDate.parse(session["started_at"]) ?? .now
+        let mine = NativeTraining.done(m).filter { !$0["warmup"].flag }.compactMap { NativeDays.liftScore(m, $0) }.max() ?? 0
+        var best = 0.0
+        for old in store.history where old.id != id && (NativeDate.parse(old["started_at"]) ?? .distantFuture) < started {
+            for movement in old["exercises"].array where movement["exercise_id"] == m["exercise_id"] && movement["load_mode"] == m["load_mode"] {
+                for row in NativeTraining.done(movement) where !row["warmup"].flag {
+                    var converted = row; converted["weight"] = NativeTraining.convert(row["weight"], from: movement["unit"].text, to: m["unit"].text)
+                    best = max(best, NativeDays.liftScore(m, converted) ?? 0)
+                }
+            }
+        }
+        return best > 0 && mine > best * 1.005
+    }
+    private func baseBadge(_ m: JSONValue, index: Int) -> (text: String, good: Bool)? {
         guard !NativeTraining.timed(m), !NativeTraining.mobility(m) else { return nil }
         let done = NativeTraining.done(m).filter { !$0["warmup"].flag }
         guard !done.isEmpty else { return nil }

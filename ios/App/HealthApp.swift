@@ -78,10 +78,65 @@ struct NativeRootView: View {
             #endif
         }
         .task { if store.designPreviewScreen == "sleep", overviewPath.isEmpty { overviewPath = [.recovery, .sleep] } }
+        // Goal celebrations: when a goal closes in the app it plays right away;
+        // when it closed elsewhere (the band) it plays the next time the app is
+        // looked at. Never over a workout or a report.
+        .overlay(alignment: .top) {
+            if let event = store.celebration, !event.big {
+                PineCelebrationView(event: event) { store.celebration = nil }.transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .overlay {
+            if let event = store.celebration, event.big {
+                PineCelebrationView(event: event) { store.celebration = nil }.transition(.opacity)
+            }
+        }
+        .task(id: celebrationKey) {
+            do { try await Task.sleep(for: .seconds(0.9)) } catch { return }
+            checkCelebrations()
+        }
         .sheet(isPresented: $store.showingSettings) { NavigationStack { NativeSettingsView() }.presentationDragIndicator(.visible) }
         .fullScreenCover(isPresented: $store.workoutPresented, onDismiss: store.workoutDidDismiss) { NativeWorkoutView() }
         .sheet(item: Binding(get: { store.reportID.map(ReportSelection.init) }, set: { store.reportID = $0?.id }), onDismiss: store.reportDidDismiss) { item in
             NavigationStack { NativeReportView(id: item.id).toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { store.reportID = nil } } } }
+        }
+    }
+}
+extension NativeRootView {
+    private var todayRow: JSONValue { store.home["days"].array.first { $0["date"] == store.home["date"] } ?? .null }
+    var celebrationKey: String {
+        [store.home["date"].text, displayNumber(todayRow["activity"], digits: 0), String(todayRow["posture"].flag), String(store.records.count), String(store.historyRevision),
+         String(store.workoutPresented), store.reportID ?? "", String(store.celebration == nil), String(store.active == nil)].joined(separator: "|")
+    }
+    /// Today's goals that closed and have not been celebrated yet; all three at
+    /// once is the big moment, otherwise one goal at a time.
+    func checkCelebrations() {
+        guard store.phase == .ready, !store.isDesignPreview, store.celebration == nil, !store.workoutPresented, store.reportID == nil, store.active == nil else { return }
+        let home = store.home, date = home["date"].text, row = todayRow
+        guard !date.isEmpty, !row.isNull else { return }
+        let zone = home["timezone"].text.isEmpty ? TimeZone.current.identifier : home["timezone"].text
+        let sessions = NativeDays.sessions(records: store.records, timezone: zone)[date] ?? []
+        let weekend = NativeDays.isWeekend(date)
+        let halves = NativeDays.halves(sessions, weekend: weekend)
+        let goal = row["goals"]["dailyActivity"].number ?? 0
+        let activity = goal > 0 ? row["activity"].number.map { $0 / goal } : nil
+        let strength = weekend ? (halves.first ?? 0) >= 1 : halves.count >= 2 && halves.prefix(2).allSatisfy { $0 >= 1 }
+        let posture = row["posture"].flag || NativeDays.postureDone(sessions)
+        let met: [PineCelebration.Kind: Bool] = [.activity: (activity ?? 0) >= 1, .strength: strength, .posture: posture]
+        let defaults = UserDefaults.standard
+        func key(_ kind: PineCelebration.Kind) -> String { "pine.celebrated." + date + "." + kind.rawValue }
+        let fresh = [PineCelebration.Kind.activity, .strength, .posture].filter { met[$0] == true && !defaults.bool(forKey: key($0)) }
+        guard let first = fresh.first else { return }
+        let kind: PineCelebration.Kind
+        if met.values.allSatisfy({ $0 }) && !defaults.bool(forKey: key(.all)) {
+            kind = .all
+            for each in [PineCelebration.Kind.activity, .strength, .posture, .all] { defaults.set(true, forKey: key(each)) }
+        } else {
+            kind = first
+            defaults.set(true, forKey: key(kind))
+        }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+            store.celebration = PineCelebration(kind: kind, activity: activity, halves: halves, posture: posture)
         }
     }
 }

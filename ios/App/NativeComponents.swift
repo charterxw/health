@@ -19,6 +19,8 @@ let pineFaint = pineDynamic(0xEEF0EE, 0x1E2420)
 let pineTint = pineDynamic(0xEEF3EF, 0x1F2B24)
 let pineCanvas = pineDynamic(0xF4F5F1, 0x000000)
 let pineSurface = pineDynamic(0xFFFFFF, 0x1A1D1B)
+/// Warm gold, only for celebrations (sparks, records, the round's medal).
+let pineGold = pineDynamic(0xC8962E, 0xE6BC5C)
 let activityColor = pine
 let strengthColor = pine
 let postureColor = pine
@@ -32,16 +34,23 @@ struct PineDayGlyph: View {
     var posture = false
     var future = false
     var size: CGFloat = 36
+    /// Draw in from empty the first time it appears (rings sweep, the dot pops);
+    /// `delay` staggers a row of glyphs.
+    var animated = false
+    var delay: Double = 0
+    @State private var shown = false
+    @PineReducedMotion private var reduceMotion
     var body: some View {
         let unit = size / 88
         let base = future ? pineFaint : pineTrack
+        let grow: Double = !animated || shown || reduceMotion ? 1 : 0
         ZStack {
             Circle().stroke(base, lineWidth: 8 * unit).frame(width: 72 * unit, height: 72 * unit)
             if !future, let activity, activity > 0 {
-                Circle().trim(from: 0, to: min(1, activity))
+                Circle().trim(from: 0, to: min(1, activity) * grow)
                     .stroke(pine, style: StrokeStyle(lineWidth: 8 * unit, lineCap: .round))
                     .rotationEffect(.degrees(-90)).frame(width: 72 * unit, height: 72 * unit)
-                if activity > 1 {
+                if activity > 1 && grow > 0 {
                     // Past the goal the ring keeps going over itself (up to a second
                     // lap). The leading tip gets a thin cut in the card colour so the
                     // second lap reads as lying on top of the first.
@@ -60,15 +69,78 @@ struct PineDayGlyph: View {
                 if !future, halves[index] > 0 {
                     // Left half fills bottom→top, right half top→bottom; butt caps so
                     // two complete halves meet as one seamless circle.
-                    Circle().trim(from: 0.25, to: 0.25 + 0.5 * min(1, halves[index]))
+                    Circle().trim(from: 0.25, to: 0.25 + 0.5 * min(1, halves[index]) * grow)
                         .stroke(pine, style: StrokeStyle(lineWidth: 7 * unit, lineCap: .butt))
                         .rotationEffect(.degrees(index == 0 ? 0 : 180)).frame(width: 42 * unit, height: 42 * unit)
                 }
             }
             Circle().fill(!future && posture ? pine : base).frame(width: 18 * unit, height: 18 * unit)
+                .scaleEffect(!future && posture ? 0.3 + 0.7 * grow : 1)
         }
         .frame(width: size, height: size)
+        // New data (a sync, a finished set) sweeps instead of jumping.
+        .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: activity)
+        .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: halves)
+        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.6), value: posture)
+        .onAppear {
+            guard animated, !shown, !reduceMotion else { return }
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.85).delay(delay)) { shown = true }
+        }
         .accessibilityHidden(true)
+    }
+}
+
+/// Celebration haptics: a short "da — da-da" for one goal, a longer roll ending
+/// in a success tap for the big moments. No sound.
+@MainActor enum PineHaptics {
+    static func celebrate(big: Bool) {
+        let tap = UIImpactFeedbackGenerator(style: big ? .heavy : .medium)
+        tap.prepare()
+        let beats: [Double] = big ? [0, 0.16, 0.26, 0.48, 0.58, 0.68] : [0, 0.2, 0.3]
+        for (index, time) in beats.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + time) { tap.impactOccurred(intensity: index == 0 ? 1 : 0.75) }
+        }
+        if big { DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { UINotificationFeedbackGenerator().notificationOccurred(.success) } }
+    }
+}
+
+/// Sparks bursting out from the centre once, in pine and gold, then gone.
+struct PineSparkBurst: View {
+    var radius: CGFloat = 90
+    var count = 28
+    var duration: Double = 0.9
+    @State private var start = Date()
+    var body: some View {
+        TimelineView(.animation) { context in
+            let t = context.date.timeIntervalSince(start) / duration
+            Canvas { canvas, size in
+                guard t < 1 else { return }
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                let ease = 1 - pow(1 - t, 3)
+                for i in 0..<count {
+                    // Fixed pseudo-random spread so every burst looks the same.
+                    let jitter = Double((i * 7919) % 97) / 97
+                    let angle = Double(i) / Double(count) * 2 * .pi + jitter * 0.35
+                    let distance = radius * ease * (0.55 + 0.45 * jitter)
+                    let dot = (i % 3 == 0 ? 2.5 : 3.5) * (1 - 0.6 * t)
+                    let point = CGPoint(x: center.x + CGFloat(cos(angle) * distance), y: center.y + CGFloat(sin(angle) * distance))
+                    let rect = CGRect(x: point.x - dot, y: point.y - dot, width: dot * 2, height: dot * 2)
+                    canvas.fill(Path(ellipseIn: rect), with: .color((i % 2 == 0 ? pineGold : pine).opacity(1 - t)))
+                }
+            }
+        }
+        .allowsHitTesting(false).accessibilityHidden(true)
+        .onAppear { start = Date() }
+    }
+}
+
+extension View {
+    /// iOS 18 zoom transitions from a row into its detail; plain push before.
+    @ViewBuilder func pineZoomSource(_ id: String, in space: Namespace.ID) -> some View {
+        if #available(iOS 18.0, *) { matchedTransitionSource(id: id, in: space) } else { self }
+    }
+    @ViewBuilder func pineZoomDestination(_ id: String, in space: Namespace.ID) -> some View {
+        if #available(iOS 18.0, *) { navigationTransition(.zoom(sourceID: id, in: space)) } else { self }
     }
 }
 
@@ -366,4 +438,82 @@ struct PineSectionHeader<Accessory: View>: View {
 }
 extension PineSectionHeader where Accessory == EmptyView {
     init(title: String) { self.init(title: title) { EmptyView() } }
+}
+
+/// One moment worth celebrating today; each kind plays at most once a day.
+struct PineCelebration: Identifiable, Equatable {
+    enum Kind: String { case activity, strength, posture, all }
+    let id = UUID()
+    let kind: Kind
+    let activity: Double?
+    let halves: [Double]
+    let posture: Bool
+    var big: Bool { kind == .all }
+    var title: String {
+        switch kind {
+        case .activity: return "活动目标达成"
+        case .strength: return "今天的力量练完了"
+        case .posture: return "体态练习完成"
+        case .all: return "今天三项全满"
+        }
+    }
+}
+
+/// A goal closing: the glyph spins once while sparks burst, with a haptic
+/// rhythm. One goal is a toast at the top; all three take the whole screen.
+struct PineCelebrationView: View {
+    let event: PineCelebration
+    let onDone: () -> Void
+    @PineReducedMotion private var reduceMotion
+    @State private var spin = 0.0
+    @State private var appear = false
+    @State private var finished = false
+    var body: some View {
+        Group {
+            if event.big {
+                ZStack {
+                    Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
+                    VStack(spacing: 14) {
+                        ZStack {
+                            if !reduceMotion { PineSparkBurst(radius: 150, count: 40, duration: 1.2) }
+                            PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 170)
+                                .rotationEffect(.degrees(spin)).scaleEffect(appear ? 1 : 0.6)
+                        }.frame(width: 320, height: 320)
+                        Text(event.title).font(.title.weight(.bold))
+                        Text("活动 · 力量 · 体态").font(.subheadline.weight(.semibold)).foregroundStyle(pineGold)
+                    }
+                }.opacity(appear ? 1 : 0)
+            } else {
+                HStack(spacing: 12) {
+                    ZStack {
+                        if !reduceMotion { PineSparkBurst(radius: 30, count: 16, duration: 0.8).frame(width: 76, height: 76) }
+                        PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 34).rotationEffect(.degrees(spin))
+                    }.frame(width: 36, height: 36)
+                    Text(event.title).font(.headline)
+                    Image(systemName: "sparkles").foregroundStyle(pineGold)
+                }
+                .padding(.horizontal, 18).padding(.vertical, 12)
+                .background(.regularMaterial, in: Capsule())
+                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+                .padding(.top, 6)
+                .offset(y: appear ? 0 : -140)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { finish() }
+        .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("点按关闭")
+        .task {
+            PineHaptics.celebrate(big: event.big)
+            withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.5, dampingFraction: 0.72)) { appear = true }
+            if !reduceMotion { withAnimation(.spring(response: 1.1, dampingFraction: 0.82)) { spin = 360 } }
+            try? await Task.sleep(for: .seconds(event.big ? 2.8 : 2.2))
+            finish()
+        }
+    }
+    private func finish() {
+        guard !finished else { return }
+        finished = true
+        withAnimation(.easeOut(duration: 0.25)) { appear = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) { onDone() }
+    }
 }
