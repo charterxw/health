@@ -8,6 +8,7 @@ struct NativeHistoryView: View {
     @State private var kind = "all"
     @State private var month = ""
     @State private var limit = 30
+    @Namespace private var zoom
     @State private var archive: JSONValue = .null
     @State private var failed = false
     @State private var rows: [NativeTimelineItem] = []
@@ -61,7 +62,9 @@ struct NativeHistoryView: View {
                     let items = grouped[date] ?? []
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, row in
                         if index > 0 { Divider() }
-                        NavigationLink { if row.source == "app" { NativeReportView(id: row.id) } else { NativeArchivedDetail(item: row) } } label: { NativeRecordRow(item: row) }.buttonStyle(.plain)
+                        NavigationLink {
+                            if row.source == "app" { NativeReportView(id: row.id).pineZoomDestination(row.id, in: zoom) } else { NativeArchivedDetail(item: row) }
+                        } label: { NativeRecordRow(item: row).pineZoomSource(row.id, in: zoom) }.buttonStyle(.plain)
                     }
                 }.pineCard()
             }
@@ -432,6 +435,9 @@ func physiologyLabel(_ status: String) -> String {
 }
 struct NativeHeartChart: View {
     let rows: [JSONValue]
+    /// The line draws in from the left the first time it is shown.
+    @State private var reveal: CGFloat = 0
+    @PineReducedMotion private var reduceMotion
     var body: some View {
         let segments = heartSegments(rows)
         Chart(Array(segments.enumerated()), id: \.offset) { _, point in
@@ -439,6 +445,8 @@ struct NativeHeartChart: View {
                 LineMark(x: .value("时间", date), y: .value("心率", bpm), series: .value("片段", point["segment"].integer)).foregroundStyle(.pink).symbol(.circle)
             }
         }.chartYScale(domain: .automatic(includesZero: false)).frame(height: 170)
+            .mask(alignment: .leading) { GeometryReader { proxy in Rectangle().frame(width: proxy.size.width * (reduceMotion ? 1 : reveal)) } }
+            .onAppear { guard reveal == 0 else { return }; withAnimation(.easeOut(duration: 1.0)) { reveal = 1 } }
     }
     private func heartSegments(_ rows: [JSONValue]) -> [JSONValue] {
         var segment = 0; var points: [JSONValue] = []

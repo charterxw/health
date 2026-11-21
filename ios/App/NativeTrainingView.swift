@@ -47,6 +47,8 @@ struct NativeTrainingView: View {
     @State private var modeChoice: TrainingMode?
     @State private var dayChoice: Int?
     @State private var expanded: Set<String> = []
+    @Namespace private var stripSpace
+    @PineReducedMotion private var reduceMotion
     private var plan: JSONValue { store.home["plan"] }
     private var isRound: Bool { plan["version"].integer == 2 }
     var body: some View {
@@ -154,19 +156,23 @@ struct NativeTrainingView: View {
                     let state: String = done ? "，已完成" : "，\(day["done"].integer)/\(day["target"].integer) 组"
                     let spoken: String = day["letter"].text + " " + focusTitle(day) + state + (index == currentIndex ? "，下一次" : "")
                     Button {
-                        withAnimation(.easeOut(duration: 0.2)) { dayChoice = index == currentIndex ? nil : index; modeChoice = nil }
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.82)) { dayChoice = index == currentIndex ? nil : index; modeChoice = nil }
                     } label: {
                         VStack(spacing: 4) {
                             ZStack {
                                 Circle().stroke(pineTrack, lineWidth: 3)
                                 Circle().trim(from: 0, to: fraction).stroke(pine, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90))
+                                    .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
                                 if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine) }
                                 else { Text(day["letter"].text).font(.subheadline.weight(.bold)).foregroundStyle(index == currentIndex ? pine : Color.primary) }
                             }.frame(width: 34, height: 34)
                             Text(planLabel(day["short"].text).prefix(2)).font(.caption2).foregroundStyle(selected ? pine : Color.secondary)
                         }
                         .frame(maxWidth: .infinity, minHeight: 64)
-                        .background(selected ? pineTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background {
+                            // One highlight slides between days instead of jumping.
+                            if selected { RoundedRectangle(cornerRadius: 12, style: .continuous).fill(pineTint).matchedGeometryEffect(id: "day", in: stripSpace) }
+                        }
                         .contentShape(Rectangle())
                     }.buttonStyle(PinePressStyle(scale: 0.96))
                         .accessibilityLabel(spoken)
@@ -174,6 +180,7 @@ struct NativeTrainingView: View {
                 }
             }
         }.padding(12).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .sensoryFeedback(.selection, trigger: dayIndex)
     }
 
     /// The selected day: where to train, what's in each part, one clear start.
@@ -199,7 +206,7 @@ struct NativeTrainingView: View {
                         }
                     }.frame(minHeight: 44)
                 } else {
-                    Picker("训练方式", selection: Binding(get: { current }, set: { modeChoice = $0; storedMode = $0.rawValue })) {
+                    Picker("训练方式", selection: Binding(get: { current }, set: { value in withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86)) { modeChoice = value }; storedMode = value.rawValue })) {
                         ForEach(TrainingMode.allCases) { Text($0.label).tag($0) }
                     }.pickerStyle(.segmented).accessibilityIdentifier("training-mode")
                     if current == .split {
@@ -214,6 +221,7 @@ struct NativeTrainingView: View {
                     }
                 }
             }.pineCard()
+            .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86), value: dayIndex)
         }
     }
     /// All five days done: the next round starts when the lifter says so.
@@ -256,7 +264,11 @@ struct NativeTrainingView: View {
                         if !open { Text(names.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary).lineLimit(3).multilineTextAlignment(.leading) }
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityHint(open ? "收起动作详情" : "展开每个动作的组数和上次成绩")
-                if open { ForEach(Array(t["exercises"].array.enumerated()), id: \.offset) { _, item in plannedLine(item) } }
+                if open {
+                    ForEach(Array(t["exercises"].array.enumerated()), id: \.offset) { _, item in
+                        plannedLine(item).transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
                 Button { store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) } label: {
                     Label(left < total ? "继续 · 还剩 \(left) 组" : "开始 · \(total) 组", systemImage: "play.fill")
                         .font(primary ? .headline : .subheadline.weight(.semibold)).foregroundStyle(primary ? .white : pine)

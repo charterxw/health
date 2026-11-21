@@ -15,6 +15,10 @@ struct NativeWorkoutView: View {
     @State private var showExercise = false
     @State private var lastEdited: String?
     @State private var completedTick = 0
+    /// "Better than last time" after a set, shown for a moment.
+    @State private var cheer: String?
+    @State private var cheerTick = 0
+    @State private var extendTick = 0
     private var record: NativeRecord? { store.active }
     private var session: JSONValue { record?.session ?? .null }
     private var movements: [JSONValue] { session["exercises"].array }
@@ -31,6 +35,20 @@ struct NativeWorkoutView: View {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         ScrollView { content(now: context.date).padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24) }
                             .safeAreaInset(edge: .bottom) { bottomBar(now: context.date) }
+                            .overlay(alignment: .top) {
+                                if let cheer {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "sparkles").foregroundStyle(pineGold)
+                                        Text(cheer).font(.subheadline.weight(.semibold))
+                                    }
+                                    .padding(.horizontal, 16).padding(.vertical, 10)
+                                    .background(.regularMaterial, in: Capsule())
+                                    .shadow(color: .black.opacity(0.1), radius: 10, y: 3)
+                                    .padding(.top, 6)
+                                    .transition(.move(edge: .top).combined(with: .opacity))
+                                    .accessibilityAddTraits(.updatesFrequently)
+                                }
+                            }
                     }
                 } else {
                     VStack(spacing: 16) { PineEmpty(title: "没有进行中的训练", symbol: "checkmark.circle"); Button("返回") { store.workoutPresented = false } }
@@ -44,6 +62,12 @@ struct NativeWorkoutView: View {
                 ToolbarItem(placement: .topBarTrailing) { Button("结束") { finish = true }.fontWeight(.semibold).disabled(record == nil) }
             }
             .sensoryFeedback(.success, trigger: completedTick)
+            .sensoryFeedback(.impact(weight: .light), trigger: extendTick)
+            .task(id: cheerTick) {
+                guard cheer != nil else { return }
+                try? await Task.sleep(for: .seconds(2.4))
+                withAnimation(.easeOut(duration: 0.25)) { cheer = nil }
+            }
             .alert("完成这场训练？", isPresented: $finish) {
                 Button("继续记录", role: .cancel) { }
                 Button("完成并保存") { if let id = record?.id { store.finish(id) } }
@@ -85,10 +109,16 @@ struct NativeWorkoutView: View {
                 Button("添加动作", systemImage: "plus") { adding = true }.buttonStyle(.bordered).frame(maxWidth: .infinity)
             } else {
                 movementHeader
-                if let rest = restRemaining(now) { restPanel(remaining: rest).padding(.top, 20) }
-                else { setPanel.padding(.top, 18) }
+                // The finished set gives way to the rest clock, and the next set
+                // rises in from below.
+                if let rest = restRemaining(now) { restPanel(remaining: rest).padding(.top, 20).transition(.opacity.combined(with: .scale(scale: 0.97))) }
+                else {
+                    setPanel.padding(.top, 18).id("set-\(mi)-\(current ?? -1)")
+                        .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                }
             }
         }
+        .animation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.86), value: "\(mi)-\(current ?? -1)-\(restRemaining(now) != nil)")
     }
     private func restRemaining(_ now: Date) -> TimeInterval? {
         guard !paused, let until = NativeDate.parse(session["rest_until"]) else { return nil }
@@ -235,7 +265,14 @@ struct NativeWorkoutView: View {
                     Button("+30 秒") { extendRest() }.font(.subheadline.weight(.semibold)).padding(.horizontal, 14).frame(height: 36)
                         .background(Color(uiColor: .tertiarySystemFill), in: Capsule()).buttonStyle(.plain)
                 }
-            }.frame(width: 240, height: 240).accessibilityElement(children: .combine).accessibilityLabel("组间休息，剩余 " + WorkoutSnapshot.clock(ceil(remaining)))
+            }.frame(width: 240, height: 240)
+                .keyframeAnimator(initialValue: 1.0, trigger: extendTick) { ring, scale in ring.scaleEffect(scale) } keyframes: { _ in
+                    KeyframeTrack {
+                        SpringKeyframe(reduceMotion ? 1.0 : 1.06, duration: 0.14)
+                        SpringKeyframe(1.0, duration: 0.35)
+                    }
+                }
+                .accessibilityElement(children: .combine).accessibilityLabel("组间休息，剩余 " + WorkoutSnapshot.clock(ceil(remaining)))
             if let ci = current {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
@@ -250,6 +287,7 @@ struct NativeWorkoutView: View {
         }.frame(maxWidth: .infinity)
     }
     private func extendRest() {
+        extendTick += 1
         mutate { s in
             guard let until = NativeDate.parse(s["rest_until"]) else { return }
             s["rest_until"] = NativeDate.stamp(min(until.addingTimeInterval(30), Date().addingTimeInterval(600)))
@@ -284,8 +322,38 @@ struct NativeWorkoutView: View {
         }
     }
     private func complete(_ ci: Int) {
+        let better = improvement(ci)
         mutate { s in s = try NativeTraining.toggle(s, movement: mi, set: ci) }
-        if !(session["exercises"][mi]["sets"][ci]["completed_at"].isNull) { completedTick += 1 }
+        if !(session["exercises"][mi]["sets"][ci]["completed_at"].isNull) {
+            completedTick += 1
+            if let better {
+                withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.7)) { cheer = better }
+                cheerTick += 1
+            }
+        }
+    }
+    /// The same work set last time, and what this one improved on it.
+    private func improvement(_ ci: Int) -> String? {
+        guard sets.indices.contains(ci), !sets[ci]["warmup"].flag, !NativeTraining.mobility(movement) else { return nil }
+        let hints = store.previousSets(exercise: movement["exercise_id"].text, mode: movement["load_mode"].text,
+            before: session["started_at"], timezone: session["timezone"].text, current: session.id).filter { !$0["warmup"].flag }
+        let workIndex = sets.prefix(ci).filter { !$0["warmup"].flag }.count
+        guard hints.indices.contains(workIndex) else { return nil }
+        let row = sets[ci], prior = hints[workIndex]
+        if NativeTraining.timed(movement) {
+            let delta = row["duration_seconds"].integer - prior["duration_seconds"].integer
+            return delta > 0 ? "比上次多 \(delta) 秒" : nil
+        }
+        let reps = row["reps"].integer - prior["reps"].integer
+        if movement["load_mode"].text == "bodyweight" { return reps > 0 ? "比上次多 \(reps) 次" : nil }
+        guard let weight = row["weight"].number, let before = NativeTraining.convert(prior["weight"], from: prior["unit"].text, to: movement["unit"].text).number else { return nil }
+        let unit = unitLabel(movement)
+        if movement["load_mode"].text == "assistance" {
+            if weight < before - 0.01 { return "辅助比上次少 " + displayNumber(.number(before - weight)) + " " + unit }
+        } else if weight > before + 0.01 {
+            return "比上次重 " + displayNumber(.number(weight - before)) + " " + unit
+        }
+        return abs(weight - before) < 0.01 && reps > 0 ? "比上次多 \(reps) 次" : nil
     }
     private var workoutOptions: some View {
         NavigationStack {

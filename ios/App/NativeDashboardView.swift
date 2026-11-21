@@ -15,6 +15,8 @@ struct NativeDashboardView: View {
     @State private var showingWeight = false
     @State private var showingStrength = false
     @State private var weekDetail: WeekDetail?
+    @State private var barsShown = false
+    @Namespace private var weekSpace
     /// Visible height between the status bar and the tab bar.
     @State private var viewport: CGFloat = 0
     private var home: JSONValue { store.home }
@@ -191,7 +193,7 @@ struct NativeDashboardView: View {
         return HStack(spacing: 10) {
             Button { showingDay = true } label: {
                 HStack(spacing: 12) {
-                    PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 80)
+                    PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 80, animated: true)
                     VStack(spacing: 0) {
                         goalLine("活动 · 外圈", activityValue, done: (fraction ?? 0) >= 1)
                         Divider()
@@ -215,6 +217,7 @@ struct NativeDashboardView: View {
             Text(label).font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 3) {
                 Text(value).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(done ? pine : Color.primary)
+                    .contentTransition(reduceMotion ? .identity : .numericText()).animation(reduceMotion ? nil : .snappy, value: value)
                 if done { Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
             }.lineLimit(1).minimumScaleFactor(0.8)
         }.frame(maxWidth: .infinity, minHeight: 46, maxHeight: 58, alignment: .leading)
@@ -238,11 +241,12 @@ struct NativeDashboardView: View {
                         let steps = row.steps ?? 0
                         RoundedRectangle(cornerRadius: 2, style: .continuous)
                             .fill(steps >= target ? pine : pine.opacity(0.35))
-                            .frame(width: 8, height: row.steps == nil ? 0 : max(2, min(top, CGFloat(steps / target) * goalHeight)))
+                            .frame(width: 8, height: row.steps == nil || !(barsShown || reduceMotion) ? 0 : max(2, min(top, CGFloat(steps / target) * goalHeight)))
                             .frame(maxWidth: .infinity)
                     }
                 }
             }.frame(height: top, alignment: .bottom)
+            .onAppear { guard !barsShown else { return }; withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.35)) { barsShown = true } }
             HStack(spacing: 0) {
                 ForEach(rows, id: \.date) { row in
                     Circle().fill(row.date == day["date"].text ? pine : .clear).frame(width: 3, height: 3).frame(maxWidth: .infinity)
@@ -290,14 +294,16 @@ struct NativeDashboardView: View {
                     let selected = date == day["date"].text, future = date > home["date"].text
                     Button {
                         guard date != day["date"].text else { return }
-                        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { selectedDay = date }
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.82)) { selectedDay = date }
                     } label: {
                         VStack(spacing: 4) {
                             Text(["一","二","三","四","五","六","日"][min(index, 6)]).font(.caption.weight(selected ? .bold : .regular)).foregroundStyle(selected ? pine : Color.secondary)
-                            PineDayGlyph(activity: activityFraction(row), halves: halves(row, list), posture: postureDone(row, list), future: future, size: 36)
+                            PineDayGlyph(activity: activityFraction(row), halves: halves(row, list), posture: postureDone(row, list), future: future, size: 36, animated: true, delay: 0.15 + 0.05 * Double(index))
                             Text(NativeDays.focus(dayKey: date, sessions: list, serverTag: row["short"].text)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         }.frame(maxWidth: .infinity, minHeight: 72).padding(.vertical, 2)
-                            .background(selected ? pineTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .background {
+                                if selected { RoundedRectangle(cornerRadius: 12, style: .continuous).fill(pineTint).matchedGeometryEffect(id: "day", in: weekSpace) }
+                            }
                             .contentShape(Rectangle())
                     }.buttonStyle(PinePressStyle(scale: 0.97))
                         .accessibilityLabel(weekAccessibility(row, list))
@@ -328,6 +334,7 @@ struct NativeDashboardView: View {
                 Text(title).font(.footnote).foregroundStyle(.secondary)
                 Spacer(minLength: 4)
                 Text(value).font(.headline).monospacedDigit().foregroundStyle(tint ? pine : Color.primary)
+                    .contentTransition(reduceMotion ? .identity : .numericText()).animation(reduceMotion ? nil : .snappy, value: value)
                 if !suffix.isEmpty { Text(suffix).font(.caption).foregroundStyle(.secondary).monospacedDigit() }
                 Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
                     .rotationEffect(.degrees(open ? 180 : 0)).padding(.leading, 2)
