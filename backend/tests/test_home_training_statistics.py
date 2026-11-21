@@ -131,6 +131,21 @@ class HomeTrainingStatistics(unittest.TestCase):
         self.assertEqual([tuple(r) for r in rounds],[(1,1),(2,0)])
         self.assertEqual(result['id'],2)
 
+    def test_an_untouched_round_follows_template_changes(self):
+        templates=self.plan_templates()
+        h.plan_state([],templates)
+        changed=copy.deepcopy(templates)
+        changed['pine-a-home']['name']='A · 家庭｜新名字'
+        changed['pine-a-home']['exercises'][0]['exercise_id']='flat-dumbbell-bench-press'
+        result=h.plan_state([],changed)
+        self.assertEqual(result['schedule'][0]['slots'][1]['name'],'A · 家庭｜新名字')
+        self.assertEqual(result['schedule'][0]['slots'][1]['exercises'][0]['exercise_id'],'flat-dumbbell-bench-press')
+        # Once a session counts toward the round, its targets stay as they were.
+        done=h.plan_state([self.plan_session('a-company',changed['pine-a-company'],9)],changed)
+        self.assertEqual(done['done'],9)
+        again=h.plan_state([self.plan_session('a-company',changed['pine-a-company'],9)],templates)
+        self.assertEqual(again['schedule'][0]['slots'][1]['name'],'A · 家庭｜新名字')
+
     def test_week_rows_follow_the_round_and_saturday_is_optional(self):
         templates=self.plan_templates(store=True)
         with patch.object(h,'now',lambda:datetime(2026,11,16,9,tzinfo=h.TZ)):

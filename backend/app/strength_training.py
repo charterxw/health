@@ -133,6 +133,12 @@ def encode(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+# Revision of pine_program.json (tools/pine_program.py REVISION). Seeding never
+# overwrites a stored template, so a new revision replaces the pine-* templates
+# once; edits made in the app after that are kept.
+PINE_REVISION = "2026-11-22"
+
+
 def seed_catalog(conn):
     for exercise in EXERCISES:
         conn.execute("INSERT OR IGNORE INTO strength_exercises VALUES (?, ?)",
@@ -140,6 +146,17 @@ def seed_catalog(conn):
     for template in TEMPLATES:
         conn.execute("INSERT OR IGNORE INTO strength_templates VALUES (?, ?, 1)",
                      (template.id, encode(template.model_dump(mode="json"))))
+    conn.execute("CREATE TABLE IF NOT EXISTS catalog_revisions (name TEXT PRIMARY KEY, revision TEXT NOT NULL)")
+    row = conn.execute("SELECT revision FROM catalog_revisions WHERE name='pine'").fetchone()
+    if not row or row[0] != PINE_REVISION:
+        for template in TEMPLATES:
+            if template.id.startswith("pine-"):
+                conn.execute("INSERT INTO strength_templates VALUES (?, ?, 1) ON CONFLICT(id) DO UPDATE SET "
+                             "document_json=excluded.document_json, version=strength_templates.version+1 "
+                             "WHERE strength_templates.document_json != excluded.document_json",
+                             (template.id, encode(template.model_dump(mode="json"))))
+        conn.execute("INSERT INTO catalog_revisions VALUES ('pine', ?) ON CONFLICT(name) DO UPDATE SET revision=excluded.revision",
+                     (PINE_REVISION,))
 
 
 def catalog():

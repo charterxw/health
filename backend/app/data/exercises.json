@@ -1468,5 +1468,37 @@
     ],
     "equipment_evidence": "2026-11-20 用户确认的公司和家庭器械",
     "weight_note": "记录单侧配重片重量。"
+  },
+  {
+    "id": "flat-dumbbell-bench-press",
+    "name": "平板哑铃卧推",
+    "english_name": "flat dumbbell bench press",
+    "aliases": [
+      "哑铃平板卧推"
+    ],
+    "equipment": "哑铃、训练凳",
+    "load_mode": "external",
+    "tracking": "reps",
+    "training_type": "strength",
+    "muscles": [
+      "胸部"
+    ],
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "triceps",
+      "deltoids"
+    ],
+    "description": "平板凳上的哑铃卧推，练整个胸部；在家只用哑铃和训练凳就能稳定加重。",
+    "instructions": [
+      "训练凳放平，坐在凳头，哑铃立在大腿上；躺下时顺势把哑铃带到胸口两侧。",
+      "双脚踩稳地面，肩胛微收贴住凳面，把哑铃推到胸口上方，掌心朝脚的方向。",
+      "缓慢下放到哑铃接近胸口两侧，上臂和身体约成 45–60 度。",
+      "推回起点，哑铃在上方略靠拢但不相碰。",
+      "做完先把哑铃放回大腿，再坐起来。"
+    ],
+    "equipment_evidence": "2026-11-22 用户确认家里有哑铃和可调训练凳",
+    "weight_note": "每只哑铃重量。"
   }
 ]

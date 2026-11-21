@@ -286,6 +286,14 @@ def plan_state(sessions, templates):
             document = {'version': 2, 'templates': {x: {'name': templates[x]['name'], 'exercises': _work(templates[x])} for x in PLAN_IDS}}
             conn.execute('INSERT INTO home_rounds(created_at,document) VALUES (?,?)', (now().isoformat(), json.dumps(document, ensure_ascii=False)))
             current = conn.execute('SELECT * FROM home_rounds ORDER BY id DESC LIMIT 1').fetchone()
+        # A round nobody has trained in yet follows template changes, so a plan
+        # revision applies from the round that is about to start.
+        fresh = {x: {'name': templates[x]['name'], 'exercises': _work(templates[x])} for x in PLAN_IDS}
+        stored = json.loads(current['document'])
+        if stored.get('templates') != fresh and not conn.execute('SELECT 1 FROM home_plan_allocations WHERE round_id=? LIMIT 1', (current['id'],)).fetchone():
+            stored['templates'] = fresh
+            conn.execute('UPDATE home_rounds SET document=? WHERE id=?', (json.dumps(stored, ensure_ascii=False), current['id']))
+            current = conn.execute('SELECT * FROM home_rounds WHERE id=?', (current['id'],)).fetchone()
         snapshot_ = json.loads(current['document'])['templates']
         started = parse(current['created_at'])
         linked = {r[0] for r in conn.execute('SELECT session_id FROM home_plan_allocations UNION SELECT session_id FROM home_plan_ignored')}
