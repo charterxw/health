@@ -106,8 +106,10 @@ struct NativeDashboardView: View {
         NativeDate.label(date, format: NativeDate.day(date, timezone: timezone) == home["date"].text ? "HH:mm" : "M/d HH:mm", timezone: timezone)
     }
     private var feelings: String {
-        let sore = home["feedback"]["soreness"].array.map(\.text)
-        return [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text, sore.isEmpty ? "" : sore.count <= 2 ? sore.joined(separator: "、") + "酸" : "\(sore.count) 处酸痛"].filter { !$0.isEmpty }.joined(separator: " · ")
+        let sore: [String] = home["feedback"]["soreness"].array.map(\.text)
+        var parts: [String] = [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text]
+        if sore.count > 2 { parts.append("\(sore.count) 处酸痛") } else if !sore.isEmpty { parts.append(sore.joined(separator: "、") + "酸") }
+        return parts.filter { !$0.isEmpty }.joined(separator: " · ")
     }
     private var syncRow: some View {
         HStack(spacing: 8) {

@@ -142,7 +142,8 @@ struct NativeExerciseDetail: View {
                     NativeLiftChart(points: points, unit: chartUnit)
                     let records = points.filter(\.record)
                     if let last = records.last {
-                        Label("最近一次新纪录：" + dayTitle(last.day, format: "M月d日") + " · " + displayNumber(.number(last.value)) + " " + chartUnit + "（共 \(records.count) 次）", systemImage: "medal.fill")
+                        let when = dayTitle(last.day, format: "M月d日"), value = displayNumber(.number(last.value))
+                        Label("最近一次新纪录：\(when) · \(value) \(chartUnit)（共 \(records.count) 次）", systemImage: "medal.fill")
                             .font(.footnote).foregroundStyle(pineGold)
                     }
                     if metric == "e1rm" { Text("估算 1RM 按 Epley 公式：重量 × (1 + 次数 ÷ 30)，次数超过 20 按 20 计。只用于看趋势，不代表真的去试极限。").font(.caption).foregroundStyle(.secondary) }

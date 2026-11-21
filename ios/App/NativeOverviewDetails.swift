@@ -89,7 +89,9 @@ struct NativeGoalsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     if !(1...3000).contains(daily) { Text("每日活动需要在 1 到 3,000 千卡之间。").foregroundStyle(.red) }
                     if !(1...21000).contains(weekly) { Text("每周活动需要在 1 到 21,000 千卡之间。").foregroundStyle(.red) }
-                    Text("生效日期：" + (store.home["next_effective"].text.isEmpty ? "下周一" : dayTitle(store.home["next_effective"].text, format: "M月d日 EEEE")) + "。本周仍按原目标计算。")
+                    let effective = store.home["next_effective"].text
+                    let when = effective.isEmpty ? "下周一" : dayTitle(effective, format: "M月d日 EEEE")
+                    Text("生效日期：\(when)。本周仍按原目标计算。")
                 }
             }
             if let error { Section { Text(error).foregroundStyle(.red) } }
@@ -309,7 +311,9 @@ struct NativeRecoveryContent: View {
                     PineRow(label: "睡眠", value: recoveryPosition(score["components"]["sleep"]) + " · 目标 " + displayNumber(score["sleep_need"], digits: 0) + " 小时")
                     PineRow(label: "近 7 晚平均欠睡", value: displayNumber(score["sleep_debt"]) + " 小时")
                 }
-                PineRow(label: "今天感受", value: [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text, home["feedback"]["stress"].text.isEmpty ? "" : "压力" + home["feedback"]["stress"].text].filter { !$0.isEmpty }.joined(separator: " · "))
+                let stress = home["feedback"]["stress"].text
+                let felt: [String] = [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text, stress.isEmpty ? "" : "压力" + stress]
+                PineRow(label: "今天感受", value: felt.filter { !$0.isEmpty }.joined(separator: " · "))
                 if !home["feedback"]["soreness"].array.isEmpty { PineRow(label: "酸痛部位", value: home["feedback"]["soreness"].array.map(\.text).joined(separator: "、")) }
             }.pineCard()
         }.navigationTitle("恢复指数").navigationBarTitleDisplayMode(.inline)

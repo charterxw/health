@@ -44,9 +44,9 @@ enum NativeBodySync {
     private static let migratedKey = "pine.body.migrated"
     private static let dirtyEntriesKey = "pine.body.dirty.entries", deletedEntriesKey = "pine.body.deleted.entries", dirtyProteinKey = "pine.body.dirty.protein"
     @MainActor private static var running = false
-    static func markEntry(_ id: String) { change(dirtyEntriesKey) { $0.insert(id) } }
-    static func markDeleted(_ id: String) { change(deletedEntriesKey) { $0.insert(id) }; change(dirtyEntriesKey) { $0.remove(id) } }
-    static func markProtein(_ date: String) { change(dirtyProteinKey) { $0.insert(date) } }
+    static func markEntry(_ id: String) { change(dirtyEntriesKey) { _ = $0.insert(id) } }
+    static func markDeleted(_ id: String) { change(deletedEntriesKey) { _ = $0.insert(id) }; change(dirtyEntriesKey) { _ = $0.remove(id) } }
+    static func markProtein(_ date: String) { change(dirtyProteinKey) { _ = $0.insert(date) } }
     private static func ids(_ key: String) -> Set<String> { Set(UserDefaults.standard.stringArray(forKey: key) ?? []) }
     private static func change(_ key: String, _ edit: (inout Set<String>) -> Void) {
         var value = ids(key); edit(&value); UserDefaults.standard.set(value.sorted(), forKey: key)
@@ -64,19 +64,19 @@ enum NativeBodySync {
         }
         do {
             for id in ids(deletedEntriesKey) {
-                _ = try await api.request("/body/measurements/" + id, method: "DELETE"); change(deletedEntriesKey) { $0.remove(id) }
+                _ = try await api.request("/body/measurements/" + id, method: "DELETE"); change(deletedEntriesKey) { _ = $0.remove(id) }
             }
             let entries = NativeMeasurements.entries()
             for id in ids(dirtyEntriesKey) {
                 if let entry = entries.first(where: { $0.id.uuidString == id }) {
                     _ = try await api.request("/body/measurements/" + id, method: "PUT", body: ["kind": .string(entry.kind), "date": .string(entry.date), "cm": .number(entry.cm)])
                 }
-                change(dirtyEntriesKey) { $0.remove(id) }
+                change(dirtyEntriesKey) { _ = $0.remove(id) }
             }
             let protein = NativeProtein.all()
             for date in ids(dirtyProteinKey) {
                 _ = try await api.request("/body/protein/" + date, method: "PUT", body: ["grams": .number(protein[date] ?? 0)])
-                change(dirtyProteinKey) { $0.remove(date) }
+                change(dirtyProteinKey) { _ = $0.remove(date) }
             }
             let server = try await api.request("/body")
             // An edit made while this ran is pushed next time; keep it on the phone until then.

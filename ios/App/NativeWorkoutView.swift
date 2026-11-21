@@ -188,7 +188,8 @@ struct NativeWorkoutView: View {
                         let rows = item["sets"].array
                         let finished = rows.filter { !$0["completed_at"].isNull }.count
                         Button { store.selectMovement(index); lastEdited = nil } label: {
-                            Label("\(index + 1). " + item["name"].text + " · \(finished)/\(rows.count)",
+                            let name = item["name"].text
+                            Label("\(index + 1). \(name) · \(finished)/\(rows.count)",
                                   systemImage: !rows.isEmpty && finished == rows.count ? "checkmark.circle.fill" : finished > 0 ? "circle.lefthalf.filled" : "circle")
                         }
                     }
