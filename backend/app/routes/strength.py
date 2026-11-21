@@ -32,6 +32,14 @@ def create_exercise(exercise: service.Exercise):
     return mutate(service.create_exercise, exercise)
 
 
+@router.put("/exercises/{exercise_id}/setup-note")
+def save_setup_note(exercise_id: str, request: service.SetupNote):
+    try:
+        return service.save_setup_note(exercise_id, request)
+    except LookupError as error:
+        raise HTTPException(404, str(error)) from error
+
+
 @router.get("/exercises/{exercise_id}/history")
 def exercise_progress(exercise_id: str):
     data = exercise_history.history(exercise_id)

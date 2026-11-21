@@ -87,6 +87,11 @@ def init_db():
                 document_json TEXT NOT NULL,
                 version INTEGER NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS strength_setup_notes (
+                exercise_id TEXT PRIMARY KEY,
+                note TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS strength_sessions (
                 id TEXT PRIMARY KEY,
                 document_json TEXT NOT NULL,

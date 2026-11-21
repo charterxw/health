@@ -287,7 +287,7 @@ struct NativeTrainingView: View {
     /// Today's double-progression step for a planned move.
     private func step(_ item: JSONValue) -> JSONValue {
         let exercise = store.exercises.first { $0.id == item["exercise_id"].text } ?? .null
-        return NativeTraining.nextStep(plan: item, exercise: exercise, history: store.history, timezone: TimeZone.current.identifier)
+        return store.nextStep(plan: item, exercise: exercise)
     }
     /// "该加重了 · 12.5 磅", with a note for dumbbells the lifter may not own yet.
     private func stepText(_ item: JSONValue, _ prescription: JSONValue) -> String {
@@ -300,7 +300,7 @@ struct NativeTrainingView: View {
     private func plannedLine(_ item: JSONValue) -> some View {
         let exercise = store.exercises.first { $0.id == item["exercise_id"].text } ?? .null
         let work = max(0, item["set_count"].integer - item["warmup_count"].integer)
-        let hints = store.previousSets(exercise: item["exercise_id"].text, mode: exercise["load_mode"].text, before: NativeDate.stamp(), timezone: TimeZone.current.identifier, current: "").filter { !$0["warmup"].flag }
+        let hints = store.lastSets(exercise: item["exercise_id"].text, mode: exercise["load_mode"].text).filter { !$0["warmup"].flag }
         let last: String = {
             guard let first = hints.first else { return "" }
             var movement = exercise; movement["unit"] = first["unit"]
@@ -314,7 +314,7 @@ struct NativeTrainingView: View {
                 if NativeTraining.isStepUp(next) {
                     Label(stepText(item, next), systemImage: "arrow.up.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(pine)
                 } else {
-                    let stalled = NativeDays.stallCount(exerciseID: item["exercise_id"].text, loadMode: exercise["load_mode"].text, history: store.history, before: Date())
+                    let stalled = store.stallCount(exerciseID: item["exercise_id"].text, loadMode: exercise["load_mode"].text)
                     if stalled >= 3 {
                         Label("连续 \(stalled) 次没进步 · 先减约 10% 再爬", systemImage: "pause.circle").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     }
@@ -421,7 +421,7 @@ struct NativeTrainingView: View {
     private func exerciseLine(_ plan: JSONValue) -> some View {
         let exercise = store.exercises.first { $0.id == plan["exercise_id"].text } ?? .null
         let mode = exercise["load_mode"].text
-        let hints = store.previousSets(exercise: plan["exercise_id"].text, mode: mode, before: NativeDate.stamp(), timezone: TimeZone.current.identifier, current: "").filter { !$0["warmup"].flag }
+        let hints = store.lastSets(exercise: plan["exercise_id"].text, mode: mode).filter { !$0["warmup"].flag }
         let detail: String = {
             guard let first = hints.first else { return "\(max(0, plan["set_count"].integer - plan["warmup_count"].integer)) 组" }
             var row = first; row["weight"] = NativeTraining.convert(first["weight"], from: first["unit"].text, to: first["unit"].text)

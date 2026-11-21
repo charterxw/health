@@ -6,10 +6,9 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from uuid import uuid4
 
-import jwt
 from fastapi.testclient import TestClient
 
-from app import database, strength_training as strength, workout_data
+from app import database, security, strength_training as strength, workout_data
 from app.main import app
 from app.training_observations import normalized_workouts
 
@@ -20,11 +19,14 @@ class StrengthTests(unittest.TestCase):
         self.old_path = database.DB_PATH
         database.DB_PATH = os.path.join(self.tmp.name, 'test.db')
         database.init_db()
-        self.env = patch.dict(os.environ, {'JWT_SECRET': 'strength-test-secret'})
+        self.env = patch.dict(os.environ, {'JWT_SECRET': 'strength-test-secret-with-32-plus-chars',
+                                           'DASHBOARD_USER': 'test', 'DASHBOARD_PASS': 'test-password'})
         self.env.start()
         # Do not run the production lifespan, scheduler or external integrations.
         self.client = TestClient(app)
-        token = jwt.encode({'sub': 'test', 'exp': datetime.now(timezone.utc) + timedelta(hours=1)}, 'strength-test-secret', algorithm='HS256')
+        # The app uses revocable server-side sessions; issue one for the test account.
+        security.init_security()
+        token, _ = security.issue_session('test')
         self.client.cookies.set('dashboard_session', token)
 
     def tearDown(self):
@@ -72,6 +74,20 @@ class StrengthTests(unittest.TestCase):
         current = self.client.get('/api/strength/catalog').json()['templates'][0]
         self.assertEqual(current['template']['exercises'][0]['set_count'], 5)
         self.assertEqual(current['version'], 2)
+
+    def test_setup_note_is_saved_listed_trimmed_and_cleared(self):
+        self.assertEqual(self.client.get('/api/strength/catalog').json()['setup_notes'], {})
+        saved = self.client.put('/api/strength/exercises/wide-grip-pulldown/setup-note', json={'note': '  座椅第 4 档  '})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()['note'], '座椅第 4 档')
+        self.assertEqual(self.client.get('/api/strength/catalog').json()['setup_notes'], {'wide-grip-pulldown': '座椅第 4 档'})
+        database.init_db()
+        self.assertEqual(self.client.get('/api/strength/catalog').json()['setup_notes'], {'wide-grip-pulldown': '座椅第 4 档'})
+        self.assertEqual(self.client.put('/api/strength/exercises/wide-grip-pulldown/setup-note', json={'note': ''}).status_code, 200)
+        self.assertEqual(self.client.get('/api/strength/catalog').json()['setup_notes'], {})
+        self.assertEqual(self.client.put('/api/strength/exercises/not-an-exercise/setup-note', json={'note': 'x'}).status_code, 404)
+        self.assertEqual(self.client.put('/api/strength/exercises/wide-grip-pulldown/setup-note', json={'note': 'x' * 201}).status_code, 422)
+        self.assertEqual(self.client.put('/api/strength/exercises/wide-grip-pulldown/setup-note', json={'note': 'x', 'extra': 1}).status_code, 422)
 
     def test_session_retry_is_idempotent_and_stale_edit_is_rejected(self):
         doc = self.document()

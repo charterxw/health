@@ -98,6 +98,8 @@ final class NativeStore {
     private(set) var weeklyMuscleCounts: [String: Int] = [:]
     @ObservationIgnored private var recordPositions: [String: Int] = [:]
     @ObservationIgnored private var priorSetCache: [String: [JSONValue]] = [:]
+    @ObservationIgnored private var stepCache: [String: JSONValue] = [:]
+    @ObservationIgnored private var stallCache: [String: Int] = [:]
     @ObservationIgnored private var cacheRevision: UInt64 = 0
     @ObservationIgnored private var checkpointDelay: Task<Void, Never>?
     @ObservationIgnored private var checkpointTask: Task<Void, Never>?
@@ -140,6 +142,7 @@ final class NativeStore {
         if historyChanged {
             history = completed.map(\.session) + importedSessions()
             historyRevision += 1; priorSetCache.removeAll(keepingCapacity: true)
+            stepCache.removeAll(keepingCapacity: true); stallCache.removeAll(keepingCapacity: true)
         }
         if historyChanged || previous.home["date"] != cache.home["date"] {
             var calendar = Calendar.current; calendar.firstWeekday = 2
@@ -161,6 +164,47 @@ final class NativeStore {
         if let value = priorSetCache[key] { return value }
         let value = NativeTraining.previous(history, exercise: exercise, mode: mode, before: NativeDate.parse(before) ?? .now, timezone: timezone, current: current)
         priorSetCache[key] = value; return value
+    }
+    /// The last completed work of a lift, for planning screens. Keyed by the day, not
+    /// the second, so it is computed once per lift until the history changes.
+    func lastSets(exercise: String, mode: String) -> [JSONValue] {
+        _ = historyRevision
+        let zone = TimeZone.current.identifier
+        let key = [exercise, mode, "now", NativeDate.day(Date(), timezone: zone)].joined(separator: "|")
+        if let value = priorSetCache[key] { return value }
+        let value = NativeTraining.previous(history, exercise: exercise, mode: mode, before: .now, timezone: zone)
+        priorSetCache[key] = value; return value
+    }
+    /// Today's double-progression step for a planned move, cached per plan and day.
+    func nextStep(plan: JSONValue, exercise: JSONValue) -> JSONValue {
+        _ = historyRevision
+        let zone = TimeZone.current.identifier
+        let body = (try? plan.data()).map { String(decoding: $0, as: UTF8.self) } ?? plan["exercise_id"].text
+        let key = [exercise.id, exercise["load_mode"].text, NativeDate.day(Date(), timezone: zone), body].joined(separator: "|")
+        if let value = stepCache[key] { return value }
+        let value = NativeTraining.nextStep(plan: plan, exercise: exercise, history: history, timezone: zone)
+        stepCache[key] = value; return value
+    }
+    /// Sessions since a lift's last new best, before `before` (now when nil).
+    func stallCount(exerciseID: String, loadMode: String, before: Date? = nil) -> Int {
+        _ = historyRevision
+        let stamp = before.map { NativeDate.stamp($0).text } ?? "now|" + NativeDate.day(Date(), timezone: TimeZone.current.identifier)
+        let key = [exerciseID, loadMode, stamp].joined(separator: "|")
+        if let value = stallCache[key] { return value }
+        let value = NativeDays.stallCount(exerciseID: exerciseID, loadMode: loadMode, history: history, before: before ?? Date())
+        stallCache[key] = value; return value
+    }
+    /// The lifter's standing note for an exercise (seat setting, grip), from the server catalogue.
+    func setupNote(_ exerciseID: String) -> String { catalog["setup_notes"][exerciseID].text }
+    func saveSetupNote(_ exerciseID: String, note: String) async throws {
+        let text = String(note.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200))
+        let stamp = epoch
+        do { _ = try await api.request("/strength/exercises/" + exerciseID + "/setup-note", method: "PUT", body: ["note": .string(text)]) }
+        catch let error as HealthAPIError where error.status == 404 || error.status == 405 {
+            throw TrainingError.invalid("服务器还不支持动作备注，更新服务器后再试。")
+        }
+        guard stamp == epoch, phase == .ready else { return }
+        var next = cache; next.catalog["setup_notes"][exerciseID] = text.isEmpty ? .null : .string(text); try commit(next)
     }
     var pending: Bool { records.contains { $0.dirty || $0.blocked != nil || $0.alternative != nil } }
 

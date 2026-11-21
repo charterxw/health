@@ -163,10 +163,33 @@ def catalog():
     with get_db() as conn:
         exercises = conn.execute("SELECT document_json FROM strength_exercises ORDER BY rowid").fetchall()
         templates = conn.execute("SELECT document_json, version FROM strength_templates ORDER BY rowid").fetchall()
+        notes = conn.execute("SELECT exercise_id, note FROM strength_setup_notes ORDER BY exercise_id").fetchall()
     docs = [json.loads(r[0]) for r in exercises]
     # Add descriptions to legacy entries while preserving their IDs and stored names.
     return {"exercises": [{**EXERCISE_METADATA.get(doc["id"], {}), **doc} for doc in docs],
-            "templates": [{"template": json.loads(r[0]), "version": r[1]} for r in templates]}
+            "templates": [{"template": json.loads(r[0]), "version": r[1]} for r in templates],
+            "setup_notes": {r[0]: r[1] for r in notes}}
+
+
+class SetupNote(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    note: str = Field(default="", max_length=200)
+
+
+def save_setup_note(exercise_id, request):
+    """A lifter's standing note for one exercise, such as a seat setting; empty removes it."""
+    note = request.note.strip()
+    with get_db() as conn:
+        if not conn.execute("SELECT 1 FROM strength_exercises WHERE id=?", (exercise_id,)).fetchone():
+            raise LookupError("没有找到这个动作")
+        stamp = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        if note:
+            conn.execute("INSERT INTO strength_setup_notes VALUES (?, ?, ?) ON CONFLICT(exercise_id) DO UPDATE SET "
+                         "note=excluded.note, updated_at=excluded.updated_at", (exercise_id, note, stamp))
+        else:
+            conn.execute("DELETE FROM strength_setup_notes WHERE exercise_id=?", (exercise_id,))
+        conn.commit()
+    return {"exercise_id": exercise_id, "note": note, "updated_at": stamp}
 
 
 class Conflict(Exception):

@@ -45,6 +45,7 @@ struct NativeExerciseDetail: View {
     @State private var error: String?
     @State private var unit = "lb"
     @State private var retry = 0
+    @State private var editingNote = false
     private var chartTitle: String {
         if NativeTraining.timed(exercise) { return "单组最多秒数" }
         if exercise["load_mode"].text == "bodyweight" { return "单组最多次数" }
@@ -80,6 +81,20 @@ struct NativeExerciseDetail: View {
                 VStack(alignment: .leading, spacing: 14) { Text("动作要领").font(.headline); ForEach(Array(exercise["instructions"].array.enumerated()), id: \.offset) { i, step in HStack(alignment: .top, spacing: 12) { Text("\(i + 1)").font(.caption.bold()).foregroundStyle(pine).padding(6).background(pine.opacity(0.1), in: Circle()); Text(step.text).font(.subheadline) } } }.pineCard()
             }
             if !exercise["weight_note"].text.isEmpty { PineBanner(text: exercise["weight_note"].text) }
+            if !NativeTraining.mobility(exercise) {
+                let setup = store.setupNote(exercise.id)
+                Button { editingNote = true } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "note.text").foregroundStyle(pine).frame(width: 22)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("器械设置备注").font(.footnote).foregroundStyle(.secondary)
+                            Text(setup.isEmpty ? "例如座椅档位、握距，训练时会显示在动作名下方" : setup).font(.subheadline).foregroundStyle(setup.isEmpty ? Color.secondary : Color.primary).multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 8)
+                        Text(setup.isEmpty ? "添加" : "修改").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
+                    }.frame(minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(.plain).pineCard()
+            }
             VStack(alignment: .leading, spacing: 12) {
                 Text("主要肌群").font(.headline)
                 Text(exercise["primary_muscles"].array.map { muscleName($0.text) }.joined(separator: " · ")).font(.subheadline)
@@ -104,7 +119,9 @@ struct NativeExerciseDetail: View {
                     }
                 }.pineCard()
             }
-        }.navigationTitle("动作详情").navigationBarTitleDisplayMode(.inline).task(id: retry) {
+        }.navigationTitle("动作详情").navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $editingNote) { NativeSetupNoteEditor(exerciseID: exercise.id, name: exercise["name"].text).presentationDetents([.medium]) }
+            .task(id: retry) {
             do { remote = try await store.api.request("/strength/exercises/" + exercise.id + "/history"); error = nil }
             catch { if !Task.isCancelled { self.error = "暂时无法读取完整历史，显示已保存在本机的记录。"; if (error as? HealthAPIError)?.status == 401 { store.handle(error) } } }
         }
