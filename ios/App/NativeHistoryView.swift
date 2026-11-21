@@ -134,15 +134,19 @@ struct NativeReportView: View {
     var body: some View {
         PinePage {
             if let record {
+                // What was done first: header and totals, the moves with every set and
+                // the change against last time; analysis, heart rate and muscles follow.
                 reportHeader
-                dayContribution
-                Label(record.blocked != nil ? "同步需要处理" : record.dirty ? "本机已保存 · 待同步" : "已保存到服务器", systemImage: record.dirty ? "arrow.triangle.2.circlepath" : "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
                 if record.blocked != nil { NativeConflictView(record: record) }
                 if let error { PineBanner(text: error) }
+                PineSectionHeader(title: "动作")
+                movementList
                 reviewCard
-                NativeMuscleMap(primary: Array(Set(session["exercises"].array.filter { !NativeTraining.done($0).filter { !$0["warmup"].flag }.isEmpty && !NativeTraining.mobility($0) }.flatMap { $0["primary_muscles"].array.map(\.text) }))).pineCard()
                 if saved { physiologyCard }
-                ForEach(Array(session["exercises"].array.enumerated()), id: \.element.id) { i, movement in movementReport(movement, index: i) }
+                let muscles = Array(Set(session["exercises"].array.filter { !NativeTraining.done($0).filter { !$0["warmup"].flag }.isEmpty && !NativeTraining.mobility($0) }.flatMap { $0["primary_muscles"].array.map(\.text) }))
+                if !muscles.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) { Text("练到的肌群").font(.headline); NativeMuscleMap(primary: muscles) }.pineCard()
+                }
                 if !session["notes"].text.isEmpty { VStack(alignment: .leading, spacing: 10) { Text("训练笔记").font(.headline); Text(session["notes"].text).font(.subheadline) }.pineCard() }
                 VStack(spacing: 0) {
                     Button { repeatSession() } label: { Text("再练一次").frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.leading, 16).contentShape(Rectangle()) }.disabled(store.active != nil)
@@ -151,6 +155,8 @@ struct NativeReportView: View {
                     Divider().padding(.leading, 16)
                     Button(role: .destructive) { deleting = true } label: { Text("删除这条记录").frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.leading, 16).contentShape(Rectangle()) }.disabled(!saved || busy)
                 }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                Label(record.blocked != nil ? "同步需要处理" : record.dirty ? "本机已保存 · 待同步" : "已保存到服务器", systemImage: record.dirty ? "arrow.triangle.2.circlepath" : "checkmark.icloud")
+                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                 if let alternative = record.alternative {
                     DisclosureGroup("保留的冲突副本") {
                         Text(alternative["title"].text).font(.headline)
@@ -168,77 +174,123 @@ struct NativeReportView: View {
             .confirmationDialog("清除保留的冲突副本？", isPresented: $clearAlternative, titleVisibility: .visible) { Button("清除副本", role: .destructive) { store.clearAlternative(id) } }
             .task(id: "\(record?.version ?? 0)-\(saved)-\(attempt)") { await loadReports() }
     }
-    /// Title split at the "｜" the templates use: focus as title, group and place below.
+    /// Title split at the "｜" the templates use: focus as title, group, place and
+    /// time below, the day's glyph beside it, then three totals.
     private var reportHeader: some View {
         let title = session["title"].text
         let parts = title.components(separatedBy: "｜")
-        let focus = parts.count > 1 ? parts[1] : title
-        let group = parts.count > 1 ? parts[0].replacingOccurrences(of: " · ", with: " 组 · ") : ""
+        let focus = (parts.count > 1 ? parts[1] : title).replacingOccurrences(of: "·", with: " · ")
+        let group = parts.count > 1 ? parts[0] : ""
         let p = NativeTraining.progress(session)
+        let zone = session["timezone"].text.isEmpty ? TimeZone.current.identifier : session["timezone"].text
         let start = NativeDate.parse(session["started_at"]), end = NativeDate.parse(session["ended_at"])
         let seconds = max(0, (end?.timeIntervalSince(start ?? .now) ?? 0) - (session["paused_seconds"].number ?? 0))
-        let when = start.map { NativeDate.label($0, format: "M月d日 HH:mm", timezone: session["timezone"].text.isEmpty ? TimeZone.current.identifier : session["timezone"].text) } ?? ""
+        let when = start.map { NativeDate.label($0, format: "M月d日 EEE HH:mm", timezone: zone) } ?? ""
+        let list = start.map { NativeDays.sessions(records: store.records, timezone: zone)[NativeDate.day($0, timezone: zone)] ?? [] } ?? []
+        let weekend = start.map { NativeDays.isWeekend(NativeDate.day($0, timezone: zone)) } ?? false
         return VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(focus).font(.largeTitle.weight(.semibold))
-                Text([group, when].filter { !$0.isEmpty }.joined(separator: " · ")).font(.subheadline).foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(focus).font(.title2.weight(.bold))
+                    Text([group, when].filter { !$0.isEmpty }.joined(separator: " · ")).font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                if session["status"].text == "completed", !list.isEmpty {
+                    PineDayGlyph(activity: nil, halves: NativeDays.halves(list, weekend: weekend), posture: NativeDays.postureDone(list), size: 44)
+                        .accessibilityLabel("这天的完成情况")
+                }
             }
             HStack(alignment: .top) {
                 reportStat("时长", "\(Int((seconds / 60).rounded()))", "分钟")
-                reportStat("完成", "\(p.done)", "/ \(p.planned) 组")
-                reportStat("动作", "\(session["exercises"].array.count)", "个")
-            }
+                reportStat("工作组", "\(p.done)", "/ \(p.planned)")
+                reportStat("容量", displayNumber(.number(sessionVolume), digits: 0), "磅")
+            }.padding(.vertical, 12).padding(.horizontal, 14).background(pineSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             if p.done == 0 { Text("本次没有完成的工作组，不推断训练表现。").font(.footnote).foregroundStyle(.secondary) }
         }
     }
-    private func reportStat(_ title: String, _ value: String, _ unit: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) { Text(value).font(.title2.weight(.semibold)).monospacedDigit(); Text(unit).font(.footnote).foregroundStyle(.secondary) }
-        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
-    }
-    /// How this session filled its day's glyph.
-    @ViewBuilder private var dayContribution: some View {
-        let zone = session["timezone"].text.isEmpty ? TimeZone.current.identifier : session["timezone"].text
-        if session["status"].text == "completed", let start = NativeDate.parse(session["started_at"]) {
-            let key = NativeDate.day(start, timezone: zone)
-            let list = NativeDays.sessions(records: store.records, timezone: zone)[key] ?? []
-            let strength = list.filter { !$0.posture }
-            let index = strength.firstIndex { $0.id == id }
-            let weekend = NativeDays.isWeekend(key)
-            let halves = NativeDays.halves(list, weekend: weekend)
-            let text: String = {
-                if list.contains(where: { $0.id == id && $0.posture }) { return "这天的圆点已经填满。" }
-                guard let index else { return "" }
-                if weekend { return index == 0 ? "周末的家庭训练完成，中圈已经满了。" : "这是这天的第 \(index + 1) 次力量训练。" }
-                if index >= 2 { return "这是这天的第 \(index + 1) 次力量训练。" }
-                let full = halves.count == 2 && halves.allSatisfy { $0 >= 1 }
-                return index == 0 ? (full ? "这是这天的第一次力量，中圈已经满了。" : "这是这天的第一次力量，中圈填了一半。") : (full ? "这是这天的第二次力量，中圈已经满了。" : "这是这天的第二次力量。")
-            }()
-            if !text.isEmpty {
-                HStack(spacing: 14) {
-                    PineDayGlyph(activity: nil, halves: halves, posture: NativeDays.postureDone(list), size: 52)
-                    Text(text).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
-                }.pineCard()
-            }
+    /// Load × reps of completed external-load work sets, in pounds.
+    private var sessionVolume: Double {
+        session["exercises"].array.reduce(0) { total, m in
+            guard m["load_mode"].text == "external", !NativeTraining.timed(m), !NativeTraining.mobility(m) else { return total }
+            let factor = m["unit"].text == "kg" ? 2.2046226 : 1
+            return total + NativeTraining.done(m).filter { !$0["warmup"].flag }.reduce(0) { $0 + ($1["weight"].number ?? 0) * factor * ($1["reps"].number ?? 0) }
         }
     }
-    private var reportSummary: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            let p = NativeTraining.progress(session)
-            let start = NativeDate.parse(session["started_at"]), end = NativeDate.parse(session["ended_at"])
-            let seconds = max(0, (end?.timeIntervalSince(start ?? .now) ?? 0) - (session["paused_seconds"].number ?? 0))
-            Text(WorkoutSnapshot.clock(seconds)).font(.system(size: 42, weight: .bold, design: .rounded)).monospacedDigit()
-            HStack { Text("\(p.done)/\(p.planned) 工作组"); Spacer(); Text("热身 \(p.warmup) 组") }.font(.subheadline).foregroundStyle(.secondary)
-            if p.done == 0 { Text("本次没有完成的工作组，不推断训练表现。").font(.footnote).foregroundStyle(.secondary) }
-        }.pineCard()
+    /// Every move in one card: its sets in a line and the change against last time.
+    private var movementList: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(session["exercises"].array.enumerated()), id: \.element.id) { i, movement in
+                if i > 0 { Divider().padding(.leading, 16) }
+                movementRow(movement, index: i)
+            }
+        }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+    private func movementRow(_ m: JSONValue, index: Int) -> some View {
+        let rows = m["sets"].array.filter { !$0["completed_at"].isNull }
+        let skipped = m["sets"].array.count - rows.count
+        let unit = NativeTraining.timed(m) ? "" : m["load_mode"].text == "bodyweight" ? "自重" : (m["load_mode"].text == "assistance" ? "辅助 · " : "") + unitLabel(m)
+        let hard = rows.compactMap { $0["hard_reps"].isNull ? nil : $0["hard_reps"].integer }.filter { $0 > 0 }
+        let badge = changeBadge(m, index: index)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(m["name"].text).font(.pineRow.weight(.semibold))
+                Spacer(minLength: 8)
+                if let badge { Text(badge.text).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(badge.good ? pine : Color.secondary) }
+            }
+            if rows.isEmpty {
+                Text("没有完成的组").font(.footnote).foregroundStyle(.secondary)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    if !unit.isEmpty { Text(unit).font(.caption).foregroundStyle(.tertiary) }
+                    Text(rows.map { setText(m, $0) }.joined(separator: "  ")).font(.subheadline).monospacedDigit().foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            let notes = [skipped > 0 ? "\(skipped) 组未完成" : "", hard.isEmpty ? "" : "\(hard.count) 组最后几次明显吃力"].filter { !$0.isEmpty }
+            if !notes.isEmpty { Text(notes.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
+        }.padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+    }
+    /// "20×10", warm-ups marked; timed sets as seconds, bodyweight as reps.
+    private func setText(_ m: JSONValue, _ row: JSONValue) -> String {
+        let core: String
+        if NativeTraining.timed(m) { core = displayNumber(row["duration_seconds"], digits: 0) + "秒" }
+        else if m["load_mode"].text == "bodyweight" { core = displayNumber(row["reps"], digits: 0) + "次" }
+        else { core = displayNumber(row["weight"]) + "×" + displayNumber(row["reps"], digits: 0) }
+        return row["warmup"].flag ? "热身 " + core : core
+    }
+    /// Against the previous time of this move: reps at the same loads, else the
+    /// best set's estimated strength.
+    private func changeBadge(_ m: JSONValue, index: Int) -> (text: String, good: Bool)? {
+        guard !NativeTraining.timed(m), !NativeTraining.mobility(m) else { return nil }
+        let done = NativeTraining.done(m).filter { !$0["warmup"].flag }
+        guard !done.isEmpty else { return nil }
+        let previous = NativeTraining.previous(store.history, exercise: m["exercise_id"].text, mode: m["load_mode"].text,
+            before: NativeDate.parse(session["started_at"]) ?? .now, timezone: session["timezone"].text, current: id, allowSameDay: false).filter { !$0["warmup"].flag }
+        guard !previous.isEmpty else { return ("首次", false) }
+        if let same = comparison(m, index: index) {
+            if same.contains("持平") { return ("持平", false) }
+            let delta = done.reduce(0) { $0 + $1["reps"].integer } - previous.reduce(0) { $0 + $1["reps"].integer }
+            return ((delta > 0 ? "+" : "") + "\(delta) 次", delta > 0)
+        }
+        let best = { (rows: [JSONValue], unit: String) -> Double in
+            rows.compactMap { row -> Double? in
+                var r = row; r["weight"] = NativeTraining.convert(row["weight"], from: row["unit"].text.isEmpty ? unit : row["unit"].text, to: m["unit"].text)
+                return NativeDays.liftScore(m, r)
+            }.max() ?? 0
+        }
+        let now = best(done, m["unit"].text), before = best(previous, m["unit"].text)
+        guard now > 0, before > 0 else { return nil }
+        let change = (now / before - 1) * 100
+        if abs(change) < 0.5 { return ("持平", false) }
+        return ((change > 0 ? "+" : "") + String(format: "%.0f%%", change), change > 0)
     }
     private var reviewCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack { Label(review["status"].text == "ready" ? "AI 复盘" : "本次复盘", systemImage: "sparkles").font(.headline); Spacer(); if review["status"].text == "pending" { ProgressView() } }
+            HStack { Text(review["status"].text == "ready" ? "AI 复盘" : "本次复盘").font(.headline); Spacer(); if review["status"].text == "pending" { ProgressView() } }
             let lines = review["status"].text == "ready" ? review["analysis"] : NativeReview.fallback(session, evidence: review["evidence"])
-            ForEach([("today","本次"),("trend","趋势"),("next","下次")], id: \.0) { key, title in
-                VStack(alignment: .leading, spacing: 5) { Text(title).font(.caption).foregroundStyle(.secondary); Text(lines[key]["text"].text).font(.subheadline).lineSpacing(4) }
+            ForEach([("today","本次"),("trend","趋势"),("next","下次")].filter { !lines[$0.0]["text"].text.isEmpty }, id: \.0) { key, title in
+                VStack(alignment: .leading, spacing: 4) { Text(title).font(.caption.weight(.semibold)).foregroundStyle(pine); Text(lines[key]["text"].text).font(.subheadline).lineSpacing(3) }
             }
             if review["status"].text == "ready" {
                 DisclosureGroup("查看分析依据") { ForEach(Array(review["evidence"]["facts"].array.enumerated()), id: \.offset) { _, fact in Text("• " + fact["text"].text).font(.footnote).padding(.vertical, 3) } }
@@ -265,22 +317,6 @@ struct NativeReportView: View {
             PineRow(label: "估算活动热量", value: displayNumber(physiology["metrics"]["active_energy"]["value"]) + " 千卡")
             if ["waiting_sync","partial","unavailable","error"].contains(physiology["status"].text), !heart["fetched_at"].isNull || !physiology["errors"].object.isEmpty { Link("打开 Google Health 同步", destination: URL(string: "https://www.fitbit.com/in-app/today")!).font(.subheadline) }
             Button("重新获取", systemImage: "arrow.clockwise") { Task { do { physiology = try await store.api.request("/strength/sessions/" + id + "/physiology/refresh", method: "POST"); attempt += 1 } catch { reportError(error) } } }.font(.subheadline).disabled(physiology["syncing"].flag || physiology["status"].text == "unsupported")
-        }.pineCard()
-    }
-    private func movementReport(_ m: JSONValue, index: Int) -> some View {
-        let done = NativeTraining.done(m)
-        return VStack(alignment: .leading, spacing: 12) {
-            Text(m["name"].text).font(.headline)
-            Text("完成 \(done.filter { !$0["warmup"].flag }.count) 工作组 · 热身 \(done.filter { $0["warmup"].flag }.count) 组").font(.subheadline).foregroundStyle(.secondary)
-            if let comparison = comparison(m, index: index) { Text(comparison).font(.subheadline).foregroundStyle(pine) }
-            DisclosureGroup("查看每组记录") {
-                ForEach(Array(m["sets"].array.enumerated()), id: \.element.id) { si, row in
-                    VStack(alignment: .leading, spacing: 4) {
-                        PineRow(label: row["warmup"].flag ? "热身" : "第 \(si + 1) 组", value: (row["completed_at"].isNull ? "未完成 · " : "") + loadText(m, row))
-                        if !row["hard_reps"].isNull { Text(row["hard_reps"].integer == 0 ? "没有明显吃力" : "最后 \(row["hard_reps"].integer) 次明显吃力").font(.caption).foregroundStyle(.secondary) }
-                    }
-                }
-            }.font(.subheadline)
         }.pineCard()
     }
     private func comparison(_ m: JSONValue, index: Int) -> String? {
