@@ -647,7 +647,21 @@ struct NativePlanView: View {
                 Text("\(plan["done"].integer) / \(plan["target"].integer) 工作组").font(.title2.bold())
                 Text(plan["version"].integer == 2 ? "本轮按 A、B、E、C、D 五天顺序进行，可以跨周；每天可以选公司+家庭、只公司或只家庭。" : "本轮可以跨周，可选 E 不影响主训练进度。").font(.footnote).foregroundStyle(.secondary)
             }
-            ForEach(Array(plan["schedule"].array.enumerated()), id: \.offset) { _, day in
+            if plan["version"].integer == 2 {
+                // The new round: one row per day; how a day was trained does not matter.
+                Section("五天") {
+                    ForEach(Array(plan["schedule"].array.enumerated()), id: \.offset) { _, day in
+                        HStack {
+                            Text(day["letter"].text).font(.headline).frame(width: 28)
+                            Text(day["slots"][0]["name"].text.components(separatedBy: "｜").last ?? "").font(.subheadline)
+                            Spacer()
+                            if day["completed"].flag { Image(systemName: "checkmark.circle.fill").foregroundStyle(pine) }
+                            else { Text("\(day["done"].integer)/\(day["target"].integer) 组").font(.subheadline).monospacedDigit().foregroundStyle(.secondary) }
+                        }
+                    }
+                }
+            }
+            ForEach(Array((plan["version"].integer == 2 ? [] : plan["schedule"].array).enumerated()), id: \.offset) { _, day in
                 Section("第\(day["day"].integer)天 · " + day["letter"].text + (day["optional"].flag ? " · 可选" : "")) {
                     ForEach(Array(day["slots"].array.enumerated()), id: \.offset) { _, item in
                         VStack(alignment: .leading, spacing: 8) {

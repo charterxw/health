@@ -46,62 +46,70 @@ struct NativeTrainingView: View {
     @AppStorage("pine.training.mode") private var storedMode = TrainingMode.split.rawValue
     @State private var modeChoice: TrainingMode?
     @State private var dayChoice: Int?
+    @State private var expanded: Set<String> = []
     private var plan: JSONValue { store.home["plan"] }
     private var isRound: Bool { plan["version"].integer == 2 }
     var body: some View {
         PinePage {
-            PineTabHeader(title: "训练") {
-                Menu {
-                    Button("自由训练", systemImage: "plus") { store.start() }.disabled(store.catalog.isNull)
-                    NavigationLink("动作库", destination: NativeExerciseLibrary())
-                    NavigationLink("全部模板", destination: NativeTemplateLibrary())
-                } label: { PineCircleIcon(systemImage: "ellipsis") }.accessibilityLabel("训练工具").accessibilityIdentifier("training-tools")
-            }
+            PineTabHeader(title: "训练") { toolsMenu }
             if let active = store.active { continueCard(active) }
             if let message = store.message { PineBanner(text: message) }
+            if store.catalog.isNull { PineEmpty(title: "正在读取训练安排", symbol: "dumbbell", detail: "联网后下拉刷新即可读取你的模板。") }
             if isRound {
+                // One place for the round: pick a day in the strip, train it in the card.
                 roundStrip
                 todayCard
+                dailyCard
             } else {
-                roundProgress
-                nextSession
+                legacyBody
             }
-            postureRow
-            if isRound { optionalRow }
-            if store.catalog.isNull { PineEmpty(title: "正在读取训练安排", symbol: "dumbbell", detail: "联网后下拉刷新即可读取你的模板。") }
-            let rotation = groups.filter { $0.letter.count == 1 }
-            if isRound {
-                PineSectionHeader(title: "本轮计划")
-                VStack(spacing: 0) {
-                    ForEach(Array(plan["schedule"].array.enumerated()), id: \.offset) { index, day in
-                        if index > 0 { Divider().padding(.leading, 60) }
-                        NavigationLink { NativeRoutineGroupView(title: day["letter"].text + " · " + focusTitle(day), records: dayTemplates(day)) } label: { planDayRow(day, index: index) }.buttonStyle(.plain)
-                    }
-                }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            } else if !rotation.isEmpty {
-                PineSectionHeader(title: "本轮计划")
-                VStack(spacing: 0) {
-                    ForEach(Array(rotation.enumerated()), id: \.element.id) { index, group in
-                        if index > 0 { Divider().padding(.leading, 60) }
-                        NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { groupRow(group) }.buttonStyle(.plain)
-                    }
-                }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            }
-            PineSectionHeader(title: "其他")
-            VStack(spacing: 0) {
-                ForEach(groups.filter { $0.letter.count > 1 && $0.letter != "体态" && !isRound }) { group in
-                    NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { plainRow(group.letter == "周末" ? "周末 · 保底训练" : group.title) }.buttonStyle(.plain)
-                    Divider().padding(.leading, 16)
-                }
-                NavigationLink { NativeExerciseLibrary() } label: { plainRow("动作库") }.buttonStyle(.plain)
-                Divider().padding(.leading, 16)
-                NavigationLink { NativeTemplateLibrary() } label: { plainRow("全部模板") }.buttonStyle(.plain)
-                Divider().padding(.leading, 16)
-                NavigationLink { PinePage { weeklyMuscles.pineCard() }.navigationTitle("本周肌群工作组") } label: { plainRow("本周肌群工作组") }.buttonStyle(.plain)
-            }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             ForEach(store.records.filter { $0.blocked != nil }, id: \.id) { NativeConflictView(record: $0) }
         }.navigationTitle("训练").refreshable { await store.refresh() }
             .sheet(isPresented: $showingPlan) { NavigationStack { NativePlanView() } }
+    }
+    /// Everything that is not today's training lives behind "…".
+    private var toolsMenu: some View {
+        Menu {
+            Button("自由训练", systemImage: "plus") { store.start() }.disabled(store.catalog.isNull || store.active != nil)
+            if isRound {
+                Button("本轮进度", systemImage: "chart.bar") { showingPlan = true }
+                if !schedule.isEmpty {
+                    let day = schedule[dayIndex]
+                    NavigationLink { NativeRoutineGroupView(title: day["letter"].text + " · " + focusTitle(day), records: dayTemplates(day)) } label: {
+                        Label(day["letter"].text + " 的模板", systemImage: "list.bullet.rectangle")
+                    }
+                }
+            }
+            Divider()
+            NavigationLink { NativeExerciseLibrary() } label: { Label("动作库", systemImage: "books.vertical") }
+            NavigationLink { NativeTemplateLibrary() } label: { Label("全部模板", systemImage: "square.stack") }
+            NavigationLink { PinePage { weeklyMuscles.pineCard() }.navigationTitle("本周肌群工作组") } label: { Label("本周肌群工作组", systemImage: "figure.strengthtraining.traditional") }
+        } label: { PineCircleIcon(systemImage: "ellipsis") }.accessibilityLabel("训练工具").accessibilityIdentifier("training-tools")
+    }
+    /// The previous plan's layout, kept until the server serves the new round.
+    @ViewBuilder private var legacyBody: some View {
+        roundProgress
+        nextSession
+        postureRow
+        let rotation = groups.filter { $0.letter.count == 1 }
+        if !rotation.isEmpty {
+            PineSectionHeader(title: "本轮计划")
+            VStack(spacing: 0) {
+                ForEach(Array(rotation.enumerated()), id: \.element.id) { index, group in
+                    if index > 0 { Divider().padding(.leading, 60) }
+                    NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { groupRow(group) }.buttonStyle(.plain)
+                }
+            }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        let others = groups.filter { $0.letter.count > 1 && $0.letter != "体态" }
+        if !others.isEmpty {
+            PineSectionHeader(title: "其他")
+            VStack(spacing: 0) {
+                ForEach(others) { group in
+                    NavigationLink { NativeRoutineGroupView(title: group.title, records: group.records) } label: { plainRow(group.letter == "周末" ? "周末 · 保底训练" : group.title) }.buttonStyle(.plain)
+                }
+            }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
     }
 
     // MARK: Round of five days
@@ -168,59 +176,94 @@ struct NativeTrainingView: View {
         }.padding(12).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    /// The selected day: choose where to train, see the moves, start.
+    /// The selected day: where to train, what's in each part, one clear start.
     @ViewBuilder private var todayCard: some View {
-        if schedule.isEmpty { EmptyView() } else {
+        if !schedule.isEmpty {
             let day = schedule[dayIndex]
             let current = mode(for: day)
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(dayIndex == currentIndex ? "下一次 · \(day["letter"].text)" : "\(day["letter"].text) · 提前看").font(.footnote).foregroundStyle(.secondary)
-                        Text(focusTitle(day)).font(.title3.weight(.semibold))
-                    }
+                    Text(day["letter"].text + " · " + focusTitle(day)).font(.title3.weight(.semibold))
                     Spacer(minLength: 8)
                     Text("\(day["done"].integer)/\(day["target"].integer) 组").font(.footnote.weight(.semibold)).monospacedDigit()
                         .foregroundStyle(day["completed"].flag ? pine : Color.secondary)
                 }
-                Picker("训练方式", selection: Binding(get: { current }, set: { modeChoice = $0; storedMode = $0.rawValue })) {
-                    ForEach(TrainingMode.allCases) { Text($0.label).tag($0) }
-                }.pickerStyle(.segmented).accessibilityIdentifier("training-mode")
-                if day["completed"].flag {
-                    Label("这一天已完成", systemImage: "checkmark.circle.fill").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                } else if current == .split {
-                    let halves = day["slots"].array
-                    let next = halves.firstIndex { !$0["completed"].flag } ?? 0
-                    ForEach(Array(halves.enumerated()), id: \.offset) { index, slot in
-                        if index > 0 { Divider() }
-                        sessionBlock(slot, title: index == 0 ? "公司" : "家庭", primary: index == next)
-                    }
+                if plan["next"].isNull {
+                    roundFinished
+                } else if day["completed"].flag {
+                    HStack {
+                        Label("这一天已完成", systemImage: "checkmark.circle.fill").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
+                        Spacer()
+                        if dayIndex != currentIndex {
+                            Button("看下一次") { withAnimation(.easeOut(duration: 0.2)) { dayChoice = nil; modeChoice = nil } }.font(.subheadline.weight(.semibold))
+                        }
+                    }.frame(minHeight: 44)
                 } else {
-                    sessionBlock(day["variants"][current.rawValue], title: current == .gym ? "只在公司 · 优先器械" : "只在家", primary: true)
-                    Text("可以把不同部位的动作两两交替做，例如弯举配臂屈伸，节省时间。").font(.caption).foregroundStyle(.secondary)
+                    Picker("训练方式", selection: Binding(get: { current }, set: { modeChoice = $0; storedMode = $0.rawValue })) {
+                        ForEach(TrainingMode.allCases) { Text($0.label).tag($0) }
+                    }.pickerStyle(.segmented).accessibilityIdentifier("training-mode")
+                    if current == .split {
+                        let halves = day["slots"].array
+                        let next = halves.firstIndex { !$0["completed"].flag } ?? 0
+                        ForEach(Array(halves.enumerated()), id: \.offset) { index, slot in
+                            if index > 0 { Divider() }
+                            sessionBlock(slot, title: index == 0 ? "公司" : "家庭", primary: index == next)
+                        }
+                    } else {
+                        sessionBlock(day["variants"][current.rawValue], title: current == .gym ? "公司 · 器械优先" : "家庭", primary: true)
+                    }
                 }
             }.pineCard()
         }
     }
-    private func sessionBlock(_ slot: JSONValue, title: String, primary: Bool) -> some View {
+    /// All five days done: the next round starts when the lifter says so.
+    private var roundFinished: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("本轮五天都完成了", systemImage: "checkmark.seal.fill").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
+            Button {
+                Task { do { try await store.mutateHome("/home/plan/next", method: "POST"); dayChoice = nil; modeChoice = nil } catch { store.handle(error) } }
+            } label: {
+                Text("开始下一轮").font(.headline).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 52).background(pine, in: Capsule())
+            }.buttonStyle(PinePressStyle(scale: 0.98))
+        }
+    }
+    /// One part of the day. Done parts fold to a line; open parts show their moves
+    /// in one line, with sets, reps and last results a tap away.
+    @ViewBuilder private func sessionBlock(_ slot: JSONValue, title: String, primary: Bool) -> some View {
         let t = template(slot["template_id"].text)
-        let left = remainingSets(slot), total = slot["target"].integer, done = slot["completed"].flag
-        let minutes = t["duration_min"].isNull ? "" : " · 约 \(t["duration_min"].integer)–\(t["duration_max"].integer) 分钟"
-        return VStack(alignment: .leading, spacing: 0) {
+        let id = slot["template_id"].text
+        let left = remainingSets(slot), total = slot["target"].integer
+        if slot["completed"].flag {
             HStack {
-                Text(title + minutes).font(.subheadline.weight(.semibold))
+                Text(title).font(.subheadline.weight(.semibold))
                 Spacer()
-                if done { Image(systemName: "checkmark").font(.subheadline.weight(.bold)).foregroundStyle(pine).accessibilityLabel("已完成") }
-            }.padding(.bottom, 4)
-            ForEach(Array(t["exercises"].array.enumerated()), id: \.offset) { _, item in plannedLine(item) }
-            if !done {
+                Label("已完成", systemImage: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
+            }.frame(minHeight: 32)
+        } else {
+            let open = expanded.contains(id)
+            let names = t["exercises"].array.map { item in store.exercises.first { $0.id == item["exercise_id"].text }?["name"].text ?? "" }.filter { !$0.isEmpty }
+            let minutes = t["duration_min"].isNull ? "" : " · 约 \(t["duration_min"].integer)–\(t["duration_max"].integer) 分钟"
+            VStack(alignment: .leading, spacing: 6) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { if open { expanded.remove(id) } else { expanded.insert(id) } }
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(title + minutes).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.tertiary).rotationEffect(.degrees(open ? 180 : 0))
+                        }
+                        if !open { Text(names.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary).lineLimit(3).multilineTextAlignment(.leading) }
+                    }.contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityHint(open ? "收起动作详情" : "展开每个动作的组数和上次成绩")
+                if open { ForEach(Array(t["exercises"].array.enumerated()), id: \.offset) { _, item in plannedLine(item) } }
                 Button { store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) } label: {
                     Label(left < total ? "继续 · 还剩 \(left) 组" : "开始 · \(total) 组", systemImage: "play.fill")
-                        .font(.headline).foregroundStyle(primary ? .white : pine).frame(maxWidth: .infinity, minHeight: primary ? 52 : 44)
+                        .font(primary ? .headline : .subheadline.weight(.semibold)).foregroundStyle(primary ? .white : pine)
+                        .frame(maxWidth: .infinity, minHeight: primary ? 52 : 40)
                         .background(primary ? pine : pineTint, in: Capsule())
-                }.buttonStyle(PinePressStyle(scale: 0.98)).padding(.top, 10).disabled(store.catalog.isNull || store.active != nil)
-                    .accessibilityIdentifier("start-" + slot["template_id"].text)
+                }.buttonStyle(PinePressStyle(scale: 0.98)).padding(.top, 4).disabled(store.catalog.isNull || store.active != nil)
+                    .accessibilityIdentifier("start-" + id)
             }
         }
     }
@@ -243,38 +286,35 @@ struct NativeTrainingView: View {
             if !last.isEmpty { Text(last).font(.footnote).foregroundStyle(.secondary).monospacedDigit().lineLimit(1) }
         }.padding(.vertical, 6)
     }
-    private func planDayRow(_ day: JSONValue, index: Int) -> some View {
-        let current = index == currentIndex
-        return HStack(spacing: 12) {
-            Text(day["letter"].text).font(.subheadline.weight(.bold)).foregroundStyle(current ? .white : pine)
-                .frame(width: 32, height: 32).background(current ? pine : pineTint, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(focusTitle(day)).font(.pineRow).foregroundStyle(.primary)
-                Text(day["completed"].flag ? "本轮已完成" : current ? "下一次 · \(day["done"].integer)/\(day["target"].integer) 组" : "\(day["done"].integer)/\(day["target"].integer) 组")
-                    .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+    /// Daily posture, plus the optional Saturday session on weekends, in one card.
+    private var dailyCard: some View {
+        let today = store.home["days"].array.first { $0["date"] == store.home["date"] } ?? .null
+        let postureDone = today["posture"].flag
+        let weekend = NativeDays.isWeekend(store.home["date"].text)
+        let optional = store.templates.first { $0["template"].id == "pine-sat-optional" }?["template"]
+        return VStack(spacing: 0) {
+            dailyRow(title: "每日体态", detail: postureDone ? "今天已做" : "5–8 分钟", done: postureDone) { store.homeAction(["template_id": "posture-daily"]) }
+            if weekend, let optional {
+                Divider().padding(.leading, 52)
+                dailyRow(title: "周末选练", detail: "肩宽 · 后束 · 三头 · 约 \(optional["duration_min"].integer)–\(optional["duration_max"].integer) 分钟", done: false) {
+                    store.homeAction(["template_id": .string(optional.id)])
+                }
             }
-            Spacer(minLength: 4)
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-        }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
+        }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
-    /// Saturday's optional small-muscle session.
-    @ViewBuilder private var optionalRow: some View {
-        if let record = store.templates.first(where: { $0["template"].id == "pine-sat-optional" }) {
-            let t = record["template"]
-            Button { store.homeAction(["template_id": .string(t.id)]) } label: {
-                HStack(spacing: 12) {
-                    Circle().stroke(pine, lineWidth: 2).frame(width: 14, height: 14).frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("周六选练").font(.pineRow).foregroundStyle(.primary)
-                        Text("肩宽 · 后束 · 三头 · 约 \(t["duration_min"].integer)–\(t["duration_max"].integer) 分钟").font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Text("开始").font(.subheadline.weight(.semibold)).foregroundStyle(pine)
-                }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
-            }.buttonStyle(PinePressStyle()).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .disabled(store.active != nil)
-                .contextMenu { NavigationLink("查看模板") { NativeTemplateDetail(record: record) } }
-        }
+    private func dailyRow(title: String, detail: String, done: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Circle().fill(done ? pine : pineTrack).frame(width: 12, height: 12).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.pineRow).foregroundStyle(.primary)
+                    Text(detail).font(.footnote).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if done { Image(systemName: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(pine) }
+                else { Text("开始").font(.subheadline.weight(.semibold)).foregroundStyle(pine) }
+            }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
+        }.buttonStyle(PinePressStyle()).disabled(done || store.active != nil)
     }
 
     // MARK: Round and next session
