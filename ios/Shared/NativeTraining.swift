@@ -261,7 +261,10 @@ public enum NativeTraining {
             restUntil: NativeDate.parse(s["rest_until"]), movementName: m["name"].text, movementIndex: ms.isEmpty ? 0 : i + 1,
             movementCount: ms.count, completedSets: ms.reduce(0) { $0 + done($1).count },
             plannedSets: ms.reduce(0) { $0 + $1["sets"].array.count }, currentSet: next, movementSetCount: rows.count,
-            nextSet: s["rest_until"].isNull ? nil : upcoming(ms, from: i))
+            nextSet: s["rest_until"].isNull ? nil : upcoming(ms, from: i),
+            // Independent of the set's values, so typing never republishes the activity;
+            // the app checks the values when the button is pressed.
+            openSetID: s["paused_at"].isNull ? rows.first(where: { $0["completed_at"].isNull })?.id : nil)
     }
 }
 

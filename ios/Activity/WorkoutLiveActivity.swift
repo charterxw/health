@@ -48,10 +48,11 @@ struct WorkoutLiveActivity: Widget {
                                 .monospacedDigit().fixedSize()
                         }
                         WorkoutProgress(info: info)
+                        ActivityButtons(info: info)
                     }
                     .padding(.horizontal, 9)
                     .padding(.bottom, 4)
-                    .accessibilityElement(children: .combine)
+                    .accessibilityElement(children: .contain)
                 }
             } compactLeading: {
                 Image(systemName: info.symbol).foregroundStyle(info.tint)
@@ -123,7 +124,7 @@ private struct WorkoutCard: View {
     let info: ActivityDisplay
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Label(info.label, systemImage: info.symbol)
                     .font(.caption.weight(.semibold))
@@ -152,9 +153,41 @@ private struct WorkoutCard: View {
                 }
             }
             WorkoutProgress(info: info)
+            ActivityButtons(info: info)
         }
-        .padding(15)
-        .accessibilityElement(children: .combine)
+        .padding(14)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// One-tap actions without unlocking: check off the set shown, or adjust the rest.
+/// They run in the app (WorkoutActivityIntent), which republishes the activity.
+private struct ActivityButtons: View {
+    let info: ActivityDisplay
+
+    var body: some View {
+        let id = info.workout.sessionID
+        HStack(spacing: 8) {
+            if info.phase == .resting {
+                button("+30 秒", symbol: "plus", intent: WorkoutActivityIntent(sessionID: id, action: "extend"))
+                button("跳过休息", symbol: "forward.end.fill", intent: WorkoutActivityIntent(sessionID: id, action: "skip"))
+            } else if info.phase == .training || info.phase == .restFinished, let setID = info.workout.openSetID {
+                button("完成本组", symbol: "checkmark", intent: WorkoutActivityIntent(sessionID: id, action: "complete", setID: setID))
+            }
+        }
+    }
+
+    private func button(_ title: String, symbol: String, intent: WorkoutActivityIntent) -> some View {
+        Button(intent: intent) {
+            Label(title, systemImage: symbol)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 30)
+                .foregroundStyle(info.tint)
+                .background(info.tint.opacity(0.18), in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 

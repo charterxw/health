@@ -70,8 +70,11 @@ extension NativeCoreChecks {
         session["exercises"][0]["sets"][0]["reps"] = 10
         session["notes"] = "Editing must not publish ActivityKit again"
         try check(before == NativeTraining.snapshot(session, movement: 0), "A numeric edit unnecessarily changed the Live Activity payload")
+        try check(before?.openSetID == session["exercises"][0]["sets"][0].id, "The Lock Screen button does not name the open set")
         session = try NativeTraining.toggle(session, movement: 0, set: 0)
         try check(before != NativeTraining.snapshot(session, movement: 0), "Set completion would be suppressed by Live Activity deduplication")
+        try check(NativeTraining.snapshot(session, movement: 0)?.openSetID == session["exercises"][0]["sets"][1].id, "The Lock Screen button did not move to the next set")
+        try check(NativeTraining.snapshot(NativeTraining.pause(session), movement: 0)?.openSetID == nil, "A paused workout still offers the Lock Screen button")
     }
     static func measurePerformance(_ output: String) throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

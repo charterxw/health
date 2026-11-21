@@ -23,6 +23,9 @@ public struct WorkoutSnapshot: Codable, Hashable, Sendable {
     public let movementSetCount: Int
     /// While resting: the next set, e.g. "侧平举 · 20 磅 × 12". Nil otherwise.
     public var nextSet: String? = nil
+    /// The set the Lock Screen "完成本组" button would check off: the current move's
+    /// first unfinished set. Nil while paused or when the move is done.
+    public var openSetID: String? = nil
 
     enum ValidationError: Error { case invalidSnapshot }
 
@@ -39,7 +42,7 @@ public struct WorkoutSnapshot: Codable, Hashable, Sendable {
               (0...2000).contains(plannedSets), (0...plannedSets).contains(completedSets),
               (0...50).contains(movementSetCount), (0...movementSetCount).contains(currentSet),
               movementCount == 0 ? movementIndex == 0 : (1...movementCount).contains(movementIndex),
-              (nextSet?.count ?? 0) <= 60
+              (nextSet?.count ?? 0) <= 60, (openSetID?.count ?? 0) <= 64
         else { throw ValidationError.invalidSnapshot }
         if let pausedAt {
             guard pausedAt >= startedAt, pausedAt <= now.addingTimeInterval(300) else { throw ValidationError.invalidSnapshot }

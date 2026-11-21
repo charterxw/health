@@ -39,8 +39,8 @@ def encode(value, level=0):
 app_files = ["App/HealthApp.swift", "App/HealthAPI.swift", "App/NativeStore.swift", "App/WorkoutCoordinator.swift",
              "App/NativeComponents.swift", "App/NativeMuscleMap.swift", "App/NativeDashboardView.swift", "App/NativeTrainingView.swift",
              "App/NativeLibraryView.swift", "App/NativeSleepView.swift", "App/NativeDesignFixtures.swift", "App/NativeWorkoutView.swift", "App/NativeHistoryView.swift", "App/NativeSettingsView.swift",
-             "Shared/WorkoutSnapshot.swift", "Shared/HealthRoute.swift", "Shared/NativeJSON.swift", "Shared/NativeCache.swift", "Shared/NativeTimeline.swift", "Shared/NativeTraining.swift", "Activity/WorkoutAttributes.swift"]
-widget_files = ["Activity/WorkoutLiveActivity.swift", "Activity/WorkoutAttributes.swift",
+             "Shared/WorkoutSnapshot.swift", "Shared/HealthRoute.swift", "Shared/NativeJSON.swift", "Shared/NativeCache.swift", "Shared/NativeTimeline.swift", "Shared/NativeTraining.swift", "Activity/WorkoutAttributes.swift", "Activity/WorkoutIntents.swift"]
+widget_files = ["Activity/WorkoutLiveActivity.swift", "Activity/WorkoutAttributes.swift", "Activity/WorkoutIntents.swift",
                 "Shared/WorkoutSnapshot.swift", "Shared/HealthRoute.swift"]
 test_files = ["Tests/HealthUITests.swift"]
 file_refs = {}
@@ -148,7 +148,7 @@ scheme.write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 common_info = dict(CFBundleDevelopmentRegion="$(DEVELOPMENT_LANGUAGE)", CFBundleExecutable="$(EXECUTABLE_NAME)",
                    CFBundleIdentifier="$(PRODUCT_BUNDLE_IDENTIFIER)", CFBundleInfoDictionaryVersion="6.0",
                    CFBundleName="$(PRODUCT_NAME)", CFBundleShortVersionString="$(MARKETING_VERSION)", CFBundleVersion="$(CURRENT_PROJECT_VERSION)")
-app_info = dict(common_info, CFBundleName="Pine", CFBundleDisplayName="Pine", CFBundlePackageType="APPL", LSRequiresIPhoneOS=True,
+app_info = dict(common_info, PineCommit="$(PINE_COMMIT)", CFBundleName="Pine", CFBundleDisplayName="Pine", CFBundlePackageType="APPL", LSRequiresIPhoneOS=True,
                 NSSupportsLiveActivities=True, UILaunchScreen={},
                 UIApplicationSceneManifest={"UIApplicationSupportsMultipleScenes": False, "UISceneConfigurations": {}},
                 UISupportedInterfaceOrientations=["UIInterfaceOrientationPortrait"],

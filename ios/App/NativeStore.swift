@@ -42,6 +42,8 @@ final class NativeStore {
     @ObservationIgnored private var lastForeground: Date?
 
     init() {
+        // Lock Screen and Dynamic Island buttons arrive here, in the app's process.
+        WorkoutIntentBridge.handler = { [weak self] session, action, setID in await self?.activityAction(session, action: action, setID: setID) }
         #if DEBUG && targetEnvironment(simulator)
         // Prepare a standalone preview before the first frame. It must not wait
         // for scene activation, authentication, or the normal async boot task.
@@ -591,6 +593,33 @@ final class NativeStore {
     }
     func handle(_ error: Error) { if (error as? HealthAPIError)?.status == 401 { unauthorized() } else { message = error.localizedDescription } }
     private func unauthorized() { epoch = UUID(); syncTask?.cancel(); phase = .login; workoutPresented = false; showingSettings = false; publishActivity() }
+    /// A Live Activity button: check off the set it was drawn for, add 30 seconds of rest,
+    /// or end the rest. Stale taps (another workout, a set already done) change nothing.
+    func activityAction(_ sessionID: String, action: String, setID: String) async {
+        if phase != .ready { await boot() }
+        guard phase == .ready, let row = active, row.id == sessionID, row.session["paused_at"].isNull else { publishActivity(force: true); return }
+        switch action {
+        case "extend":
+            update(row.id) { s in
+                guard let until = NativeDate.parse(s["rest_until"]), until > Date() else { return }
+                s["rest_until"] = NativeDate.stamp(min(until.addingTimeInterval(30), Date().addingTimeInterval(600)))
+            }
+        case "skip":
+            update(row.id) { s in s["rest_until"] = .null; s["rest_set_id"] = .null }
+        case "complete":
+            let moves = row.session["exercises"].array
+            guard let mi = moves.firstIndex(where: { $0["sets"].array.contains { $0.id == setID } }),
+                  let si = moves[mi]["sets"].array.firstIndex(where: { $0.id == setID }),
+                  moves[mi]["sets"][si]["completed_at"].isNull else { publishActivity(force: true); return }
+            guard NativeTraining.valid(moves[mi], moves[mi]["sets"][si]) else {
+                message = "这一组的重量或次数还没填好，请在 App 里完成。"; publishActivity(force: true); return
+            }
+            update(row.id) { s in s = try NativeTraining.toggle(s, movement: mi, set: si) }
+            if movementIndex != mi { selectMovement(mi) }
+        default:
+            publishActivity(force: true)
+        }
+    }
     func selectMovement(_ index: Int) {
         movementIndex = index
         if let id = active?.id { UserDefaults.standard.set(index, forKey: Self.movementKey + id) }
