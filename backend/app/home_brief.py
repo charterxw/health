@@ -5,7 +5,7 @@ import logging
 import re
 import statistics
 import time
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks
@@ -13,7 +13,7 @@ from .database import get_db
 from . import home_dashboard as home
 
 router = APIRouter(prefix='/api/home/brief', tags=['home'])
-VERSION = 'home-recovery-v4-context'
+VERSION = 'home-recovery-v5-score'
 SCHEMA = '''CREATE TABLE IF NOT EXISTS home_briefs (
  date TEXT NOT NULL, period TEXT NOT NULL, input_hash TEXT NOT NULL,
  input_json TEXT NOT NULL, status TEXT NOT NULL, token TEXT,
@@ -37,6 +37,25 @@ def period_at(instant):
 def avg(values):
     values = [x for x in values if isinstance(x, (int, float)) and x > 0]
     return round(statistics.mean(values), 1) if values else None
+
+
+COMPONENT_NAMES = {'hrv': 'HRV', 'resting_hr': '静息心率', 'sleep': '睡眠（对照8小时目标）'}
+
+
+def score_state(recovery):
+    """Recovery wording that agrees with the score's label and names its drivers."""
+    score, label = recovery['score'], recovery.get('label')
+    parts = recovery.get('components') or {}
+    weak = [COMPONENT_NAMES[k] for k, v in sorted(parts.items(), key=lambda kv: kv[1]) if k in COMPONENT_NAMES and v <= -0.5]
+    strong = [COMPONENT_NAMES[k] for k, v in sorted(parts.items(), key=lambda kv: -kv[1]) if k in COMPONENT_NAMES and v >= 0.5]
+    if label == '偏低':
+        drivers = f'主要被{"、".join(weak)}拉低' if weak else '几项信号都略低于个人平常'
+        return f'恢复指数{score}，状态偏低，{drivers}；今天不加量、不冲重量，强度看热身体感，可以写成恢复偏弱，不写成接近平常。'
+    if label == '充分':
+        extra = f'，{"、".join(strong)}好于平常' if strong else ''
+        return f'恢复指数{score}，状态充分{extra}；可以按计划训练，不必因此额外加练。'
+    extra = f'，其中{"、".join(weak)}偏弱' if weak else ''
+    return f'恢复指数{score}，处在个人正常范围{extra}；按计划训练，结合热身体感。'
 
 
 def recovery_facts(data, previous, fact):
@@ -70,6 +89,9 @@ def recovery_facts(data, previous, fact):
         state='今天自述疲惫，运动建议优先尊重体感，即使指数较高也不要催促加练。'
     elif short_sleep:
         state='昨夜睡眠偏短，今天先看热身和体感，不能用相对平时的改善抵消短睡眠。'
+    elif recovery.get('score') is not None:
+        # The same verdict as the home screen's recovery index, with what moved it.
+        state = score_state(recovery)
     elif low_hrv and high_rhr:
         state='HRV偏低且静息心率偏高，恢复信号偏弱；即使睡眠时长充足，今天也应视热身体感调整。'
     elif recovery.get('caution'):
@@ -82,6 +104,31 @@ def recovery_facts(data, previous, fact):
     else:
         state='结合已提供的睡眠和当日体感描述恢复；只谈有证据的信号，不补造未提供指标的方向。'
     fact('recovery-state','recovery',state+'这是当日恢复观察，不推断疾病、不把手环指标当成肌肉修复程度。')
+
+
+def weight_trend(weights, today):
+    """Lean-gain pace: a least-squares line through the last 28 days of weigh-ins,
+    against the 0.5–1 % of body weight a month the app targets."""
+    end = date.fromisoformat(today)
+    points = []
+    for row in weights:
+        try:
+            day = date.fromisoformat(row['date'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if 0 <= (end-day).days < 28 and isinstance(row.get('kg'), (int, float)) and row['kg'] > 20:
+            points.append(((day-end).days, row['kg']))
+    if len(points) < 6 or max(p[0] for p in points) - min(p[0] for p in points) < 14:
+        return None
+    mx = statistics.mean(p[0] for p in points); my = statistics.mean(p[1] for p in points)
+    sxx = sum((x-mx)**2 for x, _ in points)
+    if not sxx:
+        return None
+    slope = sum((x-mx)*(y-my) for x, y in points) / sxx
+    recent = [y for x, y in points if x > -7] or [my]
+    month, percent = round(slope*30, 1), round(slope*30/statistics.mean(recent)*100, 1)
+    pace = '偏慢' if percent < 0.5 else '偏快，多出来的多半是脂肪' if percent > 1 else '在目标范围内'
+    return f'近4周{len(points)}次称重拟合，体重每月约{month:+g}公斤（约{percent:+g}%体重/月）；增肌目标每月0.5–1%，目前{pace}。单次称重波动不算趋势。'
 
 
 def context(period=None):
@@ -100,6 +147,11 @@ def context(period=None):
         if hours:
             mins = round(hours*60)
             fact('sleep-today', 'observation', f'昨夜睡眠{mins//60}小时{mins%60}分。')
+            target = round(home.SLEEP_TARGET_HOURS*60)
+            gap = mins - target
+            debt = data['recovery'].get('sleep_debt')
+            week = f'近7晚平均每晚比目标少{round(debt*60)}分钟。' if debt else ''
+            fact('sleep-target', 'comparison', f'睡眠目标{home.SLEEP_TARGET_HOURS:g}小时，昨夜{"少" if gap < 0 else "多"}{abs(gap)}分钟。{week}')
         baseline = [m['sleep_hours'] for m in previous[:7] if m.get('sleep_hours', 0) > 0]
         if hours and len(baseline) >= 4:
             minutes = round(statistics.mean(baseline)*60)
@@ -125,7 +177,13 @@ def context(period=None):
         if len(recent) >= 4 and len(older) >= 4:
             a,b = avg(recent),avg(older)
             unit = '小时' if key == 'sleep_hours' else '毫秒' if key == 'hrv' else '次/分'
-            fact(key+'-trend', 'trend', f'近7个完整日{title}均值{a}{unit}，此前7日{b}{unit}；各段至少4个有效日。')
+            # Week-to-week differences inside normal day-to-day noise are not a trend.
+            flat = abs(a-b) < {'sleep_hours': 0.3, 'hrv': max(3, b*0.1), 'resting_hr': 1.5}[key]
+            note = '差异在日常波动范围内，视为基本持平，不写成上升或下降。' if flat else ''
+            fact(key+'-trend', 'trend', f'近7个完整日{title}均值{a}{unit}，此前7日{b}{unit}；各段至少4个有效日。{note}')
+    weight = weight_trend(data.get('weights') or [], today)
+    if weight:
+        fact('weight-trend', 'trend', weight)
     # Actual bedtimes add a distinct regularity signal; unwrap around midnight.
     bedtimes = []
     seen = set()
@@ -183,7 +241,14 @@ def context_facts(data, period, fact):
     row = next((r for r in data['days'] if r['date'] == data['date']), {})
     plan = data.get('plan') or {}
     slots = (plan.get('current') or {}).get('slots') or ([plan['next']] if plan.get('next') else [])
-    if slots and (row.get('strength_planned') or row.get('strength_optional') or row.get('sets')):
+    optional = (home.load_training()[1] or {}).get(home.OPTIONAL_ID) if row.get('strength_optional') and not row.get('sets') else None
+    if optional:
+        from .strength_training import EXERCISE_METADATA
+        moves = [EXERCISE_METADATA.get(e.get('exercise_id'), {}).get('name') or e.get('exercise_id') for e in optional.get('exercises', [])]
+        work = sum(max(0, (e.get('set_count') or 0) - (e.get('warmup_count') or 0)) for e in optional.get('exercises', []))
+        name = str(optional.get('name', '')).split('｜')[-1]
+        fact('plan-today', 'observation', f'今天是可选的选练日：{name}，约{optional.get("duration_min")}–{optional.get("duration_max")}分钟、{work}个工作组，动作' + '、'.join(m for m in moves[:4] if m) + '；也可以休息。')
+    elif slots and (row.get('strength_planned') or row.get('strength_optional') or row.get('sets')):
         parts = []
         for slot in slots:
             state = '已完成' if slot.get('completed') else f"已做{slot.get('done', 0)}组" if slot.get('done') else '未开始'
@@ -302,7 +367,7 @@ def generate(claimed):
     try:
         _require_ai_configured()
         prompt=('为个人增肌与健康App首页写中文AI摘要，严格两到三句，优先三句，总计尽量75–95字，最多100字；第一句是最重要的结论，首页只显示前约50字。'
-            '早间结构：第一句综合昨夜睡眠时长与睡眠结构、当日HRV/静息心率相对个人基线及已填体感，给出恢复状态观察，引用recovery-state及所用信号；第二句从近期趋势和昨天训练中选最影响今天决定的一项；最后一句结合今天的力量安排给运动重点，可以点名部位或动作，不提字母组名，引用guidance。'
+            '早间结构：第一句综合昨夜睡眠时长（对照sleep-target的8小时目标）与睡眠结构、当日HRV/静息心率相对个人基线及已填体感，给出恢复状态观察，引用recovery-state及所用信号；第二句从近期趋势和昨天训练中选最影响今天决定的一项；最后一句结合今天的力量安排给运动重点，可以点名部位或动作，不提字母组名，引用guidance。'
             '先处理相互矛盾的信号：睡得久不等于全面恢复好，HRV升高也不自动等于更适合大强度训练。主观疲惫优先影响建议；不让综合指数遮住短睡眠或同时偏弱的生理信号。'
             '晚间结构：一句概括当天已记录活动/训练；一句联系个人近期趋势；一句结合训练和已填疲劳给今晚一个恢复与休息重点。不要把早晨的生理指标写成夜间实时恢复状态，也不根据次数、组数、热量诊断疲劳或过度训练。'
             '趋势优先解释持续异常或恢复相关变化，其次才是时长和活动量；已有trend证据时至少用一条，单晚对比不说持续改善。每句引用对应evidence_ids，最后一句引用guidance。'
