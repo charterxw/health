@@ -455,7 +455,9 @@ final class NativeStore {
         update(id) { $0 = NativeTraining.finish($0, status: discard ? "discarded" : "completed") }
         guard cache.records[id]?.session["status"].text != "active" else { return }
         UserDefaults.standard.removeObject(forKey: Self.movementKey + id)
-        if !discard { pendingReport = id; freshReport = id; selectedTab = 2 }; workoutPresented = false
+        // The report opens over the tab the workout started from, so closing it lands
+        // where the lifter was, with the next steps in the report.
+        if !discard { pendingReport = id; freshReport = id }; workoutPresented = false
         retrySync()
     }
     func workoutDidDismiss() { if let id = pendingReport { pendingReport = nil; reportID = id } }

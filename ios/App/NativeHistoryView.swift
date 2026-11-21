@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import UserNotifications
 
 private struct NativeTimelineRevision: Hashable { let history: Int; let archive: Int }
 struct NativeHistoryView: View {
@@ -131,6 +132,8 @@ struct NativeReportView: View {
     @State private var templateSheet = false
     @State private var clearAlternative = false
     @State private var attempt = 0
+    /// Confirmation of a reminder set from the next-steps card.
+    @State private var reminderNote: String?
     /// Opened right after finishing: totals count up and badges pop in once.
     @State private var celebrating = false
     @State private var revealed = true
@@ -148,6 +151,7 @@ struct NativeReportView: View {
                 if let error { PineBanner(text: error) }
                 PineSectionHeader(title: "动作")
                 movementList
+                nextSteps
                 reviewCard
                 if saved { physiologyCard }
                 let muscles = Array(Set(session["exercises"].array.filter { !NativeTraining.done($0).filter { !$0["warmup"].flag }.isEmpty && !NativeTraining.mobility($0) }.flatMap { $0["primary_muscles"].array.map(\.text) }))
@@ -225,7 +229,7 @@ struct NativeReportView: View {
             HStack(alignment: .top) {
                 reportStat("时长", revealed ? "\(Int((seconds / 60).rounded()))" : "0", "分钟")
                 reportStat("工作组", revealed ? "\(p.done)" : "0", "/ \(p.planned)")
-                reportStat("容量", revealed ? displayNumber(.number(sessionVolume), digits: 0) : "0", "磅")
+                reportStat("容量", revealed ? displayNumber(.number(sessionVolume.value), digits: 0) : "0", sessionVolume.unit)
             }.padding(.vertical, 12).padding(.horizontal, 14).background(pineSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             if p.done == 0 { Text("本次没有完成的工作组，不推断训练表现。").font(.footnote).foregroundStyle(.secondary) }
         }
@@ -239,13 +243,18 @@ struct NativeReportView: View {
             }
         }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
     }
-    /// Load × reps of completed external-load work sets, in pounds.
-    private var sessionVolume: Double {
-        session["exercises"].array.reduce(0) { total, m in
-            guard m["load_mode"].text == "external", !NativeTraining.timed(m), !NativeTraining.mobility(m) else { return total }
-            let factor = m["unit"].text == "kg" ? 2.2046226 : 1
-            return total + NativeTraining.done(m).filter { !$0["warmup"].flag }.reduce(0) { $0 + ($1["weight"].number ?? 0) * factor * ($1["reps"].number ?? 0) }
+    /// Load × reps of completed external-load work sets, in the unit most of those sets
+    /// were recorded in (pounds when tied).
+    private var sessionVolume: (value: Double, unit: String) {
+        let moves = session["exercises"].array.filter { $0["load_mode"].text == "external" && !NativeTraining.timed($0) && !NativeTraining.mobility($0) }
+        let work = moves.map { m in (unit: m["unit"].text, sets: NativeTraining.done(m).filter { !$0["warmup"].flag }) }
+        let kgSets = work.filter { $0.unit == "kg" }.reduce(0) { $0 + $1.sets.count }, lbSets = work.filter { $0.unit != "kg" }.reduce(0) { $0 + $1.sets.count }
+        let kg = kgSets > lbSets
+        let total = work.reduce(0.0) { total, m in
+            let factor = m.unit == "kg" ? (kg ? 1 : 2.2046226) : (kg ? 0.45359237 : 1)
+            return total + m.sets.reduce(0.0) { $0 + ($1["weight"].number ?? 0) * factor * ($1["reps"].number ?? 0) }
         }
+        return (total, kg ? "公斤" : "磅")
     }
     /// Every move in one card: its sets in a line and the change against last time.
     private var movementList: some View {
@@ -346,6 +355,122 @@ struct NativeReportView: View {
         if abs(change) < 0.5 { return ("持平", false) }
         return ((change > 0 ? "+" : "") + String(format: "%.0f%%", change), change > 0)
     }
+    // MARK: Next steps
+    /// Today's workout only: the other half of a company+home day, today's posture, and
+    /// what comes next in the round, each one tap from starting.
+    @ViewBuilder private var nextSteps: some View {
+        if let next = planAfterSession() {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("下一步").font(.headline).padding(.bottom, 4)
+                if let other = next.other {
+                    nextRow(title: partName(other) + " · 还剩 \(remaining(other)) 组", detail: focus(other)) {
+                        start(["template_id": other["template_id"], "remaining": other["remaining"]])
+                    }
+                    reminderMenu(other)
+                }
+                if next.posture {
+                    if next.other != nil { Divider() }
+                    nextRow(title: "每日体态", detail: "今天还没做 · 5–8 分钟") { start(["template_id": "posture-daily"]) }
+                }
+                if let upcoming = next.upcoming {
+                    if next.other != nil || next.posture { Divider() }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("下一次").font(.footnote).foregroundStyle(.secondary)
+                        Text(upcoming["letter"].text + " · " + focus(upcoming["slots"][0])).font(.subheadline.weight(.semibold))
+                    }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                }
+                if let reminderNote { Text(reminderNote).font(.footnote).foregroundStyle(pine).padding(.top, 4) }
+            }.pineCard()
+        }
+    }
+    /// What is left after a workout finished today, or nil for older reports and when nothing is.
+    private func planAfterSession() -> (other: JSONValue?, posture: Bool, upcoming: JSONValue?)? {
+        guard session["status"].text == "completed" else { return nil }
+        let zone = session["timezone"].text.isEmpty ? TimeZone.current.identifier : session["timezone"].text
+        let today = store.home["date"].text
+        guard !today.isEmpty, let start = NativeDate.parse(session["started_at"]), NativeDate.day(start, timezone: zone) == today else { return nil }
+        let template = session["template_id"]
+        let schedule = store.home["plan"]["schedule"].array
+        var dayIndex: Int?
+        for (i, day) in schedule.enumerated() {
+            let ids = (day["slots"].array + [day["variants"]["gym"], day["variants"]["house"]]).map { $0["template_id"] }
+            if ids.contains(template) { dayIndex = i; break }
+        }
+        // Only a session that was one of the two halves leaves a half for later.
+        var other: JSONValue?
+        if let i = dayIndex {
+            let halves = schedule[i]["slots"].array
+            if halves.contains(where: { $0["template_id"] == template }) {
+                other = halves.first { $0["template_id"] != template && !$0["completed"].flag && remaining($0) > 0 }
+            }
+        }
+        let row = store.home["days"].array.first { $0["date"].text == today } ?? .null
+        let moves = session["exercises"].array
+        let postureSession = !moves.isEmpty && moves.allSatisfy(NativeTraining.mobility)
+        let doneToday = NativeDays.postureDone(NativeDays.sessions(records: store.records, timezone: zone)[today] ?? [])
+        let posture = !postureSession && row["posture_planned"].flag && !row["posture"].flag && !doneToday
+        var upcoming: JSONValue?
+        if other == nil, let i = dayIndex, schedule.count > 1 {
+            for step in 1..<schedule.count {
+                let day = schedule[(i + step) % schedule.count]
+                if !day["completed"].flag { upcoming = day; break }
+            }
+        }
+        guard other != nil || posture || upcoming != nil else { return nil }
+        return (other, posture, upcoming)
+    }
+    private func partName(_ slot: JSONValue) -> String { slot["variant"].text == "home" ? "家庭部分" : "公司部分" }
+    private func remaining(_ slot: JSONValue) -> Int { slot["remaining"].array.reduce(0) { $0 + $1["target"].integer } }
+    private func focus(_ slot: JSONValue) -> String {
+        let parts = slot["name"].text.components(separatedBy: "｜")
+        return (parts.count > 1 ? parts[1] : slot["name"].text).replacingOccurrences(of: "·", with: " · ")
+    }
+    private func nextRow(title: String, detail: String, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            Button("开始", action: action).font(.subheadline.weight(.semibold)).buttonStyle(.bordered).tint(pine).disabled(store.active != nil)
+        }.frame(minHeight: 56)
+    }
+    /// Starts the next part once this report closes, so the workout opens over the tab.
+    private func start(_ action: JSONValue) {
+        store.homeAction(action)
+        if store.active != nil { store.reportID = nil }
+    }
+    /// A local reminder for the half left for later today.
+    private func reminderMenu(_ slot: JSONValue) -> some View {
+        let now = Date(), calendar = Calendar.current
+        let tonight = [20, 21].compactMap { calendar.date(bySettingHour: $0, minute: 0, second: 0, of: now) }.filter { $0 > now.addingTimeInterval(15 * 60) }
+        return Menu {
+            Button("1 小时后") { remind(slot, at: now.addingTimeInterval(3600)) }
+            ForEach(tonight, id: \.self) { date in
+                Button("今晚 " + NativeDate.label(date, format: "H:mm", timezone: TimeZone.current.identifier)) { remind(slot, at: date) }
+            }
+        } label: {
+            Label("提醒我晚点练", systemImage: "bell").font(.footnote.weight(.semibold)).foregroundStyle(pine).frame(minHeight: 36)
+        }
+    }
+    private func remind(_ slot: JSONValue, at date: Date) {
+        let title = partName(slot) + "还剩 \(remaining(slot)) 组"
+        let body = focus(slot)
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
+            guard granted else { reminderNote = "通知未开启，可以在 iPhone 设置里允许 Pine 发送通知。"; return }
+            let content = UNMutableNotificationContent(); content.title = title; content.body = body; content.sound = .default
+            let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+            let request = UNNotificationRequest(identifier: "pine.next-part." + slot["template_id"].text, content: content,
+                                                trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false))
+            do {
+                try await center.add(request)
+                reminderNote = "会在 " + NativeDate.label(date, format: "H:mm", timezone: TimeZone.current.identifier) + " 提醒你。"
+            } catch { reminderNote = "提醒没有设好：" + error.localizedDescription }
+        }
+    }
+
     private var reviewCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack { Text(review["status"].text == "ready" ? "AI 复盘" : "本次复盘").font(.headline); Spacer(); if review["status"].text == "pending" { ProgressView() } }

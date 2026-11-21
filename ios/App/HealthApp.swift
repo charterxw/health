@@ -67,7 +67,9 @@ struct NativeLaunchView: View {
     }
 }
 
-enum NativeOverviewRoute: Hashable { case recovery, sleep }
+/// Pages pushed from the overview. Reading a detail is a push; editing (goals,
+/// feelings, walks) stays a sheet.
+enum NativeOverviewRoute: Hashable { case recovery, sleep, steps, weight, day(String), sync, strength, calendar }
 struct NativeRootView: View {
     @Environment(NativeStore.self) var store
     @Namespace private var workoutZoom
@@ -81,7 +83,7 @@ struct NativeRootView: View {
     var body: some View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
-            NavigationStack(path: $overviewPath) { NativeDashboardView().nativeToolbar().navigationDestination(for: NativeOverviewRoute.self) { route in switch route { case .recovery: NativeRecoveryContent(); case .sleep: NativeSleepView() } } }.tabItem { Label("总览", systemImage: "square.grid.2x2.fill") }.tag(0)
+            NavigationStack(path: $overviewPath) { NativeDashboardView().nativeToolbar().navigationDestination(for: NativeOverviewRoute.self) { route in overviewPage(route) } }.tabItem { Label("总览", systemImage: "square.grid.2x2.fill") }.tag(0)
             NavigationStack { NativeTrainingView().nativeToolbar() }.tabItem { Label("训练", systemImage: "dumbbell.fill") }.tag(1)
             NavigationStack { NativeHistoryView().nativeToolbar() }.tabItem { Label("运动记录", systemImage: "list.bullet.clipboard.fill") }.tag(2)
         }
@@ -121,6 +123,18 @@ struct NativeRootView: View {
     }
 }
 extension NativeRootView {
+    @ViewBuilder func overviewPage(_ route: NativeOverviewRoute) -> some View {
+        switch route {
+        case .recovery: NativeRecoveryContent()
+        case .sleep: NativeSleepView()
+        case .steps: NativeMetricContent(metric: MetricSelection(id: "steps", title: "步数", unit: "步"))
+        case .weight: NativeWeightList(rows: store.home["weights"].array)
+        case .day(let date): NativeDayDetail(day: store.home["days"].array.first { $0["date"].text == date } ?? .null)
+        case .sync: NativeSyncDetail()
+        case .strength: NativeStrengthProgressView()
+        case .calendar: PinePage { NativeMonthCalendar() }.navigationTitle("训练日历").navigationBarTitleDisplayMode(.inline)
+        }
+    }
     private var todayRow: JSONValue { store.home["days"].array.first { $0["date"] == store.home["date"] } ?? .null }
     var celebrationKey: String {
         [store.home["date"].text, displayNumber(todayRow["activity"], digits: 0), String(todayRow["posture"].flag), displayNumber(store.home["today"]["steps"], digits: 0), String(store.records.count), String(store.historyRevision),

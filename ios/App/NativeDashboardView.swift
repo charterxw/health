@@ -6,15 +6,9 @@ struct MetricSelection: Identifiable { let id: String; let title: String; let un
 struct NativeDashboardView: View {
     @Environment(NativeStore.self) var store
     @PineReducedMotion private var reduceMotion
-    @AppStorage("pine.records.calendar") private var recordsCalendar = false
     @State private var selectedDay = ""
-    @State private var metric: MetricSelection?
     @State private var showingGoals = false
     @State private var showingFeedback = false
-    @State private var showingDay = false
-    @State private var showingSync = false
-    @State private var showingWeight = false
-    @State private var showingStrength = false
     @State private var weekDetail: WeekDetail?
     @State private var barsShown = false
     /// Sentences of a newly written observation shown so far (all when settled).
@@ -56,7 +50,7 @@ struct NativeDashboardView: View {
                     // 36 pt header; the buttons keep a 44 pt hit area through their content shape.
                     PineSectionHeader(title: "本周", minHeight: 36) {
                         Button("目标") { showingGoals = true }.font(.subheadline).frame(minWidth: 44, minHeight: 36).contentShape(Rectangle().inset(by: -4))
-                        Button("日历") { recordsCalendar = true; store.selectedTab = 2 }.font(.subheadline).frame(minWidth: 44, minHeight: 36).contentShape(Rectangle().inset(by: -4))
+                        NavigationLink("日历", value: NativeOverviewRoute.calendar).font(.subheadline).frame(minWidth: 44, minHeight: 36).contentShape(Rectangle().inset(by: -4))
                     }
                     weekCard(sessions)
                     flexGap(min: 10, max: 14)
@@ -77,14 +71,9 @@ struct NativeDashboardView: View {
         .background(pineCanvas)
         .navigationTitle("今天")
         .modifier(PinePullRefresh { await store.refresh(); await store.refreshHealth() })
-        .sheet(item: $metric) { item in NavigationStack { NativeMetricDetail(metric: item) } }
         .sheet(isPresented: $showingGoals) { NavigationStack { NativeGoalsView() } }
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
-        .sheet(isPresented: $showingDay) { NavigationStack { NativeDayDetail(day: day) } }
-        .sheet(isPresented: $showingSync) { NavigationStack { NativeSyncDetail() } }
-        .sheet(isPresented: $showingStrength) { NavigationStack { NativeStrengthProgressView() } }
         .task(id: home["date"].text) { if !home.isNull, !store.isDesignPreview { checkYesterday(sessions) } }
-        .sheet(isPresented: $showingWeight) { NavigationStack { NativeWeightList(rows: home["weights"].array) } }
         .task(id: store.brief["status"].text) {
             guard !store.isDesignPreview, store.brief["status"].text == "pending" else { return }
             for _ in 0..<60 {
@@ -112,7 +101,7 @@ struct NativeDashboardView: View {
     private var feelings: String { [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · ") }
     private var syncRow: some View {
         HStack(spacing: 8) {
-            Button { showingSync = true } label: {
+            NavigationLink(value: NativeOverviewRoute.sync) {
                 HStack(spacing: 6) {
                     if busy {
                         // The glyph turns while data comes in.
@@ -285,7 +274,7 @@ struct NativeDashboardView: View {
         // Steps sit beside the rings as a fourth daily goal; both tiles share one height.
         // The steps tile is an overlay so it always matches the goal tile's height.
         return HStack(spacing: 10) {
-            Button { showingDay = true } label: {
+            NavigationLink(value: NativeOverviewRoute.day(day["date"].text)) {
                 HStack(spacing: 12) {
                     PineDayGlyph(activity: fraction, halves: half, posture: postureMet, future: future, size: 80, animated: true)
                     VStack(spacing: 0) {
@@ -363,7 +352,7 @@ struct NativeDashboardView: View {
             guard let steps, let goal, goal > 0 else { return "" }
             return steps >= goal ? "超出 " + displayNumber(.number(steps - goal), digits: 0) : "目标 " + displayNumber(.number(goal), digits: 0)
         }()
-        return Button { metric = MetricSelection(id: "steps", title: "今日步数", unit: "步") } label: {
+        return NavigationLink(value: NativeOverviewRoute.steps) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("步数").font(.caption).foregroundStyle(.secondary)
                 Text(displayNumber(stepsValue, digits: 0)).font(.title3.weight(.semibold)).monospacedDigit()
@@ -489,7 +478,7 @@ struct NativeDashboardView: View {
                         .foregroundStyle(lift.change > 0.005 ? pine : Color.secondary)
                 }
             }
-            Button { showingStrength = true } label: {
+            NavigationLink(value: NativeOverviewRoute.strength) {
                 HStack(spacing: 2) { Text(week.lifts.count > 3 ? "全部 \(week.lifts.count) 个动作与之前几周" : "动作详情与之前几周"); Image(systemName: "chevron.right").font(.caption2.weight(.semibold)) }
                     .font(.footnote.weight(.semibold)).foregroundStyle(pine).frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
             }.buttonStyle(.plain)
@@ -514,7 +503,7 @@ struct NativeDashboardView: View {
                 thirdTile(sleep.title, sleep.detail, sleep.value, sleep.unit, nil)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("home-sleep")
             Divider().frame(height: 36)
-            Button { showingWeight = true } label: {
+            NavigationLink(value: NativeOverviewRoute.weight) {
                 thirdTile("体重", NativeGain.rate(home["weights"].array, today: home["date"].text).map { "增速" + NativeGain.status($0.percentPerMonth) } ?? weight.change, weight.value, weight.value == "—" ? "" : "公斤", nil)
             }.buttonStyle(PinePressStyle()).accessibilityIdentifier("metric-weight")
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -690,15 +679,10 @@ struct NativeSyncDetail: View {
             }
             Section("App 最近读取") { ForEach(store.home["sources"].object.keys.sorted(), id: \.self) { key in PineRow(label: ["metrics":"每日指标","sleep":"睡眠","weight":"体重","activity":"活动拆分","walks":"散步记录"][key] ?? key, value: dateLabel(store.home["sources"][key]["fetched_at"])) } }
             Button("重新读取数据", systemImage: "arrow.clockwise") { Task { await store.refreshHealth() } }.disabled(store.healthRefreshing || store.isDesignPreview)
-        }.navigationTitle("数据与同步").toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+        }.navigationTitle("数据与同步").navigationBarTitleDisplayMode(.inline)
     }
 }
 
-struct NativeMetricDetail: View {
-    @Environment(\.dismiss) private var dismiss
-    let metric: MetricSelection
-    var body: some View { NativeMetricContent(metric: metric).toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } } }
-}
 struct NativeMetricContent: View {
     @Environment(NativeStore.self) var store
     let metric: MetricSelection
@@ -865,10 +849,6 @@ struct NativeWalkEditor: View {
     }
 }
 
-struct NativeRecoveryView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View { NativeRecoveryContent().toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } } }
-}
 struct NativeRecoveryContent: View {
     @Environment(NativeStore.self) var store
     var body: some View {
@@ -946,7 +926,7 @@ struct NativeDayDetail: View {
                 ForEach(day["posture_sessions"].array,id:\.id) { s in Button(s["title"].text) { dismiss();store.homeAction(["session_id":s["id"]]) } }
                 if day["date"]==store.home["date"],!day["posture_recorded"].flag { Button("查看今天的体态练习") { dismiss();store.homeAction(["template_id":"posture-daily"]) } }
             }.pineCard()
-        }.navigationTitle("每日记录").toolbar { ToolbarItem(placement:.confirmationAction) { Button("完成") { dismiss() } } }
+        }.navigationTitle("每日记录").navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -1075,7 +1055,6 @@ struct NativeWeightList: View {
                 }
             }
         }.navigationTitle("体重与体型").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
             .onAppear { entries = NativeMeasurements.entries(); protein = NativeProtein.all() }
     }
     private func signed(_ value: Double) -> String { (value >= 0 ? "+" : "") + displayNumber(.number(value), digits: 2) }
@@ -1180,7 +1159,6 @@ struct NativeStrengthProgressView: View {
             volumeRow(sessions: sessions, calendar: calendar, start: start, now: now)
         }
         .navigationTitle("力量指数").navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
         .onAppear {
             guard !shown else { return }
             if reduceMotion { shown = true } else { withAnimation(.smooth(duration: 0.9).delay(0.1)) { shown = true } }
