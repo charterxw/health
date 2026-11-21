@@ -14,6 +14,9 @@ struct NativeDashboardView: View {
     /// Sentences of a newly written observation shown so far (all when settled).
     @State private var revealed = Int.max
     @State private var seenBrief = ""
+    /// The observation stayed "pending" through every poll.
+    @State private var briefSlow = false
+    @State private var briefRetry = 0
     /// Yesterday's glyph glows once when all three closed while the app was away.
     @State private var glowDate = ""
     /// On Sunday evening the week's summary takes the observation's place.
@@ -74,12 +77,14 @@ struct NativeDashboardView: View {
         .sheet(isPresented: $showingGoals) { NavigationStack { NativeGoalsView() } }
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
         .task(id: home["date"].text) { if !home.isNull, !store.isDesignPreview { checkYesterday(sessions) } }
-        .task(id: store.brief["status"].text) {
+        .task(id: store.brief["status"].text + "|\(briefRetry)") {
+            briefSlow = false
             guard !store.isDesignPreview, store.brief["status"].text == "pending" else { return }
             for _ in 0..<60 {
                 do { try await Task.sleep(for: .seconds(3)) } catch { return }
                 await store.loadBrief(); if store.brief["status"].text != "pending" { return }
             }
+            briefSlow = true
         }
     }
 
@@ -178,7 +183,7 @@ struct NativeDashboardView: View {
         let lines = store.brief["sentences"].array.map { $0.text.isEmpty ? $0["text"].text : $0.text }.filter { !$0.isEmpty }
         let summary = lines.isEmpty ? home["tip"].text : lines.joined(separator: " ")
         let evening = store.brief["title"].text.contains("晚") || store.brief["period"].text == "evening"
-        let pending = store.brief["status"].text == "pending"
+        let pending = store.brief["status"].text == "pending" && !briefSlow
         let written = NativeDate.parse(store.brief["generated_at"]).map { " · " + NativeDate.label($0, format: "HH:mm", timezone: timezone) } ?? ""
         // The whole observation is readable on the overview; the text runs the full
         // width, and the re-analyse control sits on the label line instead of
@@ -189,7 +194,7 @@ struct NativeDashboardView: View {
                 Spacer(minLength: 8)
                 if summaryTime { Button("本周小结") { withAnimation(.easeOut(duration: 0.2)) { showBrief = false } }.font(.caption.weight(.semibold)) }
                 // Manual trigger: rewrite the observation now, even if the data is unchanged.
-                Button { Task { await store.loadBrief(force: true) } } label: {
+                Button { briefRetry += 1; Task { await store.loadBrief(force: true) } } label: {
                     Image(systemName: "sparkles").font(.footnote.weight(.semibold)).foregroundStyle(pending ? pineGold : pine)
                         .symbolEffect(.variableColor.iterative.reversing, options: .repeating, isActive: pending && !reduceMotion)
                         .frame(width: 28, height: 20).contentShape(Rectangle().inset(by: -12))
@@ -197,7 +202,7 @@ struct NativeDashboardView: View {
                     .accessibilityLabel(pending ? "正在分析" : "立即重新分析")
             }
             NavigationLink { NativeBriefDetail() } label: {
-                observationText(lines: lines, fallback: pending && lines.isEmpty ? "正在分析睡眠和恢复…" : summary).font(.subheadline).lineSpacing(2)
+                observationText(lines: lines, fallback: pending && lines.isEmpty ? "正在分析睡眠和恢复…" : briefSlow && lines.isEmpty ? "这次分析比平时慢，稍后打开会自动更新；也可以点右上角重新分析。" : summary).font(.subheadline).lineSpacing(2)
                     .foregroundStyle(pending && lines.isEmpty ? .secondary : .primary)
                     .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -686,12 +691,22 @@ struct NativeSyncDetail: View {
 struct NativeMetricContent: View {
     @Environment(NativeStore.self) var store
     let metric: MetricSelection
+    /// The list shows the four weeks the chart covers; older days are one tap away.
+    @State private var showingAll = false
     var body: some View {
         let rows = store.home["metrics"].array.sorted { $0["date"].text > $1["date"].text }
+        let visible = showingAll ? rows : Array(rows.prefix(28))
         PinePage {
             Text(displayNumber(healthValue(store.home["today"][metric.id], key: metric.id)) + " " + metric.unit).font(.largeTitle.bold())
             MetricChart(rows: Array(rows.prefix(28).reversed()), key: metric.id).pineCard()
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in PineRow(label: row["date"].text, value: displayNumber(healthValue(row[metric.id], key: metric.id)) + " " + metric.unit) }
+            VStack(spacing: 10) {
+                ForEach(Array(visible.enumerated()), id: \.offset) { _, row in
+                    PineRow(label: dayTitle(row["date"].text, format: "M月d日 EEE"), value: displayNumber(healthValue(row[metric.id], key: metric.id)) + " " + metric.unit)
+                }
+            }.pineCard()
+            if rows.count > visible.count {
+                Button("显示更早的 \(rows.count - visible.count) 天") { withAnimation(.easeOut(duration: 0.2)) { showingAll = true } }.font(.subheadline).frame(minHeight: 44)
+            }
         }.navigationTitle(metric.title).navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -708,10 +723,27 @@ struct NativeGoalsView: View {
     @State private var busy = false
     var body: some View {
         Form {
-            Section("日常走动") { TextField("每日步数", value: $steps, format: .number).keyboardType(.numberPad); Button("保存步数目标") { save(stepsOnly: true) }.disabled(busy || !(1000...50000).contains(steps)) }
-            Section { TextField("每日活动千卡", value: $daily, format: .number).keyboardType(.numberPad); TextField("每周活动千卡", value: $weekly, format: .number).keyboardType(.numberPad); Stepper("力量训练 \(strength) 天", value: $strength, in: 1...7); Stepper("体态练习 \(posture) 天", value: $posture, in: 1...7) } header: { Text("从下周起生效") } footer: { Text("生效日期：" + store.home["next_effective"].text) }
-            if let error { Text(error).foregroundStyle(.red) }
-            Button("保存下周目标") { save(stepsOnly: false) }.disabled(busy || !(1...3000).contains(daily) || !(1...21000).contains(weekly))
+            // Two separate saves with different timing, each stated beside its button.
+            Section {
+                LabeledContent("每日步数") { TextField("每日步数", value: $steps, format: .number).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
+                Button("保存步数目标") { save(stepsOnly: true) }.disabled(busy || !(1000...50000).contains(steps))
+            } header: { Text("步数 · 保存后立即生效") } footer: {
+                if !(1000...50000).contains(steps) { Text("步数目标需要在 1,000 到 50,000 之间。").foregroundStyle(.red) }
+            }
+            Section {
+                LabeledContent("每日活动千卡") { TextField("每日活动千卡", value: $daily, format: .number).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
+                LabeledContent("每周活动千卡") { TextField("每周活动千卡", value: $weekly, format: .number).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
+                Stepper("力量训练 \(strength) 天", value: $strength, in: 1...7)
+                Stepper("体态练习 \(posture) 天", value: $posture, in: 1...7)
+                Button("保存下周目标") { save(stepsOnly: false) }.disabled(busy || !(1...3000).contains(daily) || !(1...21000).contains(weekly))
+            } header: { Text("活动与训练 · 从下周起生效") } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if !(1...3000).contains(daily) { Text("每日活动需要在 1 到 3,000 千卡之间。").foregroundStyle(.red) }
+                    if !(1...21000).contains(weekly) { Text("每周活动需要在 1 到 21,000 千卡之间。").foregroundStyle(.red) }
+                    Text("生效日期：" + (store.home["next_effective"].text.isEmpty ? "下周一" : dayTitle(store.home["next_effective"].text, format: "M月d日 EEEE")) + "。本周仍按原目标计算。")
+                }
+            }
+            if let error { Section { Text(error).foregroundStyle(.red) } }
         }.navigationTitle("调整目标").toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
             .onAppear { let g = store.home["next_goals"].or(store.home["goals"]); steps = store.home["step_goal"]["target"].integer; daily = g["dailyActivity"].integer; weekly = g["weeklyActivity"].integer; strength = max(1,g["weeklyStrength"].integer); posture = max(1,g["weeklyPosture"].integer) }
     }
@@ -905,7 +937,7 @@ struct NativeDayDetail: View {
     let day:JSONValue
     var body: some View {
         PinePage {
-            PineHeading(title:day["date"].text)
+            PineHeading(title: dayTitle(day["date"].text, format: "M月d日 EEEE"))
             VStack(alignment:.leading,spacing:12) {
                 Text("日常活动").font(.headline)
                 PineRow(label:"全天活动热量",value:displayNumber(day["total_energy"]) + " 千卡")
@@ -978,6 +1010,8 @@ struct NativeWeightList: View {
     @Environment(NativeStore.self) private var store
     let rows: [JSONValue]
     @State private var protein = NativeProtein.all()
+    /// Portions added on this page, newest last, so undo takes back exactly the last one.
+    @State private var added: [Double] = []
     @State private var entries = NativeMeasurements.entries()
     private var today: String { store.home["date"].text.isEmpty ? NativeDate.day(Date(), timezone: TimeZone.current.identifier) : store.home["date"].text }
     var body: some View {
@@ -1016,7 +1050,8 @@ struct NativeWeightList: View {
                         Button("+\(Int(grams))") { addProtein(grams) }.buttonStyle(.bordered).tint(pine)
                     }
                     Spacer()
-                    Button("撤销", systemImage: "arrow.uturn.backward") { addProtein(-10) }.labelStyle(.iconOnly).buttonStyle(.bordered).disabled(eaten <= 0)
+                    Button("撤销上一次", systemImage: "arrow.uturn.backward") { undoProtein() }.labelStyle(.iconOnly).buttonStyle(.bordered).disabled(added.isEmpty || eaten <= 0)
+                        .accessibilityLabel(added.last.map { "撤销刚才的 +\(Int($0)) 克" } ?? "撤销")
                 }.font(.subheadline.weight(.semibold))
                 let week = (0..<7).compactMap { offset -> Double? in
                     guard let date = NativeDate.parse(today + "T12:00:00Z")?.addingTimeInterval(-Double(offset) * 86400) else { return nil }
@@ -1063,7 +1098,12 @@ struct NativeWeightList: View {
         return "近 4 周每月 \(signed(percent))% · 7 天平均 \(avg) 公斤"
     }
     private func addProtein(_ grams: Double) {
-        NativeProtein.add(grams, on: today)
+        NativeProtein.add(grams, on: today); added.append(grams)
+        withAnimation(.snappy) { protein = NativeProtein.all() }
+    }
+    private func undoProtein() {
+        guard let last = added.popLast() else { return }
+        NativeProtein.add(-last, on: today)
         withAnimation(.snappy) { protein = NativeProtein.all() }
     }
     /// The month's pace on a 0–1.5 % scale with the target band shaded.
