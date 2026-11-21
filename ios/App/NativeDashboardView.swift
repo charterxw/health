@@ -76,7 +76,11 @@ struct NativeDashboardView: View {
         .modifier(PinePullRefresh { await store.refresh(); await store.refreshHealth() })
         .sheet(isPresented: $showingGoals) { NavigationStack { NativeGoalsView() } }
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
-        .task(id: home["date"].text) { if !home.isNull, !store.isDesignPreview { checkYesterday(sessions) } }
+        .task(id: home["date"].text) {
+            guard !home.isNull, !store.isDesignPreview else { return }
+            checkYesterday(sessions)
+            await NativeBodySync.sync(store.api)
+        }
         .task(id: store.brief["status"].text + "|\(briefRetry)") {
             briefSlow = false
             guard !store.isDesignPreview, store.brief["status"].text == "pending" else { return }
@@ -103,7 +107,10 @@ struct NativeDashboardView: View {
     private func shortTime(_ date: Date) -> String {
         NativeDate.label(date, format: NativeDate.day(date, timezone: timezone) == home["date"].text ? "HH:mm" : "M/d HH:mm", timezone: timezone)
     }
-    private var feelings: String { [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · ") }
+    private var feelings: String {
+        let sore = home["feedback"]["soreness"].array.map(\.text)
+        return [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text, sore.isEmpty ? "" : sore.count <= 2 ? sore.joined(separator: "、") + "酸" : "\(sore.count) 处酸痛"].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
     private var syncRow: some View {
         HStack(spacing: 8) {
             NavigationLink(value: NativeOverviewRoute.sync) {
@@ -755,17 +762,50 @@ struct NativeGoalsView: View {
 struct NativeFeedbackView: View {
     @Environment(NativeStore.self) var store
     @Environment(\.dismiss) private var dismiss
+    static let areas = ["胸", "背", "肩", "手臂", "腹", "下背", "臀", "大腿", "小腿", "颈"]
     @State private var energy = ""
     @State private var fatigue = ""
+    @State private var sore: Set<String> = []
+    @State private var stress = ""
+    @State private var note = ""
     @State private var busy = false
     @State private var error: String?
     var body: some View {
         Form {
-            Picker("精神", selection: $energy) { Text("未记录").tag(""); ForEach(["充沛","一般","困倦"], id: \.self) { Text($0).tag($0) } }
-            Picker("疲劳", selection: $fatigue) { Text("未记录").tag(""); ForEach(["轻","中","重"], id: \.self) { Text($0).tag($0) } }
-            if let error { Text(error).foregroundStyle(.red) }
-            Button("保存今天的感受") { busy = true; Task { do { try await store.mutateHome("/home/feedback", body: ["energy": energy.isEmpty ? .null : .string(energy), "fatigue": fatigue.isEmpty ? .null : .string(fatigue)]); dismiss() } catch { self.error = error.localizedDescription }; busy = false } }.disabled(busy)
-        }.navigationTitle("今天的感受").toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }.onAppear { energy = store.home["feedback"]["energy"].text; fatigue = store.home["feedback"]["fatigue"].text }
+            Section {
+                Picker("精神", selection: $energy) { Text("未记录").tag(""); ForEach(["充沛","一般","困倦"], id: \.self) { Text($0).tag($0) } }
+                Picker("疲劳", selection: $fatigue) { Text("未记录").tag(""); ForEach(["轻","中","重"], id: \.self) { Text($0).tag($0) } }
+                Picker("压力", selection: $stress) { Text("未记录").tag(""); ForEach(["低","中","高"], id: \.self) { Text($0).tag($0) } }
+            }
+            Section {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 64), spacing: 8)], alignment: .leading, spacing: 8) {
+                    ForEach(Self.areas, id: \.self) { area in
+                        let on = sore.contains(area)
+                        Button { if on { sore.remove(area) } else { sore.insert(area) } } label: {
+                            Text(area).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 36)
+                                .foregroundStyle(on ? Color.white : pine).background(on ? pine : pineTint, in: Capsule())
+                        }.buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }.padding(.vertical, 4)
+            } header: { Text("哪里酸痛") } footer: { Text("观察会提醒今天少给这些部位加量。") }
+            Section("备注") {
+                TextField("例如：昨晚没睡好、左肩有点紧", text: $note, axis: .vertical).lineLimit(1...3)
+            }
+            if let error { Section { Text(error).foregroundStyle(.red) } }
+            Button("保存今天的感受") { save() }.disabled(busy || note.count > 200)
+        }.navigationTitle("今天的感受").toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+            .onAppear {
+                let saved = store.home["feedback"]
+                energy = saved["energy"].text; fatigue = saved["fatigue"].text; stress = saved["stress"].text; note = saved["note"].text
+                sore = Set(saved["soreness"].array.map(\.text))
+            }
+    }
+    private func save() {
+        busy = true
+        let body: JSONValue = ["energy": energy.isEmpty ? .null : .string(energy), "fatigue": fatigue.isEmpty ? .null : .string(fatigue),
+                               "stress": stress.isEmpty ? .null : .string(stress), "note": .string(note),
+                               "soreness": .array(Self.areas.filter { sore.contains($0) }.map { .string($0) })]
+        Task { do { try await store.mutateHome("/home/feedback", body: body); dismiss() } catch { self.error = error.localizedDescription }; busy = false }
     }
 }
 
@@ -916,7 +956,8 @@ struct NativeRecoveryContent: View {
                     PineRow(label: "睡眠", value: recoveryPosition(score["components"]["sleep"]) + " · 目标 " + displayNumber(score["sleep_need"], digits: 0) + " 小时")
                     PineRow(label: "近 7 晚平均欠睡", value: displayNumber(score["sleep_debt"]) + " 小时")
                 }
-                PineRow(label: "今天感受", value: [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text].filter { !$0.isEmpty }.joined(separator: " · "))
+                PineRow(label: "今天感受", value: [home["feedback"]["energy"].text, home["feedback"]["fatigue"].text, home["feedback"]["stress"].text.isEmpty ? "" : "压力" + home["feedback"]["stress"].text].filter { !$0.isEmpty }.joined(separator: " · "))
+                if !home["feedback"]["soreness"].array.isEmpty { PineRow(label: "酸痛部位", value: home["feedback"]["soreness"].array.map(\.text).joined(separator: "、")) }
             }.pineCard()
         }.navigationTitle("恢复指数").navigationBarTitleDisplayMode(.inline)
     }
@@ -984,12 +1025,74 @@ enum NativeProtein {
     static func all() -> [String: Double] { UserDefaults.standard.dictionary(forKey: key) as? [String: Double] ?? [:] }
     static func add(_ grams: Double, on date: String) {
         var rows = all(); rows[date] = max(0, (rows[date] ?? 0) + grams)
-        // Keep about two months.
+        store(rows); NativeBodySync.markProtein(date)
+    }
+    /// The server's totals replace the phone's copy after a sync.
+    static func replace(_ rows: [String: Double]) { store(rows) }
+    private static func store(_ value: [String: Double]) {
+        var rows = value
+        // Keep about two months on the phone; the server keeps the rest.
         if rows.count > 70 { for old in rows.keys.sorted().prefix(rows.count - 70) { rows[old] = nil } }
         UserDefaults.standard.set(rows, forKey: key)
     }
     /// 1.6 g per kg of body weight, rounded to 5 g.
     static func target(kg: Double) -> Double { (kg * 1.6 / 5).rounded() * 5 }
+}
+/// Girths and protein: the phone keeps a copy for offline use and the server keeps
+/// the record. Local changes are marked and pushed first (each write is idempotent),
+/// then the server's copy replaces the phone's. Photos never leave the phone.
+enum NativeBodySync {
+    private static let migratedKey = "pine.body.migrated"
+    private static let dirtyEntriesKey = "pine.body.dirty.entries", deletedEntriesKey = "pine.body.deleted.entries", dirtyProteinKey = "pine.body.dirty.protein"
+    @MainActor private static var running = false
+    static func markEntry(_ id: String) { change(dirtyEntriesKey) { $0.insert(id) } }
+    static func markDeleted(_ id: String) { change(deletedEntriesKey) { $0.insert(id) }; change(dirtyEntriesKey) { $0.remove(id) } }
+    static func markProtein(_ date: String) { change(dirtyProteinKey) { $0.insert(date) } }
+    private static func ids(_ key: String) -> Set<String> { Set(UserDefaults.standard.stringArray(forKey: key) ?? []) }
+    private static func change(_ key: String, _ edit: (inout Set<String>) -> Void) {
+        var value = ids(key); edit(&value); UserDefaults.standard.set(value.sorted(), forKey: key)
+    }
+    /// True when the server's copy was applied to the phone.
+    @MainActor @discardableResult static func sync(_ api: HealthAPI) async -> Bool {
+        guard !running else { return false }
+        running = true; defer { running = false }
+        let defaults = UserDefaults.standard
+        if !defaults.bool(forKey: migratedKey) {
+            // The first sync uploads what was recorded before girths and protein had a server copy.
+            for entry in NativeMeasurements.entries() { markEntry(entry.id.uuidString) }
+            for date in NativeProtein.all().keys { markProtein(date) }
+            defaults.set(true, forKey: migratedKey)
+        }
+        do {
+            for id in ids(deletedEntriesKey) {
+                _ = try await api.request("/body/measurements/" + id, method: "DELETE"); change(deletedEntriesKey) { $0.remove(id) }
+            }
+            let entries = NativeMeasurements.entries()
+            for id in ids(dirtyEntriesKey) {
+                if let entry = entries.first(where: { $0.id.uuidString == id }) {
+                    _ = try await api.request("/body/measurements/" + id, method: "PUT", body: ["kind": .string(entry.kind), "date": .string(entry.date), "cm": .number(entry.cm)])
+                }
+                change(dirtyEntriesKey) { $0.remove(id) }
+            }
+            let protein = NativeProtein.all()
+            for date in ids(dirtyProteinKey) {
+                _ = try await api.request("/body/protein/" + date, method: "PUT", body: ["grams": .number(protein[date] ?? 0)])
+                change(dirtyProteinKey) { $0.remove(date) }
+            }
+            let server = try await api.request("/body")
+            // An edit made while this ran is pushed next time; keep it on the phone until then.
+            guard ids(dirtyEntriesKey).isEmpty, ids(deletedEntriesKey).isEmpty, ids(dirtyProteinKey).isEmpty else { return false }
+            NativeMeasurements.save(server["measurements"].array.compactMap { row in
+                guard let id = UUID(uuidString: row.id), let cm = row["cm"].number, !row["kind"].text.isEmpty, !row["date"].text.isEmpty else { return nil }
+                return NativeMeasurements.Entry(id: id, kind: row["kind"].text, date: row["date"].text, cm: cm)
+            })
+            NativeProtein.replace(server["protein"].object.compactMapValues(\.number))
+            return true
+        } catch {
+            // An older server without these endpoints, or no connection: keep the phone's copy and retry later.
+            return false
+        }
+    }
 }
 /// Shoulder circumference over waist, pairing each shoulder reading with the
 /// waist reading closest in time (within ten days).
@@ -1058,7 +1161,7 @@ struct NativeWeightList: View {
                     return protein[NativeDate.day(date, timezone: "UTC")]
                 }
                 if goal > 0, !week.isEmpty { Text("近 7 天记录了 \(week.count) 天，其中 \(week.filter { $0 >= goal }.count) 天达标").font(.caption).foregroundStyle(.secondary) }
-            } header: { Text("今天的蛋白质") } footer: { Text("每公斤体重约 1.6 克，分到三四顿。参考：一个鸡蛋约 6 克，一杯牛奶约 8 克，一掌心肉或鱼约 25 克，一勺蛋白粉约 25 克。只保存在这台手机上。") }
+            } header: { Text("今天的蛋白质") } footer: { Text("每公斤体重约 1.6 克，分到三四顿。参考：一个鸡蛋约 6 克，一杯牛奶约 8 克，一掌心肉或鱼约 25 克，一勺蛋白粉约 25 克。会同步到服务器。") }
             Section {
                 let ratios = NativeShape.ratios(entries)
                 if let last = ratios.last {
@@ -1091,6 +1194,7 @@ struct NativeWeightList: View {
             }
         }.navigationTitle("体重与体型").navigationBarTitleDisplayMode(.inline)
             .onAppear { entries = NativeMeasurements.entries(); protein = NativeProtein.all() }
+            .task { if !store.isDesignPreview, await NativeBodySync.sync(store.api) { entries = NativeMeasurements.entries(); protein = NativeProtein.all() } }
     }
     private func signed(_ value: Double) -> String { (value >= 0 ? "+" : "") + displayNumber(.number(value), digits: 2) }
     private func paceText(percent: Double, average: Double) -> String {
@@ -1100,11 +1204,17 @@ struct NativeWeightList: View {
     private func addProtein(_ grams: Double) {
         NativeProtein.add(grams, on: today); added.append(grams)
         withAnimation(.snappy) { protein = NativeProtein.all() }
+        pushProtein()
     }
     private func undoProtein() {
         guard let last = added.popLast() else { return }
         NativeProtein.add(-last, on: today)
         withAnimation(.snappy) { protein = NativeProtein.all() }
+        pushProtein()
+    }
+    private func pushProtein() {
+        guard !store.isDesignPreview else { return }
+        Task { if await NativeBodySync.sync(store.api) { protein = NativeProtein.all() } }
     }
     /// The month's pace on a 0–1.5 % scale with the target band shaded.
     private func gainBar(_ percent: Double) -> some View {
@@ -1334,7 +1444,7 @@ struct NativeMeasurementsView: View {
                     ForEach(entries.filter { $0.kind == kind.rawValue }.sorted { $0.date > $1.date }.prefix(6)) { entry in
                         HStack { Text(dayTitle(entry.date, format: "M月d日 EEE")); Spacer(); Text(displayNumber(.number(entry.cm)) + " 厘米").monospacedDigit() }
                             .font(.subheadline).foregroundStyle(.secondary)
-                            .swipeActions { Button("删除", role: .destructive) { entries.removeAll { $0.id == entry.id }; NativeMeasurements.save(entries) } }
+                            .swipeActions { Button("删除", role: .destructive) { entries.removeAll { $0.id == entry.id }; NativeMeasurements.save(entries); NativeBodySync.markDeleted(entry.id.uuidString); syncBody() } }
                     }
                 } header: { Text(kind.title + (kind == .waist ? " · 每周" : " · 每月")) } footer: { Text(kind.how) }
             }
@@ -1353,11 +1463,13 @@ struct NativeMeasurementsView: View {
                         }
                     }.padding(.vertical, 4)
                 }
-            } header: { Text("对比照片 · 每月") } footer: { Text("同样的光线和站姿，正面、侧面、背面各一张。围度和照片只保存在这台手机上，不上传服务器；删除 App 会一起删除。") }
+            } header: { Text("对比照片 · 每月") } footer: { Text("同样的光线和站姿，正面、侧面、背面各一张。围度会同步到服务器，进入每周观察；照片只保存在这台手机上，删除 App 会一起删除。") }
         }
         .navigationTitle("围度与照片").navigationBarTitleDisplayMode(.inline)
+        .task { if !store.isDesignPreview, await NativeBodySync.sync(store.api) { entries = NativeMeasurements.entries() } }
         .sheet(item: $editing) { kind in NavigationStack { NativeMeasurementEntry(kind: kind, date: today) { value in
-            entries.append(.init(kind: kind.rawValue, date: today, cm: value)); NativeMeasurements.save(entries)
+            let entry = NativeMeasurements.Entry(kind: kind.rawValue, date: today, cm: value)
+            entries.append(entry); NativeMeasurements.save(entries); NativeBodySync.markEntry(entry.id.uuidString); syncBody()
         } }.presentationDetents([.medium]) }
         .sheet(item: $viewing) { photo in
             NavigationStack {
@@ -1394,6 +1506,9 @@ struct NativeMeasurementsView: View {
                 picked = nil
             }
         }
+    }
+    private func syncBody() {
+        Task { if await NativeBodySync.sync(store.api) { entries = NativeMeasurements.entries() } }
     }
     private func photoImage(_ photo: NativeMeasurements.Photo) -> Image {
         let path = NativeMeasurements.folder.appendingPathComponent(photo.file).path

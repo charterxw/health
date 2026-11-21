@@ -46,10 +46,25 @@ def schema(conn):
     CREATE TABLE IF NOT EXISTS home_activity_edits (id TEXT PRIMARY KEY, document TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS home_step_goal (id INTEGER PRIMARY KEY CHECK(id=1), target INTEGER NOT NULL, basis TEXT NOT NULL);
     ''')
+    # Later feelings fields: sore areas (JSON list), stress and a short note.
+    columns = {r[1] for r in conn.execute('PRAGMA table_info(home_feedback)')}
+    for name in ('soreness', 'stress', 'note'):
+        if name not in columns:
+            conn.execute(f'ALTER TABLE home_feedback ADD COLUMN {name} TEXT')
 
 
 def now():
     return datetime.now(TZ)
+
+
+def feeling_row(row):
+    """A stored feelings row with its sore areas as a list."""
+    value = dict(row)
+    try:
+        value['soreness'] = json.loads(value.get('soreness') or '[]')
+    except (TypeError, ValueError):
+        value['soreness'] = []
+    return value
 
 
 def parse(value):
@@ -438,7 +453,7 @@ def summary():
         if activity and not conn.execute('SELECT 1 FROM home_goals LIMIT 1').fetchone():
             conn.execute('INSERT INTO home_goals VALUES (?,?)', (week.isoformat(), json.dumps(initial_goals(activity))))
         versions = [(r[0], json.loads(r[1])) for r in conn.execute('SELECT * FROM home_goals ORDER BY effective_date')]
-        feedback = {r['date']: dict(r) for r in conn.execute('SELECT * FROM home_feedback')}
+        feedback = {r['date']: feeling_row(r) for r in conn.execute('SELECT * FROM home_feedback')}
         edits = {r[0]: json.loads(r[1]) for r in conn.execute('SELECT * FROM home_activity_edits')}
         conn.commit()
     if not versions:
@@ -535,10 +550,16 @@ class Goals(BaseModel):
     weeklyPosture: int = Field(ge=1, le=7)
 
 
+SORE_AREAS = ('胸', '背', '肩', '手臂', '腹', '下背', '臀', '大腿', '小腿', '颈')
+
+
 class Feedback(BaseModel):
     model_config = ConfigDict(extra='forbid')
     energy: Literal['充沛', '一般', '困倦'] | None = None
     fatigue: Literal['轻', '中', '重'] | None = None
+    soreness: list[Literal['胸', '背', '肩', '手臂', '腹', '下背', '臀', '大腿', '小腿', '颈']] | None = Field(default=None, max_length=10)
+    stress: Literal['低', '中', '高'] | None = None
+    note: str | None = Field(default=None, max_length=200)
 
 
 class StepGoal(BaseModel):
@@ -588,7 +609,12 @@ def save_feedback(value: Feedback):
         schema(conn)
         conn.execute('INSERT OR IGNORE INTO home_feedback(date) VALUES (?)', (key,))
         for field in value.model_fields_set:
-            conn.execute(f'UPDATE home_feedback SET {field}=? WHERE date=?', (getattr(value, field), key))
+            stored = getattr(value, field)
+            if field == 'soreness':
+                stored = json.dumps([x for x in SORE_AREAS if x in stored], ensure_ascii=False) if stored else None
+            elif field == 'note':
+                stored = (stored or '').strip() or None
+            conn.execute(f'UPDATE home_feedback SET {field}=? WHERE date=?', (stored, key))
         conn.commit()
     return summary()
 

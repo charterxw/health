@@ -217,9 +217,19 @@ def context(period=None):
         fact('guidance', 'guidance', f'{schedule}。当前本地建议：{data["tip"]}。只讲今天的安排，不提下一次训练或模板简称；日常遛狗散步是已有习惯，不要求额外凑热量。')
     else:
         fact('guidance', 'guidance', '晚间结合今天记录的活动、力量训练和自述疲劳，选择一个恢复重点：例如训练后放松、减少临睡前刺激或保持通常就寝时间。白天恢复信号不是此刻的新测量；没有晚间体感时不声称晚上更疲劳或恢复下降。不为补齐数字追加训练，不预测今晚睡眠，不根据组数或热量推断肌肉修复、过度训练或疲劳原因。')
-    feeling = [data['feedback'].get('energy'), data['feedback'].get('fatigue')]
+    said = data['feedback']
+    feeling = [said.get('energy'), said.get('fatigue')]
+    parts = []
     if any(feeling):
-        fact('subjective', 'observation', '今天自述：'+ '、'.join(x for x in feeling if x)+'。')
+        parts.append('、'.join(x for x in feeling if x))
+    if said.get('soreness'):
+        parts.append('酸痛部位：' + '、'.join(said['soreness']))
+    if said.get('stress'):
+        parts.append('压力' + said['stress'])
+    if said.get('note'):
+        parts.append('备注：' + said['note'][:200])
+    if parts:
+        fact('subjective', 'observation', '今天自述：' + '；'.join(parts) + '。酸痛部位当天少给这些部位加量，但不替用户改计划。')
     if not any(f['kind'] in ['observation','trend','comparison'] for f in facts):
         return None
     document = {'version': VERSION, 'date': today, 'period': period, 'facts': facts}

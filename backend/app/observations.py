@@ -11,6 +11,7 @@ from statistics import mean, median, pstdev, quantiles
 from threading import RLock
 
 from .database import get_cached_health_metrics, get_db
+from . import body_log
 
 VERSION = "observations-v1"
 DAILY_VERSION = "observations-v2"
@@ -399,6 +400,7 @@ def weekly_context(rows, end_date, workouts):
             "calendar": calendar, "baseline_nights": baseline,
             "weekly_blocks": blocks, "distribution": distribution,
             "recorded_workouts": [w for w in workouts if baseline_start <= w.get("datestr", "") <= end_date],
+            "body": body_log.weekly_summary(start, end_date),
             "notes": "日历中null代表缺失，不代表没睡；bedtime_minutes/wake_minutes是当地时间自中午起的分钟数。训练缓存可能不完整。"}
 
 

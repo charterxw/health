@@ -19,6 +19,7 @@ from .routes.strength import router as strength_router
 from .routes.web_push import router as web_push_router
 from .home_dashboard import router as home_router
 from .home_brief import router as brief_router
+from .body_log import router as body_router
 from .media_bridge import start_media_bridge
 from .security import init_security, session_secret
 from .system_health import router as system_router
@@ -113,6 +114,7 @@ app.include_router(strength_router)
 app.include_router(web_push_router)
 app.include_router(home_router)
 app.include_router(brief_router)
+app.include_router(body_router)
 app.include_router(system_router)
 app.include_router(ui_layout_router)
 
