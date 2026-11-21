@@ -19,6 +19,9 @@ struct NativeWorkoutView: View {
     @State private var cheer: String?
     @State private var cheerTick = 0
     @State private var extendTick = 0
+    /// The rest clock just ran out on its own: a gold ring swells once.
+    @State private var restFlash = 0
+    @State private var flashing = false
     private var record: NativeRecord? { store.active }
     private var session: JSONValue { record?.session ?? .null }
     private var movements: [JSONValue] { session["exercises"].array }
@@ -35,6 +38,10 @@ struct NativeWorkoutView: View {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         ScrollView { content(now: context.date).padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24) }
                             .safeAreaInset(edge: .bottom) { bottomBar(now: context.date) }
+                            .onChange(of: restRemaining(context.date) != nil) { was, now in
+                                // Ran out by itself (not skipped): rest_until is still set.
+                                if was, !now, !paused, !session["rest_until"].isNull { restFlash += 1 }
+                            }
                             .overlay(alignment: .top) {
                                 if let cheer {
                                     HStack(spacing: 8) {
@@ -63,6 +70,13 @@ struct NativeWorkoutView: View {
             }
             .sensoryFeedback(.success, trigger: completedTick)
             .sensoryFeedback(.impact(weight: .light), trigger: extendTick)
+            .sensoryFeedback(.impact(weight: .medium), trigger: restFlash)
+            .task(id: restFlash) {
+                guard restFlash > 0, !reduceMotion else { return }
+                flashing = true
+                try? await Task.sleep(for: .seconds(0.9))
+                flashing = false
+            }
             .task(id: cheerTick) {
                 guard cheer != nil else { return }
                 try? await Task.sleep(for: .seconds(2.4))
@@ -115,6 +129,7 @@ struct NativeWorkoutView: View {
                 else {
                     setPanel.padding(.top, 18).id("set-\(mi)-\(current ?? -1)")
                         .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                        .overlay(alignment: .top) { if flashing { PineRingFlash().padding(.top, 2).transition(.identity) } }
                 }
             }
         }
@@ -259,15 +274,25 @@ struct NativeWorkoutView: View {
     private func restPanel(remaining: TimeInterval) -> some View {
         let total = max(remaining, Double(max(1, movement["rest_seconds"].integer)))
         let doneIndex = sets.lastIndex { !$0["completed_at"].isNull }
+        // The last three seconds turn gold and tick, each with a light tap.
+        let second = Int(ceil(remaining)), final = second <= 3
         return VStack(spacing: 18) {
             if let doneIndex { Text(setName(doneIndex) + "完成").font(.subheadline).foregroundStyle(.secondary) }
             ZStack {
                 Circle().stroke(pineTrack, lineWidth: 14)
-                Circle().trim(from: 0, to: remaining / total).stroke(pine, style: StrokeStyle(lineWidth: 14, lineCap: .round)).rotationEffect(.degrees(-90))
+                Circle().trim(from: 0, to: remaining / total).stroke(final ? pineGold : pine, style: StrokeStyle(lineWidth: 14, lineCap: .round)).rotationEffect(.degrees(-90))
                     .animation(reduceMotion ? nil : .linear(duration: 1), value: remaining)
+                    .animation(.easeInOut(duration: 0.3), value: final)
                 VStack(spacing: 4) {
                     Text("休息").font(.subheadline).foregroundStyle(.secondary)
                     Text(WorkoutSnapshot.clock(ceil(remaining))).font(.system(size: 60, weight: .semibold, design: .rounded)).monospacedDigit()
+                        .foregroundStyle(final ? pineGold : .primary)
+                        .keyframeAnimator(initialValue: 1.0, trigger: second) { text, scale in text.scaleEffect(scale) } keyframes: { _ in
+                            KeyframeTrack {
+                                SpringKeyframe(final && !reduceMotion ? 1.14 : 1.0, duration: 0.12)
+                                SpringKeyframe(1.0, duration: 0.4)
+                            }
+                        }
                     Button("+30 秒") { extendRest() }.font(.subheadline.weight(.semibold)).padding(.horizontal, 14).frame(height: 36)
                         .background(Color(uiColor: .tertiarySystemFill), in: Capsule()).buttonStyle(.plain)
                 }
@@ -278,6 +303,7 @@ struct NativeWorkoutView: View {
                         SpringKeyframe(1.0, duration: 0.35)
                     }
                 }
+                .sensoryFeedback(.impact(weight: .light, intensity: 0.8), trigger: second) { _, next in next <= 3 && next > 0 }
                 .accessibilityElement(children: .combine).accessibilityLabel("组间休息，剩余 " + WorkoutSnapshot.clock(ceil(remaining)))
             if let ci = current {
                 HStack {
@@ -309,13 +335,19 @@ struct NativeWorkoutView: View {
                     HStack(spacing: 4) { Text("下一个：" + movements[mi + 1]["name"].text); Image(systemName: "chevron.right").font(.caption.weight(.semibold)) }.font(.subheadline).foregroundStyle(.secondary).frame(minHeight: 40)
                 }.buttonStyle(.plain)
             }
-            primaryButton(resting: resting)
+            primaryButton(resting: resting, final: (restRemaining(now) ?? 99) <= 3)
         }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 4)
             .background(LinearGradient(colors: [pineCanvas.opacity(0), pineCanvas], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35)))
     }
-    @ViewBuilder private func primaryButton(resting: Bool) -> some View {
+    @ViewBuilder private func primaryButton(resting: Bool, final: Bool) -> some View {
         if resting, let ci = current {
-            Button { mutate { $0["rest_until"] = .null; $0["rest_set_id"] = .null } } label: { Text("开始" + setName(ci)).primaryLabel() }
+            // Breathes in the last seconds of rest: time to pick the weight up.
+            Button { mutate { $0["rest_until"] = .null; $0["rest_set_id"] = .null } } label: {
+                Text("开始" + setName(ci)).primaryLabel()
+                    .phaseAnimator(final && !reduceMotion ? [1.0, 1.035] : [1.0]) { label, scale in
+                        label.scaleEffect(scale).shadow(color: pine.opacity(scale > 1 ? 0.35 : 0), radius: 12)
+                    } animation: { _ in .easeInOut(duration: 0.5) }
+            }
                 .buttonStyle(PinePressStyle(scale: 0.98))
         } else if let ci = current {
             Button { complete(ci) } label: { Label("完成" + setName(ci), systemImage: "checkmark").primaryLabel() }
@@ -324,7 +356,8 @@ struct NativeWorkoutView: View {
         } else if mi + 1 < movements.count {
             Button { store.selectMovement(mi + 1); lastEdited = nil } label: { Text("下一个动作").primaryLabel() }.buttonStyle(PinePressStyle(scale: 0.98))
         } else {
-            Button { finish = true } label: { Text("完成训练").primaryLabel() }.buttonStyle(PinePressStyle(scale: 0.98))
+            // Everything is done: hold to save, no extra alert.
+            PineHoldButton(title: "按住完成训练") { if let id = record?.id { store.finish(id) } }
         }
     }
     private func complete(_ ci: Int) {

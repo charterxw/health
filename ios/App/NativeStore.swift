@@ -17,6 +17,8 @@ final class NativeStore {
     private(set) var storageFailed = false
     var showingSettings = false
     var workoutPresented = false
+    /// The button the workout screen zooms out of (and back into on close).
+    var workoutSource = ""
     /// The goal celebration on screen, if any.
     var celebration: PineCelebration?
     /// The workout just finished; its report opens with a celebration once.

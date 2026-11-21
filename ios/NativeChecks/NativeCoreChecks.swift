@@ -50,6 +50,14 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         try check(abs((result.lifts.first { $0.id == "press|external" }?.change ?? 0) - (50 * 1.4 / (50 * (1 + 10.0 / 30)) - 1)) < 1e-9, "Estimated 1RM progress is wrong")
         try check(result.change == 0 && result.records == 1, "Median strength change ignored a flat lift")
     }
+    static func postureStreak() throws {
+        // 2026-11-16 is a Monday; planned Mon/Tue/Thu/Sun.
+        let done: Set<String> = ["2026-11-16", "2026-11-17", "2026-11-19", "2026-11-22"]
+        try check(NativeDays.postureStreak(done: done, today: "2026-11-22") == (4, "2026-11-16"), "Unplanned rest days broke the posture streak")
+        try check(NativeDays.postureStreak(done: done, today: "2026-11-23").count == 4, "Today broke the streak before it was done")
+        try check(NativeDays.postureStreak(done: done, today: "2026-11-24").count == 0, "A missed planned day kept the streak")
+        try check(NativeDays.postureStreak(done: done.union(["2026-11-18"]), today: "2026-11-22").count == 5, "An extra practice day did not count")
+    }
     static func bedtime() throws {
         // Wake 07:30 New York (12:30Z in November), need 7.5 h, 20 min awake in bed.
         let nights: [JSONValue] = (1...7).map { d in
@@ -159,7 +167,7 @@ func rejects(_ body: () throws -> Void) throws { do { try body() } catch { retur
         try payload.data().write(to:URL(fileURLWithPath:output));print("Emitted \(sessions.count) sessions from the latest Pi template catalog")
     }
     static func main() throws {
-        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Strength index against each lift's own best",strengthIndex),("Suggested bedtime from wake time and sleep need",bedtime),("Whole-day sessions and weekday labels",dayGlyphs),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
+        let cases:[(String,()throws->Void)]=[("Actual set completion and rest ownership",nativeCompletion),("Native pause/resume/finish clocks",timers),("Resume at the movement being recorded",resumeMovement),("Strength index against each lift's own best",strengthIndex),("Suggested bedtime from wake time and sleep need",bedtime),("Posture streak over planned days",postureStreak),("Whole-day sessions and weekday labels",dayGlyphs),("Duration-based mobility",timedMobility),("Strength/mobility separation",mixedProgress),("Double progression and incomplete work",doubleProgression),("Edited template baselines and remaining sets",templateBaseline),("Warmup and work-target edits",editedTargets),("In-flight edits, conflicts, tombstones and disk roundtrip",mergeAndInflightEdits),("Missing values, future fields and units",nullsAndUnknownFields),("Unified records, source semantics and combined filters",recordsTimeline),("Legacy cache, durable deltas, checkpoint races and tombstones",cacheJournalRecovery),("Atomic append failure preserves storage",cacheWriteFailure),("Cached timestamps, zones and concurrent access",cachedDateSemantics),("Live payload ignores numeric edits but publishes set completion",livePayloadIdentity)]
         for (name,run) in cases { try run();print("PASS: \(name)") }
         if CommandLine.arguments.count==4 && CommandLine.arguments[1]=="--contracts" { try emitContracts(CommandLine.arguments[2],CommandLine.arguments[3]) }
         if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--performance" { try measurePerformance(CommandLine.arguments[2]) }

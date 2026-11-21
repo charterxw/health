@@ -383,19 +383,29 @@ struct NativeLoginView: View {
 
 /// Shared top of the three tab roots: same title size, height and action style on
 /// every tab, instead of the system bar whose large/inline title varies by page.
+struct PineSettle { var scale = 1.0; var lift = 0.0 }
 struct PineTabHeader<Actions: View>: View {
     @Environment(NativeStore.self) var store
+    @PineReducedMotion private var reduceMotion
     let title: String
     @ViewBuilder var actions: Actions
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             Text(title).font(.system(size: 30, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityAddTraits(.isHeader)
+                // Switching tabs: the new page's title settles in with a small bounce.
+                .keyframeAnimator(initialValue: PineSettle(), trigger: store.selectedTab) { text, value in
+                    text.scaleEffect(value.scale, anchor: .leading).offset(y: value.lift)
+                } keyframes: { _ in
+                    KeyframeTrack(\.scale) { CubicKeyframe(reduceMotion ? 1 : 0.94, duration: 0.01); SpringKeyframe(1.0, duration: 0.45, spring: .bouncy) }
+                    KeyframeTrack(\.lift) { CubicKeyframe(reduceMotion ? 0 : 6, duration: 0.01); SpringKeyframe(0, duration: 0.45, spring: .bouncy) }
+                }
             Spacer(minLength: 8)
             if store.active != nil {
-                Button { store.workoutPresented = true } label: {
+                Button { store.workoutSource = "resume-" + title; store.workoutPresented = true } label: {
                     Label("继续训练", systemImage: "play.fill").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 14).frame(height: 36).background(pine, in: Capsule())
+                        .pineWorkoutSource("resume-" + title)
                 }.buttonStyle(PinePressStyle()).frame(minHeight: 44)
             }
             actions
@@ -442,7 +452,7 @@ extension PineSectionHeader where Accessory == EmptyView {
 
 /// One moment worth celebrating today; each kind plays at most once a day.
 struct PineCelebration: Identifiable, Equatable {
-    enum Kind: String { case activity, strength, posture, all, round }
+    enum Kind: String { case activity, strength, posture, all, round, steps, streak }
     let id = UUID()
     let kind: Kind
     let activity: Double?
@@ -451,7 +461,9 @@ struct PineCelebration: Identifiable, Equatable {
     /// For a finished round: its number and total work sets.
     var round = 0
     var sets = 0
-    var big: Bool { kind == .all || kind == .round }
+    /// For a posture streak badge: consecutive practice days (3, 7 or 14).
+    var streak = 0
+    var big: Bool { kind == .all || kind == .round || (kind == .streak && streak >= 14) }
     var title: String {
         switch kind {
         case .activity: return "活动目标达成"
@@ -459,9 +471,17 @@ struct PineCelebration: Identifiable, Equatable {
         case .posture: return "体态练习完成"
         case .all: return "今天三项全满"
         case .round: return "第 \(round) 轮完成"
+        case .steps: return "步数目标达成"
+        case .streak: return "体态连续 \(streak) 天"
         }
     }
-    var detail: String { kind == .round ? "五天 · \(sets) 组" : "活动 · 力量 · 体态" }
+    var detail: String {
+        switch kind {
+        case .round: return "五天 · \(sets) 组"
+        case .streak: return "计划日一天没落下"
+        default: return "活动 · 力量 · 体态"
+        }
+    }
 }
 
 /// A goal closing: the glyph spins once while sparks burst, with a haptic
@@ -483,10 +503,11 @@ struct PineCelebrationView: View {
                             if !reduceMotion { PineSparkBurst(radius: 150, count: 40, duration: 1.2) }
                             Group {
                                 if event.kind == .round { PineMedal(round: event.round).frame(width: 180, height: 180) }
+                                else if event.kind == .streak { PineStreakBadge(count: event.streak).frame(width: 170, height: 170) }
                                 else { PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 170) }
                             }
-                            .rotation3DEffect(.degrees(event.kind == .round ? spin : 0), axis: (x: 0, y: 1, z: 0))
-                            .rotationEffect(.degrees(event.kind == .round ? 0 : spin)).scaleEffect(appear ? 1 : 0.6)
+                            .rotation3DEffect(.degrees(event.kind == .round || event.kind == .streak ? spin : 0), axis: (x: 0, y: 1, z: 0))
+                            .rotationEffect(.degrees(event.kind == .round || event.kind == .streak ? 0 : spin)).scaleEffect(appear ? 1 : 0.6)
                         }.frame(width: 320, height: 320)
                         Text(event.title).font(.title.weight(.bold))
                         Text(event.detail).font(.subheadline.weight(.semibold)).foregroundStyle(pineGold)
@@ -496,7 +517,15 @@ struct PineCelebrationView: View {
                 HStack(spacing: 12) {
                     ZStack {
                         if !reduceMotion { PineSparkBurst(radius: 30, count: 16, duration: 0.8).frame(width: 76, height: 76) }
-                        PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 34).rotationEffect(.degrees(spin))
+                        Group {
+                            switch event.kind {
+                            case .steps: Image(systemName: "figure.walk").font(.system(size: 20, weight: .semibold)).foregroundStyle(pineGold).frame(width: 34, height: 34).background(pineTint, in: Circle())
+                                .symbolEffect(.bounce, value: spin)
+                            case .streak: PineStreakBadge(count: event.streak).frame(width: 34, height: 34)
+                            default: PineDayGlyph(activity: event.activity, halves: event.halves, posture: event.posture, size: 34)
+                            }
+                        }.rotationEffect(.degrees(event.kind == .streak || event.kind == .steps ? 0 : spin))
+                        .rotation3DEffect(.degrees(event.kind == .streak ? spin : 0), axis: (x: 0, y: 1, z: 0))
                     }.frame(width: 36, height: 36)
                     Text(event.title).font(.headline)
                     Image(systemName: "sparkles").foregroundStyle(pineGold)
@@ -524,6 +553,32 @@ struct PineCelebrationView: View {
         finished = true
         withAnimation(.easeOut(duration: 0.25)) { appear = false }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) { onDone() }
+    }
+}
+
+/// A posture streak badge: a pine disc with a gold ring and the day count,
+/// the ring split into as many arcs as the milestone (3, 7, 14).
+struct PineStreakBadge: View {
+    let count: Int
+    var body: some View {
+        GeometryReader { proxy in
+            let d = min(proxy.size.width, proxy.size.height), segments = max(3, min(14, count))
+            ZStack {
+                Circle().fill(pine)
+                ForEach(0..<segments, id: \.self) { index in
+                    let gap = 0.012
+                    Circle().trim(from: Double(index) / Double(segments) + gap, to: Double(index + 1) / Double(segments) - gap)
+                        .stroke(pineGold, style: StrokeStyle(lineWidth: max(1.5, d * 0.07), lineCap: .butt))
+                        .rotationEffect(.degrees(-90)).padding(d * 0.07)
+                }
+                VStack(spacing: 0) {
+                    Text("\(count)").font(.system(size: d * 0.36, weight: .bold, design: .rounded)).monospacedDigit()
+                    if d > 60 { Text("天体态").font(.system(size: d * 0.09, weight: .semibold)) }
+                }.foregroundStyle(.white)
+            }.frame(width: d, height: d).frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .compositingGroup().shadow(color: pineGold.opacity(0.3), radius: 8, y: 3)
+        .accessibilityElement().accessibilityLabel("体态连续 \(count) 天徽章")
     }
 }
 
@@ -556,5 +611,200 @@ struct PineMedal: View {
         .compositingGroup().shadow(color: pineGold.opacity(0.35), radius: 12, y: 4)
         .onAppear { withAnimation(.easeInOut(duration: 1.4).delay(0.6)) { sweep = true } }
         .accessibilityElement().accessibilityLabel("第 \(round) 轮奖章")
+    }
+}
+
+// MARK: Motion batch 3
+
+/// Hold to confirm: a ring fills around the check while the finger stays down,
+/// and the action runs when it closes. Letting go early drains it. VoiceOver's
+/// activate runs the action directly.
+struct PineHoldButton: View {
+    let title: String
+    var duration: Double = 1.0
+    let action: () -> Void
+    @PineReducedMotion private var reduceMotion
+    @State private var progress: CGFloat = 0
+    @State private var hint = false
+    @State private var done = 0
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().stroke(.white.opacity(0.3), lineWidth: 3)
+                Circle().trim(from: 0, to: progress).stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90))
+                Image(systemName: "checkmark").font(.caption.weight(.bold)).scaleEffect(progress >= 1 ? 1.2 : 1)
+            }.frame(width: 24, height: 24)
+            Text(hint ? "按住完成" : title)
+                .contentTransition(.opacity)
+        }
+        .font(.headline).foregroundStyle(.white)
+        .frame(maxWidth: .infinity, minHeight: 56)
+        .background {
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(pine)
+                    Capsule().fill(.white.opacity(0.16)).frame(width: proxy.size.width * progress)
+                }
+            }
+        }
+        .clipShape(Capsule())
+        .scaleEffect(progress > 0 && progress < 1 && !reduceMotion ? 0.98 : 1)
+        .contentShape(Capsule())
+        .onLongPressGesture(minimumDuration: duration, maximumDistance: 40) {
+            done += 1
+            action()
+        } onPressingChanged: { pressing in
+            if pressing {
+                withAnimation(.linear(duration: duration)) { progress = 1 }
+            } else if progress < 1 || done == 0 {
+                withAnimation(.easeOut(duration: 0.25)) { progress = 0 }
+            }
+        }
+        .simultaneousGesture(TapGesture().onEnded {
+            withAnimation(.easeOut(duration: 0.15)) { hint = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation(.easeOut(duration: 0.2)) { hint = false } }
+        })
+        .sensoryFeedback(.impact(weight: .light), trigger: progress > 0) { _, pressing in pressing }
+        .sensoryFeedback(.success, trigger: done)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title).accessibilityAddTraits(.isButton)
+        .accessibilityAction { action() }
+    }
+}
+
+/// A gold ring that swells and fades once: the rest clock reaching zero.
+struct PineRingFlash: View {
+    var size: CGFloat = 240
+    @State private var on = false
+    var body: some View {
+        Circle().stroke(pineGold, lineWidth: 14)
+            .frame(width: size, height: size)
+            .scaleEffect(on ? 1.18 : 1).opacity(on ? 0 : 0.9)
+            .onAppear { withAnimation(.easeOut(duration: 0.8)) { on = true } }
+            .allowsHitTesting(false).accessibilityHidden(true)
+    }
+}
+
+/// The glyph as a pull-to-refresh indicator: the rings fill as the page is
+/// pulled, then the whole mark spins while the refresh runs.
+struct PineRefreshGlyph: View {
+    let progress: Double
+    let spinning: Bool
+    var size: CGFloat = 26
+    @PineReducedMotion private var reduceMotion
+    var body: some View {
+        TimelineView(.animation(minimumInterval: nil, paused: !spinning || reduceMotion)) { context in
+            let turn = spinning && !reduceMotion ? context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.1) / 1.1 * 360 : progress * 270
+            PineDayGlyph(activity: max(0.01, min(1, progress * 1.4)), halves: [min(1, max(0, progress * 2 - 0.4)), min(1, max(0, progress * 2 - 1))], posture: progress >= 1, size: size)
+                .rotationEffect(.degrees(turn))
+        }
+        .padding(7).background(.regularMaterial, in: Circle())
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A small animated numeral that counts up from zero the first time it appears.
+struct PineCountUp: View {
+    let value: Double
+    var digits = 0
+    var font: Font = .title3.weight(.semibold)
+    var duration: Double = 0.9
+    @PineReducedMotion private var reduceMotion
+    @State private var shown: Double?
+    var body: some View {
+        Text(displayNumber(.number(shown ?? value), digits: digits)).font(font).monospacedDigit()
+            .contentTransition(reduceMotion ? .identity : .numericText(value: shown ?? value))
+            .onAppear {
+                guard !reduceMotion, shown == nil else { return }
+                shown = 0
+                withAnimation(.smooth(duration: duration).delay(0.15)) { shown = value }
+            }
+            .onChange(of: value) { _, next in withAnimation(reduceMotion ? nil : .smooth(duration: 0.5)) { shown = next } }
+    }
+}
+
+/// A half-circle dial (left to right) that sweeps to `fraction` on appear.
+struct PineHalfDial: View {
+    let fraction: Double
+    var lineWidth: CGFloat = 12
+    var color: Color = pine
+    @PineReducedMotion private var reduceMotion
+    @State private var shown = false
+    var body: some View {
+        GeometryReader { proxy in
+            let d = min(proxy.size.width, proxy.size.height * 2)
+            ZStack {
+                Circle().trim(from: 0.5, to: 1).stroke(pineTrack, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                Circle().trim(from: 0.5, to: 0.5 + 0.5 * max(0, min(1, fraction)) * (shown || reduceMotion ? 1 : 0))
+                    .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+            }
+            .frame(width: d - lineWidth, height: d - lineWidth)
+            .frame(width: proxy.size.width, height: d / 2 + lineWidth / 2, alignment: .top)
+            .offset(y: lineWidth / 2)
+        }
+        .onAppear { withAnimation(.spring(response: 1.0, dampingFraction: 0.9).delay(0.1)) { shown = true } }
+        .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The namespace the workout cover zooms out of (iOS 18+): set by the tab
+/// root, read by every button that opens the workout.
+private struct PineWorkoutZoomKey: EnvironmentKey { static let defaultValue: Namespace.ID? = nil }
+extension EnvironmentValues {
+    var pineWorkoutZoom: Namespace.ID? {
+        get { self[PineWorkoutZoomKey.self] }
+        set { self[PineWorkoutZoomKey.self] = newValue }
+    }
+}
+private struct PineWorkoutSource: ViewModifier {
+    @Environment(\.pineWorkoutZoom) private var space
+    let id: String
+    func body(content: Content) -> some View {
+        if let space { content.pineZoomSource(id, in: space) } else { content }
+    }
+}
+extension View {
+    /// Marks a button the workout screen grows out of and shrinks back into.
+    func pineWorkoutSource(_ id: String) -> some View { modifier(PineWorkoutSource(id: id)) }
+}
+
+/// Pull to refresh with the glyph instead of the system spinner (iOS 18+; the
+/// system control before). Pulling fills the rings; past the threshold it
+/// fires once with a tap and spins until the refresh ends.
+struct PinePullRefresh: ViewModifier {
+    let action: @MainActor () async -> Void
+    var threshold: CGFloat = 76
+    @State private var pull: CGFloat = 0
+    @State private var running = false
+    @State private var armed = true
+    @State private var fired = 0
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content
+                .scrollBounceBehavior(.always)
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    -(geometry.contentOffset.y + geometry.contentInsets.top)
+                } action: { _, value in
+                    pull = max(0, value)
+                    if value <= 2 { armed = true }
+                    if armed, !running, value >= threshold { armed = false; fired += 1; run() }
+                }
+                .overlay(alignment: .top) {
+                    if pull > 8 {
+                        PineRefreshGlyph(progress: running ? 1 : min(1, pull / threshold), spinning: running)
+                            .offset(y: pull / 2 - 20)
+                            .opacity(min(1, (pull - 8) / 24))
+                    }
+                }
+                .sensoryFeedback(.impact(weight: .medium), trigger: fired)
+        } else {
+            content.refreshable { await action() }
+        }
+    }
+    private func run() {
+        running = true
+        Task { await action(); running = false }
     }
 }

@@ -72,7 +72,7 @@ struct NativeDashboardView: View {
         }
         .background(pineCanvas)
         .navigationTitle("今天")
-        .refreshable { await store.refresh(); await store.refreshHealth() }
+        .modifier(PinePullRefresh { await store.refresh(); await store.refreshHealth() })
         .sheet(item: $metric) { item in NavigationStack { NativeMetricDetail(metric: item) } }
         .sheet(isPresented: $showingGoals) { NavigationStack { NativeGoalsView() } }
         .sheet(isPresented: $showingFeedback) { NavigationStack { NativeFeedbackView() } }
@@ -111,9 +111,10 @@ struct NativeDashboardView: View {
             Button { showingSync = true } label: {
                 HStack(spacing: 6) {
                     if busy {
+                        // The glyph turns while data comes in.
                         TimelineView(.animation(minimumInterval: nil, paused: reduceMotion)) { context in
-                            Image(systemName: "arrow.clockwise").imageScale(.small)
-                                .rotationEffect(.degrees(reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1) * 360))
+                            PineDayGlyph(activity: 0.75, halves: [1, 0.5], posture: true, size: 15)
+                                .rotationEffect(.degrees(reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.1) / 1.1 * 360))
                         }
                     } else { Image(systemName: store.message == nil ? "arrow.clockwise" : "exclamationmark.circle").imageScale(.small) }
                     Text(syncText).contentTransition(reduceMotion ? .identity : .numericText()).animation(reduceMotion ? nil : .snappy, value: syncText)
@@ -328,8 +329,13 @@ struct NativeDashboardView: View {
                 HStack(alignment: .bottom, spacing: 0) {
                     ForEach(rows, id: \.date) { row in
                         let steps = row.steps ?? 0
+                        // Today's bar flashes gold while the steps toast is up.
+                        let flash = store.celebration?.kind == .steps && row.date == home["date"].text
                         RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(steps >= target ? pine : pine.opacity(0.35))
+                            .fill(flash ? pineGold : steps >= target ? pine : pine.opacity(0.35))
+                            .shadow(color: pineGold.opacity(flash ? 0.8 : 0), radius: 4)
+                            .scaleEffect(x: flash && !reduceMotion ? 1.3 : 1, y: 1, anchor: .bottom)
+                            .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.5), value: flash)
                             .frame(width: 8, height: row.steps == nil || !(barsShown || reduceMotion) ? 0 : max(2, min(top, CGFloat(steps / target) * goalHeight)))
                             .frame(maxWidth: .infinity)
                     }
@@ -544,9 +550,9 @@ struct NativeDashboardView: View {
                 if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85) }
             }
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value).font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
-                    .contentTransition(reduceMotion ? .identity : .numericText(value: animated ?? 0))
-                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: animated)
+                // The recovery score counts up from zero when the page opens.
+                if let animated { PineCountUp(value: animated, font: .title3.weight(.semibold)).foregroundStyle(.primary) }
+                else { Text(value).font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.primary) }
                 if !unit.isEmpty { Text(unit).font(.caption).foregroundStyle(.secondary) }
             }
         }.padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -782,6 +788,20 @@ struct NativePlanView: View {
                     }
                 }
             }
+            let streaks = NativeMedals.streaks
+            if !streaks.isEmpty {
+                Section("体态徽章") {
+                    ForEach(Array(streaks.enumerated()), id: \.offset) { _, badge in
+                        HStack(spacing: 12) {
+                            PineStreakBadge(count: badge.count).frame(width: 40, height: 40)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("体态连续 \(badge.count) 天").font(.subheadline.weight(.semibold))
+                                Text(dayTitle(badge.date, format: "M月d日") + " 达成").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
             let medals = NativeMedals.all
             if !medals.isEmpty {
                 Section("奖章") {
@@ -851,7 +871,15 @@ struct NativeRecoveryContent: View {
         let home=store.home, score=home["recovery"]
         PinePage {
             VStack(spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) { Text(displayNumber(score["score"], digits: 0)).font(.system(size: 64, weight: .semibold, design: .rounded)).monospacedDigit(); Text("/ 100").font(.headline).foregroundStyle(.secondary) }
+                // A half dial sweeps to the score while the number counts up.
+                ZStack(alignment: .bottom) {
+                    PineHalfDial(fraction: (score["score"].number ?? 0) / 100, lineWidth: 14).frame(width: 260, height: 137)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        if let value = score["score"].number { PineCountUp(value: value, font: .system(size: 64, weight: .semibold, design: .rounded), duration: 1.0) }
+                        else { Text("—").font(.system(size: 64, weight: .semibold, design: .rounded)) }
+                        Text("/ 100").font(.headline).foregroundStyle(.secondary)
+                    }
+                }.accessibilityElement(children: .combine).accessibilityLabel("恢复指数 " + displayNumber(score["score"], digits: 0) + " 分，满分 100")
                 Text(score["label"].text.isEmpty ? "待更新" : "状态" + score["label"].text).font(.title3.weight(.semibold))
             }.frame(maxWidth: .infinity)
             Text(score["score"].isNull ? "等待当日指标及至少 7 天的个人记录。" : "HRV、静息心率和睡眠分别和你自己近 4 周的正常范围比较：昨夜和近 7 天各占一半，单晚波动不会左右结果。在正常范围内是「平稳」，明显高于是「充分」，低于是「偏低」。睡眠不足 6.5 小时不会显示「充分」。指数不代表肌肉修复比例，训练仍结合今天的体感。").font(.subheadline).foregroundStyle(.secondary)
@@ -966,6 +994,9 @@ struct NativeWeightList: View {
 struct NativeStrengthProgressView: View {
     @Environment(NativeStore.self) var store
     @Environment(\.dismiss) private var dismiss
+    @PineReducedMotion private var reduceMotion
+    /// Numbers roll up from zero and the rows arrive one after another.
+    @State private var shown = false
     private var timezone: String { store.home["timezone"].text.isEmpty ? TimeZone.current.identifier : store.home["timezone"].text }
     var body: some View {
         let sessions = NativeStrengthWeeks.sessions(store)
@@ -979,8 +1010,9 @@ struct NativeStrengthProgressView: View {
         }
         PinePage {
             VStack(spacing: 4) {
-                Text(week.change.map(NativeStrengthWeeks.percent) ?? "—").font(.system(size: 56, weight: .semibold, design: .rounded)).monospacedDigit()
+                Text(week.change.map { NativeStrengthWeeks.percent(shown ? $0 : 0) } ?? "—").font(.system(size: 56, weight: .semibold, design: .rounded)).monospacedDigit()
                     .foregroundStyle((week.change ?? 0) > 0.005 ? pine : Color.primary)
+                    .contentTransition(.numericText(value: shown ? week.change ?? 0 : 0))
                 Text(week.records > 0 ? "本周 \(week.records) 个动作超过近 4 周最好成绩" : "本周力量指数").font(.subheadline).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity).padding(.top, 8)
             Text("每个动作取本周最好的一组，按“重量 ×（1 + 次数 ÷ 30）”估算最大力量，和这个动作前 4 周的最好成绩比；所有动作取中位数。换动作或少练一个动作不会拉低它。自重动作比次数，辅助动作辅助越少越好。").font(.footnote).foregroundStyle(.secondary)
@@ -997,9 +1029,12 @@ struct NativeStrengthProgressView: View {
                                 Text(detail(lift)).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                             }
                             Spacer(minLength: 8)
-                            Text(NativeStrengthWeeks.percent(lift.change)).font(.subheadline.weight(.semibold)).monospacedDigit()
+                            Text(NativeStrengthWeeks.percent(shown ? lift.change : 0)).font(.subheadline.weight(.semibold)).monospacedDigit()
                                 .foregroundStyle(lift.change > 0.005 ? pine : lift.change < -0.005 ? Color.secondary : Color.primary)
+                                .contentTransition(.numericText(value: shown ? lift.change : 0))
                         }.padding(.vertical, 10)
+                            .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 10)
+                            .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.85).delay(0.15 + Double(index) * 0.06), value: shown)
                     }
                 }.pineCard()
             }
@@ -1020,6 +1055,10 @@ struct NativeStrengthProgressView: View {
         }
         .navigationTitle("力量指数").navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+        .onAppear {
+            guard !shown else { return }
+            if reduceMotion { shown = true } else { withAnimation(.smooth(duration: 0.9).delay(0.1)) { shown = true } }
+        }
     }
     private func detail(_ lift: NativeLiftProgress) -> String {
         if lift.id.hasSuffix("|bodyweight") { return "最多 \(Int(lift.current)) 次 · 之前 \(Int(lift.best)) 次" }

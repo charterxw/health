@@ -209,6 +209,26 @@ public enum NativeDays {
     public static func postureDone(_ sessions: [NativeDaySession]) -> Bool {
         sessions.contains { $0.posture && $0.ratio > 0 }
     }
+    /// Posture practice streak ending today: every practised day counts, a missed
+    /// planned day (Gregorian weekdays in `planned`, 1 = Sunday) ends it, a missed
+    /// unplanned day is skipped, and today does not break it before it is done.
+    /// Returns the count and the streak's first day ("" when zero).
+    public static func postureStreak(done: Set<String>, today: String, planned: Set<Int> = [1, 2, 3, 5], limit: Int = 90) -> (count: Int, start: String) {
+        let parts = today.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return (0, "") }
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(identifier: "UTC")!
+        guard let end = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return (0, "") }
+        let format = DateFormatter(); format.calendar = calendar; format.timeZone = calendar.timeZone
+        format.locale = Locale(identifier: "en_US_POSIX"); format.dateFormat = "yyyy-MM-dd"
+        var count = 0, start = ""
+        for offset in 0..<limit {
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: end) else { break }
+            let key = format.string(from: date)
+            if done.contains(key) { count += 1; start = key }
+            else if offset > 0 && planned.contains(calendar.component(.weekday, from: date)) { break }
+        }
+        return (count, start)
+    }
 }
 
 public struct NativeLiftProgress: Identifiable, Equatable, Sendable {

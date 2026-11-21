@@ -273,11 +273,12 @@ struct NativeTrainingView: View {
                         plannedLine(item).transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
-                Button { store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) } label: {
+                Button { store.workoutSource = "start-" + id; store.homeAction(["template_id": slot["template_id"], "remaining": slot["remaining"]]) } label: {
                     Label(left < total ? "继续 · 还剩 \(left) 组" : "开始 · \(total) 组", systemImage: "play.fill")
                         .font(primary ? .headline : .subheadline.weight(.semibold)).foregroundStyle(primary ? .white : pine)
                         .frame(maxWidth: .infinity, minHeight: primary ? 52 : 40)
                         .background(primary ? pine : pineTint, in: Capsule())
+                        .pineWorkoutSource("start-" + id)
                 }.buttonStyle(PinePressStyle(scale: 0.98)).padding(.top, 4).disabled(store.catalog.isNull || store.active != nil)
                     .accessibilityIdentifier("start-" + id)
             }
@@ -473,7 +474,7 @@ struct NativeTrainingView: View {
             .padding(.horizontal, 16).frame(minHeight: 50).contentShape(Rectangle())
     }
     private func continueCard(_ active: NativeRecord) -> some View {
-        Button { store.workoutPresented = true } label: {
+        Button { store.workoutSource = "resume-card"; store.workoutPresented = true } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("进行中").font(.footnote).foregroundStyle(.white.opacity(0.8))
@@ -483,6 +484,7 @@ struct NativeTrainingView: View {
                 Spacer()
                 Text("继续").font(.headline).foregroundStyle(pine).padding(.horizontal, 18).frame(minHeight: 44).background(.white, in: Capsule())
             }.padding(16).background(pine, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .pineWorkoutSource("resume-card")
         }.buttonStyle(PinePressStyle())
     }
     private var weeklyMuscles: some View {

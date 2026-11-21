@@ -24,7 +24,7 @@ private struct NativeAppContent: View {
     var body: some View {
         Group {
             switch store.phase {
-            case .loading: ProgressView("正在打开 Pine").frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(uiColor: .systemGroupedBackground))
+            case .loading: NativeLaunchView()
             case .login: NativeLoginView()
             case .ready: NativeRootView()
             case .failed(let message):
@@ -55,9 +55,22 @@ private struct NativeAppContent: View {
     }
 }
 
+/// Opening: the three rings draw in and the posture dot pops, then the app.
+struct NativeLaunchView: View {
+    var body: some View {
+        VStack(spacing: 18) {
+            PineDayGlyph(activity: 1, halves: [1, 1], posture: true, size: 96, animated: true, delay: 0.05)
+            Text("Pine").font(.title3.weight(.semibold)).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).background(pineCanvas)
+        .accessibilityElement().accessibilityLabel("正在打开 Pine")
+    }
+}
+
 enum NativeOverviewRoute: Hashable { case recovery, sleep }
 struct NativeRootView: View {
     @Environment(NativeStore.self) var store
+    @Namespace private var workoutZoom
     @State private var overviewPath: [NativeOverviewRoute] = {
         #if DEBUG && targetEnvironment(simulator)
         let env = ProcessInfo.processInfo.environment
@@ -78,6 +91,7 @@ struct NativeRootView: View {
             if store.isDesignPreview, ProcessInfo.processInfo.environment["HEALTH_DESIGN_REDUCE_MOTION"] == "1" { value = true }
             #endif
         }
+        .sensoryFeedback(.selection, trigger: store.selectedTab)
         .task { if store.designPreviewScreen == "sleep", overviewPath.isEmpty { overviewPath = [.recovery, .sleep] } }
         // Goal celebrations: when a goal closes in the app it plays right away;
         // when it closed elsewhere (the band) it plays the next time the app is
@@ -98,7 +112,8 @@ struct NativeRootView: View {
             checkCelebrations()
         }
         .sheet(isPresented: $store.showingSettings) { NavigationStack { NativeSettingsView() }.presentationDragIndicator(.visible) }
-        .fullScreenCover(isPresented: $store.workoutPresented, onDismiss: store.workoutDidDismiss) { NativeWorkoutView() }
+        .fullScreenCover(isPresented: $store.workoutPresented, onDismiss: store.workoutDidDismiss) { NativeWorkoutView().pineZoomDestination(store.workoutSource, in: workoutZoom) }
+        .environment(\.pineWorkoutZoom, workoutZoom)
         .sheet(item: Binding(get: { store.reportID.map(ReportSelection.init) }, set: { store.reportID = $0?.id }), onDismiss: store.reportDidDismiss) { item in
             NavigationStack { NativeReportView(id: item.id).toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { store.reportID = nil } } } }
         }
@@ -107,7 +122,7 @@ struct NativeRootView: View {
 extension NativeRootView {
     private var todayRow: JSONValue { store.home["days"].array.first { $0["date"] == store.home["date"] } ?? .null }
     var celebrationKey: String {
-        [store.home["date"].text, displayNumber(todayRow["activity"], digits: 0), String(todayRow["posture"].flag), String(store.records.count), String(store.historyRevision),
+        [store.home["date"].text, displayNumber(todayRow["activity"], digits: 0), String(todayRow["posture"].flag), displayNumber(store.home["today"]["steps"], digits: 0), String(store.records.count), String(store.historyRevision),
          String(store.workoutPresented), store.reportID ?? "", String(store.celebration == nil), String(store.active == nil)].joined(separator: "|")
     }
     /// Hands today's goals and the next session to the home-screen widget.
@@ -182,7 +197,30 @@ extension NativeRootView {
         }
         func key(_ kind: PineCelebration.Kind) -> String { "pine.celebrated." + date + "." + kind.rawValue }
         let fresh = [PineCelebration.Kind.activity, .strength, .posture].filter { met[$0] == true && !defaults.bool(forKey: key($0)) }
-        guard let first = fresh.first else { return }
+        guard let first = fresh.first else {
+            // Smaller moments once the day's goals are settled: steps, then streaks.
+            let steps = home["today"]["steps"].number ?? 0, stepGoal = home["step_goal"]["target"].number ?? 0
+            if stepGoal > 0, steps >= stepGoal, !defaults.bool(forKey: key(.steps)) {
+                defaults.set(true, forKey: key(.steps))
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { store.celebration = PineCelebration(kind: .steps, activity: nil, halves: [], posture: false) }
+                return
+            }
+            let all = NativeDays.sessions(records: store.records, timezone: zone)
+            let done = Set(all.filter { NativeDays.postureDone($0.value) }.keys).union(home["days"].array.filter { $0["posture"].flag }.map { $0["date"].text })
+            let streak = NativeDays.postureStreak(done: done, today: date)
+            guard let milestone = [14, 7, 3].first(where: { streak.count >= $0 }) else { return }
+            let streakKey = "pine.posture.streak.\(streak.start).\(milestone)"
+            guard !defaults.bool(forKey: streakKey) else { return }
+            // Reaching a milestone also settles the smaller ones of this streak.
+            for each in [3, 7, 14] where each <= milestone { defaults.set(true, forKey: "pine.posture.streak.\(streak.start).\(each)") }
+            var badges = defaults.array(forKey: NativeMedals.streakKey) as? [[String: Any]] ?? []
+            badges.append(["count": milestone, "date": date])
+            defaults.set(badges, forKey: NativeMedals.streakKey)
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                store.celebration = PineCelebration(kind: .streak, activity: nil, halves: [], posture: true, streak: milestone)
+            }
+            return
+        }
         let kind: PineCelebration.Kind
         if met.values.allSatisfy({ $0 }) && !defaults.bool(forKey: key(.all)) {
             kind = .all
@@ -200,6 +238,11 @@ struct ReportSelection: Identifiable { let id: String }
 /// Medals for finished rounds, kept on this phone.
 enum NativeMedals {
     static let key = "pine.medals"
+    static let streakKey = "pine.posture.badges"
+    /// Posture streak badges, newest first.
+    static var streaks: [(count: Int, date: String)] {
+        (UserDefaults.standard.array(forKey: streakKey) as? [[String: Any]] ?? []).map { ($0["count"] as? Int ?? 0, $0["date"] as? String ?? "") }.reversed()
+    }
     static var all: [(round: Int, date: String, sets: Int)] {
         (UserDefaults.standard.array(forKey: key) as? [[String: Any]] ?? []).map { ($0["round"] as? Int ?? 0, $0["date"] as? String ?? "", $0["sets"] as? Int ?? 0) }
     }

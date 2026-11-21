@@ -561,6 +561,8 @@ struct NativeMonthCalendar: View {
     @Environment(NativeStore.self) var store
     @PineReducedMotion private var reduceMotion
     @State private var monthOffset = 0
+    /// +1 when moving to a later month: the new month slides in from that side.
+    @State private var direction = 1
     @State private var selected = ""
     private var timezone: String { store.home["timezone"].text.isEmpty ? TimeZone.current.identifier : store.home["timezone"].text }
     private var calendar: Calendar {
@@ -584,23 +586,43 @@ struct NativeMonthCalendar: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 2) {
                 HStack {
-                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset -= 1 } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 36) }.accessibilityLabel("上个月")
+                    Button { move(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 36) }.accessibilityLabel("上个月")
                     Spacer()
                     Text(NativeDate.label(shown, format: "yyyy年M月", timezone: timezone)).font(.headline)
+                        .contentTransition(reduceMotion ? .identity : .numericText(countsDown: direction < 0))
                     Spacer()
-                    Button { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { monthOffset += 1 } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 36) }.disabled(monthOffset >= 0).accessibilityLabel("下个月")
+                    Button { move(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 36) }.disabled(monthOffset >= 0).accessibilityLabel("下个月")
                 }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                     ForEach(["一","二","三","四","五","六","日"], id: \.self) { Text($0).font(.caption2).foregroundStyle(.secondary).frame(height: 16) }
-                    ForEach(cells) { cell in cellView(cell, sessions[cell.key] ?? [], focus: focus) }
                 }
+                // Months slide sideways (buttons or a swipe) and the new month's
+                // glyphs draw in one after another.
+                ZStack {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
+                        ForEach(Array(cells.enumerated()), id: \.element.id) { index, cell in cellView(cell, sessions[cell.key] ?? [], focus: focus, delay: Double(max(0, index - lead)) * 0.012) }
+                    }
+                    .id(monthOffset)
+                    .transition(reduceMotion ? AnyTransition.opacity : AnyTransition.asymmetric(insertion: AnyTransition.move(edge: direction > 0 ? .trailing : .leading).combined(with: .opacity),
+                                                                                         removal: AnyTransition.move(edge: direction > 0 ? .leading : .trailing).combined(with: .opacity)))
+                }
+                .clipped()
+                .contentShape(Rectangle())
+                .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { drag in
+                    guard abs(drag.translation.width) > abs(drag.translation.height) * 1.5, abs(drag.translation.width) > 50 else { return }
+                    if drag.translation.width < 0, monthOffset < 0 { move(1) } else if drag.translation.width > 0 { move(-1) }
+                })
             }.padding(.horizontal, 8).padding(.vertical, 6).background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 // The legend lives on the overview's goal card; here it stays for VoiceOver.
                 .accessibilityHint("外圈活动，中圈两次力量，圆点体态")
             dayDetail(focus, sessions[focus] ?? [])
         }
     }
-    @ViewBuilder private func cellView(_ cell: Cell, _ list: [NativeDaySession], focus: String) -> some View {
+    private func move(_ step: Int) {
+        direction = step
+        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.9)) { monthOffset += step }
+    }
+    @ViewBuilder private func cellView(_ cell: Cell, _ list: [NativeDaySession], focus: String, delay: Double) -> some View {
         if cell.key.isEmpty { Color.clear.frame(height: 46) }
         else {
             let future = cell.key > today
@@ -609,7 +631,7 @@ struct NativeMonthCalendar: View {
             Button { selected = cell.key } label: {
                 VStack(spacing: 1) {
                     Text("\(cell.number)").font(.caption2.weight(chosen ? .bold : .regular)).monospacedDigit().foregroundStyle(numberColor)
-                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(cell.key)), posture: posture(cell.key, list), future: future, size: 30)
+                    PineDayGlyph(activity: activity(cell.key), halves: NativeDays.halves(list, weekend: NativeDays.isWeekend(cell.key)), posture: posture(cell.key, list), future: future, size: 30, animated: true, delay: delay)
                 }
                 .frame(maxWidth: .infinity, minHeight: 46)
                 .background(chosen ? pineTint : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
