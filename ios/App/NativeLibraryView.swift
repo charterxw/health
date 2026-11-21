@@ -46,25 +46,56 @@ struct NativeExerciseDetail: View {
     @State private var unit = "lb"
     @State private var retry = 0
     @State private var editingNote = false
-    private var chartTitle: String {
-        if NativeTraining.timed(exercise) { return "单组最多秒数" }
-        if exercise["load_mode"].text == "bodyweight" { return "单组最多次数" }
-        return exercise["load_mode"].text == "assistance" ? "工作组最小辅助量" : "工作组最高重量"
+    /// "top" (best set), "e1rm" (estimated one-rep max) or "volume" (load × reps).
+    @State private var metric = "top"
+    private var mode: String { exercise["load_mode"].text }
+    /// The measures that mean something for this lift, with their labels.
+    private var metrics: [NativeLiftMetric] {
+        if NativeTraining.timed(exercise) { return [.init(key: "top", title: "单组最长")] }
+        if mode == "bodyweight" { return [.init(key: "top", title: "单组最多次数"), .init(key: "volume", title: "总次数")] }
+        if mode == "assistance" { return [.init(key: "top", title: "最小辅助量")] }
+        return [.init(key: "top", title: "最高重量"), .init(key: "e1rm", title: "估算 1RM"), .init(key: "volume", title: "总量")]
     }
-    private var chartRows: [JSONValue] {
-        var values: [String: Double] = [:]
-        let timed = NativeTraining.timed(exercise), mode = exercise["load_mode"].text
+    private var chartUnit: String {
+        if NativeTraining.timed(exercise) { return "秒" }
+        if mode == "bodyweight" { return "次" }
+        return unit == "kg" ? "公斤" : "磅"
+    }
+    /// One point per session: the chosen measure over its completed work sets, and
+    /// whether it beat every earlier session (lower is better for assistance).
+    private var liftPoints: [NativeLiftPoint] {
+        let timed = NativeTraining.timed(exercise), key = metrics.contains { $0.key == metric } ? metric : "top"
+        var byDay: [String: Double] = [:]
         for session in history {
             let date = String(session["started_at"].text.prefix(10))
             for m in session["exercises"].array where m["exercise_id"].text == exercise.id && m["load_mode"].text == mode {
-                for row in NativeTraining.done(m) where !row["warmup"].flag {
-                    let value = timed ? row["duration_seconds"].number : mode == "bodyweight" ? row["reps"].number : NativeTraining.convert(row["weight"], from: m["unit"].text, to: unit).number
-                    guard let value else { continue }
-                    values[date] = values[date].map { mode == "assistance" ? min($0, value) : max($0, value) } ?? value
+                let rows = NativeTraining.done(m).filter { !$0["warmup"].flag }
+                guard !rows.isEmpty else { continue }
+                let values: [Double] = rows.compactMap { row -> Double? in
+                    let reps = row["reps"].number
+                    if timed { return row["duration_seconds"].number }
+                    if mode == "bodyweight" { return reps }
+                    guard let weight = NativeTraining.convert(row["weight"], from: m["unit"].text, to: unit).number else { return nil }
+                    switch key {
+                    case "e1rm": return reps.map { weight * (1 + min($0, 20) / 30) }
+                    case "volume": return reps.map { weight * $0 }
+                    default: return weight
+                    }
                 }
+                guard !values.isEmpty else { continue }
+                let value = key == "volume" ? values.reduce(0, +) : mode == "assistance" ? values.min()! : values.max()!
+                byDay[date] = byDay[date].map { key == "volume" ? $0 + value : mode == "assistance" ? min($0, value) : max($0, value) } ?? value
             }
         }
-        return values.keys.sorted().suffix(30).map { ["date": .string($0), "value": .number(values[$0]!)] }
+        var best: Double?
+        let lowerIsBetter = mode == "assistance" && key == "top"
+        let all = byDay.keys.sorted().compactMap { day -> NativeLiftPoint? in
+            guard let value = byDay[day], let date = NativeDate.parse(day + "T12:00:00Z") else { return nil }
+            let record = best.map { lowerIsBetter ? value < $0 - 0.01 : value > $0 + 0.01 } ?? false
+            best = best.map { lowerIsBetter ? min($0, value) : max($0, value) } ?? value
+            return NativeLiftPoint(day: day, date: date, value: (value * 10).rounded() / 10, record: record)
+        }
+        return Array(all.suffix(30))
     }
     private var history: [JSONValue] {
         var result: [String: JSONValue] = [:]
@@ -101,11 +132,20 @@ struct NativeExerciseDetail: View {
                 Text(exercise["secondary_muscles"].array.map { muscleName($0.text) }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
             }.pineCard()
             PineHeading(title: "历史表现", subtitle: "只统计已完成组；热身单独标记")
-            if !chartRows.isEmpty {
+            let points = liftPoints
+            if !points.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(chartTitle).font(.headline)
-                    if exercise["load_mode"].text != "bodyweight" { Picker("图表单位", selection: $unit) { Text("磅").tag("lb"); Text("公斤").tag("kg") }.pickerStyle(.segmented) }
-                    MetricChart(rows: chartRows, key: "value")
+                    if metrics.count > 1 {
+                        Picker("指标", selection: $metric) { ForEach(metrics, id: \.key) { Text($0.title).tag($0.key) } }.pickerStyle(.segmented)
+                    } else { Text(metrics[0].title).font(.headline) }
+                    if mode != "bodyweight", !NativeTraining.timed(exercise) { Picker("图表单位", selection: $unit) { Text("磅").tag("lb"); Text("公斤").tag("kg") }.pickerStyle(.segmented) }
+                    NativeLiftChart(points: points, unit: chartUnit)
+                    let records = points.filter(\.record)
+                    if let last = records.last {
+                        Label("最近一次新纪录：" + dayTitle(last.day, format: "M月d日") + " · " + displayNumber(.number(last.value)) + " " + chartUnit + "（共 \(records.count) 次）", systemImage: "medal.fill")
+                            .font(.footnote).foregroundStyle(pineGold)
+                    }
+                    if metric == "e1rm" { Text("估算 1RM 按 Epley 公式：重量 × (1 + 次数 ÷ 30)，次数超过 20 按 20 计。只用于看趋势，不代表真的去试极限。").font(.caption).foregroundStyle(.secondary) }
                 }.pineCard()
             }
             if let error { PineBanner(text: error); Button("重新加载") { retry += 1 } }
@@ -125,6 +165,31 @@ struct NativeExerciseDetail: View {
             do { remote = try await store.api.request("/strength/exercises/" + exercise.id + "/history"); error = nil }
             catch { if !Task.isCancelled { self.error = "暂时无法读取完整历史，显示已保存在本机的记录。"; if (error as? HealthAPIError)?.status == 401 { store.handle(error) } } }
         }
+    }
+}
+struct NativeLiftMetric: Hashable { let key: String; let title: String }
+struct NativeLiftPoint: Identifiable, Equatable {
+    var id: String { day }
+    let day: String
+    let date: Date
+    let value: Double
+    /// Better than every earlier session.
+    let record: Bool
+}
+/// One lift across sessions, with new bests in gold.
+struct NativeLiftChart: View {
+    let points: [NativeLiftPoint]
+    let unit: String
+    var body: some View {
+        Chart(points) { point in
+            LineMark(x: .value("日期", point.date), y: .value(unit, point.value)).foregroundStyle(pine).interpolationMethod(.monotone)
+            PointMark(x: .value("日期", point.date), y: .value(unit, point.value))
+                .foregroundStyle(point.record ? pineGold : pine).symbolSize(point.record ? 90 : 28)
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+        .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisGridLine(); AxisValueLabel(format: .dateTime.month(.defaultDigits).day()) } }
+        .frame(height: 190)
+        .accessibilityLabel("动作历史曲线，金色点为新纪录")
     }
 }
 struct NativeExerciseCreator: View {

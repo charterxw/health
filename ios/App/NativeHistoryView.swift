@@ -261,7 +261,10 @@ struct NativeReportView: View {
         VStack(spacing: 0) {
             ForEach(Array(session["exercises"].array.enumerated()), id: \.element.id) { i, movement in
                 if i > 0 { Divider().padding(.leading, 16) }
-                movementRow(movement, index: i)
+                // Each move opens its own history and progress chart.
+                NavigationLink { NativeExerciseDetail(exercise: store.exercises.first { $0.id == movement["exercise_id"].text } ?? movement) } label: {
+                    movementRow(movement, index: i).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityHint("点按查看这个动作的历史曲线")
             }
         }.background(pineSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
